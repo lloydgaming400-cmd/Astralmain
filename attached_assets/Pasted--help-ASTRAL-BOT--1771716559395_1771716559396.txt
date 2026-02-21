@@ -1,0 +1,149 @@
+
+*!help*
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+        🌌  ASTRAL BOT  🌌
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+Greetings, Cultivator! ✨
+
+Astral Bot is your path to ascension —
+collect spirit cards, climb the ranks,
+and forge your legacy in the realm.
+
+╭━━━━━━━━━━━━━━━━━━━━━━╮
+│  🃏  Collect rare anime cards
+│  🏅  Rank up & gain glory
+│  ⚔️   Join a sect & conquer
+│  📜  Respect the sacred laws
+╰━━━━━━━━━━━━━━━━━━━━━━╯
+
+Before you begin, read the laws:
+!rules — view the sacred laws 📜
+!scroll — view all commands 📖
+
+✦━━━━━━━━━━━━━━━━━━━━━━━━━━━✦
+    Your ascension begins with one step.
+✦━━━━━━━━━━━━━━━━━━━━━━━━━━━✦
+
+
+---
+
+*!rules*
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+         ⚖️  ASTRAL LAWS  ⚖️
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+Heed these sacred laws, Cultivator.
+Violations shall not go unpunished. ⚡
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━━╮
+│  📜  THE SACRED LAWS
+├━━━━━━━━━━━━━━━━━━━━━━━━━┤
+│
+│  1️⃣  No Spamming Commands
+│       ↳ Spam & you shall be silenced
+│
+│  2️⃣  No Disrespect
+│       ↳ Honour all cultivators
+│
+│  3️⃣  No Bug Exploitation
+│       ↳ Report bugs, never abuse them
+│
+│  4️⃣  No Begging
+│       ↳ Earn your cards & XP with honour
+│
+│  5️⃣  Respect Sect Leaders
+│       ↳ Their word is law within the sect
+│
+│  6️⃣  No Alternate Accounts
+│       ↳ One soul, one path
+│
+│  7️⃣  Respect All Decisions
+│       ↳ Admin rulings are final & absolute
+│
+╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+✦━━━━━━━━━━━━━━━━━━━━━━━━━━━✦
+   ⚔️  Break the laws. Face the consequences.
+✦━━━━━━━━━━━━━━━━━━━━━━━━━━━✦
+
+
+---
+
+*!scroll*
+
+✦ ═══════════════════════════════ ✦
+✦✦✦  【 ＡＳＴＲＡＬ  ＢＯＴ 】  ✦✦✦
+✦ ═══════════════════════════════ ✦
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+       📊  PROFILE & STATS
+├━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┤
+│  🏅  !rank
+│       ↳ Check your current rank
+│
+│  📈  !stats
+│       ↳ View your detailed stats
+│
+│  🏆  !leaderboard
+│       ↳ View the top cultivators
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+         🃏  ANIME CARDS
+├━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┤
+│  ✨  !getcard
+│       ↳ Claim your daily spirit card
+│
+│  📚  !cardcollection
+│       ↳ View your full collection
+│
+│  🔍  !card [num]
+│       ↳ Inspect a specific card
+│
+│  🎁  !givecard [num]
+│       ↳ Gift a card (reply to user)
+╰━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━╮
+      🏯  SECT COMMANDS  🏯
+├━━━━━━━━━━━━━━━━━━━━━━━━┤
+│
+│  🌀  GENERAL
+│  ─────────────────────
+│  ⚔️   !createsect [Name] [Tag]
+│       ↳ Found your own sect
+│
+│  🚪  !joinsect [Name]
+│       ↳ Join an existing sect
+│
+│  🏯  !mysect
+│       ↳ View your sect details
+│
+│  💰  !donate [amount]
+│       ↳ Donate XP to the treasury
+│
+│  📊  !sectranking
+│       ↳ View the sect leaderboard
+│
+│  🚶  !sectleave
+│       ↳ Depart from your sect
+│
+│  👑  LEADER ONLY
+│  ─────────────────────
+│  🖼️   !setsectpfp
+│       ↳ Set your sect image
+│
+│  🥾  !kickmember [username]
+│       ↳ Remove a member
+│
+│  ⚡  !punish [username]
+│       ↳ Discipline a member
+│
+╰━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+✦════════════════✦
+        𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™  𝟸𝟶𝟸𝟼
+✦═══════════════ ✦

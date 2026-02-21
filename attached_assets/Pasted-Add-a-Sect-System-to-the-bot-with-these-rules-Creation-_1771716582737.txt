@@ -1,0 +1,73 @@
+Add a Sect System to the bot with these rules:
+
+**Creation**
+- Command: `!createsect [SectName] [SectTag]`
+- Only 5 sects can ever exist across the entire bot's lifetime. Once 5 are created, no more can be made — ever.
+- A user must have at least **10,000 XP** to create a sect. Creating a sect costs **1,000 XP** deducted from the creator immediately.
+- The user who creates a sect becomes its Sect Leader.
+- The SectTag is added as a prefix to the member's display name automatically (e.g. `[MOON] Username`).
+- Sect name and tag can never be changed after creation.
+- If the user has less than 10,000 XP: `You need at least 10,000 XP to found a sect.`
+
+**Joining**
+- Command: `!joinsect [SectName]`
+- Max 20 members per sect including the leader.
+- A user can only be in one sect. After leaving or being kicked they can join again freely.
+
+**XP Boost**
+- Normal users earn 5 XP per message (existing behavior).
+- Sect members earn 10 XP per message.
+
+**Donations**
+- Command: `!donate [amount]`
+- Members can donate up to 100 XP per day from their personal XP to their sect's treasury.
+- This is the only way the sect treasury grows.
+
+**Sect Leaderboard**
+- Command: `!sectranking`
+- Ranks all 5 sects by their treasury XP, highest to lowest.
+- Display: Rank, SectTag, SectName, Leader, Members count, Treasury XP.
+
+**Sect Profile Picture**
+- Command: `!setsectpfp` — Leader sends this command with an image attached.
+- Only the Sect Leader can set it. Stored and displayed above the `!mysect` output.
+- Non-leaders get: `Only the Sect Leader can set the sect profile picture.`
+
+**Sect Info**
+- Command: `!mysect`
+- Display the sect profile picture above the text if one has been set.
+- Display the sect info in this exact format:
+```
+――――――――――――――――――――――
+        [SECTAG] SECTNAME        
+――――――――――――――――――――――
+  Leader: [LeaderName]
+  Members: [current]/20
+――――――――――――――――――――――
+  ROSTER
+  1. [LeaderName] (Leader)
+  2. [Member2]
+  3. [Member3]
+  ...
+――――――――――――――――――――――
+  TREASURY: [amount] XP
+――――――――――――――――――――――
+```
+- If not in a sect reply with: `You are not in any sect. Use !joinsect [SectName] to join one.`
+
+**Leave**
+- Command: `!sectleave`
+- Removes the user from their sect and strips their sect tag. They can join another sect freely after.
+- If the leader tries to leave: `You are the Sect Leader. Kick all members first.`
+
+**Kick**
+- Command: `!kickmember [username]`
+- Sect Leader only. Removes the member from the sect and strips their tag. Kicked user can join any sect again.
+- Non-leaders get: `Only the Sect Leader can kick members.`
+
+**Punish**
+- Command: `!punish [username]`
+- Sect Leader only. Mutes the target from gaining any XP from messages for 24 hours.
+- Bot announces: `[Username] has been punished by [Leader]. They will gain no XP for 24 hours.`
+- If already punished: `[Username] is already serving a punishment.`
+- Non-leaders get: `Only the Sect Leader can punish members.`
