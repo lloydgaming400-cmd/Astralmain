@@ -1,0 +1,89 @@
+Add this to the bot:
+
+SHOP SYSTEM:
+
+Add !shop to the scroll menu.
+
+---
+
+!shop
+
+When a user types !shop display the full shop with item names, prices, and a one line description of each item.
+
+Bot response:
+
+🏪 Shop
+
+Blood Rune — 1000 XP
+Steal XP from another user.
+
+Eclipse Stone — 1200 XP
+Hide your race and XP from everyone for 24 hours.
+
+Phantom Seal — 1100 XP
+Vanish from the leaderboard for 24 hours.
+
+Cursed Coin — 200 XP
+Unknown outcome. Flip and find out.
+
+Mirror Shard — 1300 XP
+Copy another user's race for 30 minutes.
+
+Type !buy [item name] to purchase.
+
+---
+
+!buy [item name]
+
+When a user types !buy followed by an item name check their current XP against the item price. Also check if the user already has that item in their inventory.
+
+If they already own that item and have not used it yet send:
+
+❌ You already own a [ITEM NAME]. Use it before buying another.
+
+If they have enough XP and do not already own the item:
+Deduct the XP cost from their total XP. Add the item to their inventory. Then send:
+
+✅ Purchase Successful
+
+You bought a [ITEM NAME].
+It has been added to your inventory.
+
+Remaining XP: [REMAINING XP]
+
+Type !inventory to see your items.
+
+If they do not have enough XP send:
+
+⚠️ Insufficient XP
+
+You do not have enough XP to purchase [ITEM NAME].
+
+[ITEM NAME] — [ITEM PRICE] XP
+Your XP — [USER CURRENT XP] XP
+
+Earn more XP by chatting and come back.
+
+If the item name they typed does not exist in the shop send:
+
+❌ That item does not exist in the shop. Type !shop to see available items.
+
+If the user tries to buy a Living Core send:
+
+❌ The Living Core is not for sale. It cannot be bought.
+
+If the user types !buy with no item name send:
+
+Type !buy followed by an item name. Example: !buy Cursed Coin
+
+---
+
+SHOP RULES:
+
+The Living Core is never available in the shop under any circumstance and cannot be added to it.
+A user cannot buy an item if their XP would go below 0.
+A user cannot buy an item they already own until they have used it and it has been consumed from their inventory.
+XP is deducted immediately on purchase.
+Items go directly into the user's inventory after purchase.
+The shop is always available and does not rotate.
+Item names are not case sensitive so !buy blood rune and !buy Blood Rune both work.
