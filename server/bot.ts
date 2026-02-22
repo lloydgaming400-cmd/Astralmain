@@ -46,10 +46,15 @@ export async function initBot() {
   connectionStatus = "DISCONNECTED";
   currentQrCode = undefined;
   
-  const authPath = path.join(process.cwd(), '.wwebjs_auth');
-  if (!fs.existsSync(authPath)) {
+    const authPath = path.join(process.cwd(), '.wwebjs_auth');
+    if (fs.existsSync(authPath)) {
+      try {
+        fs.rmSync(authPath, { recursive: true, force: true });
+      } catch (e) {
+        console.error('Failed to clear auth path:', e);
+      }
+    }
     fs.mkdirSync(authPath, { recursive: true });
-  }
 
   client = new Client({
     authStrategy: new LocalAuth({
@@ -62,7 +67,8 @@ export async function initBot() {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--no-zygote'
+        '--no-zygote',
+        '--single-process'
       ]
     }
   }) as any;
@@ -91,18 +97,25 @@ export async function initBot() {
     setTimeout(initBot, 5000);
   });
 
-  client.on('disconnected', (reason: string) => {
-    console.log('Client was disconnected', reason);
-    connectionStatus = "DISCONNECTED";
-    currentQrCode = undefined;
-    
-    // Automatically reinitialize to get new QR
-    console.log('Reinitializing client...');
-    setTimeout(initBot, 5000);
-  });
+    client.on('disconnected', async (reason: string) => {
+      console.log('Client was disconnected', reason);
+      connectionStatus = "DISCONNECTED";
+      currentQrCode = undefined;
+      
+      try {
+        await client.destroy();
+      } catch (e) {}
+
+      console.log('Reinitializing client...');
+      setTimeout(initBot, 2000);
+    });
 
   client.on('message', async (msg: any) => {
-    await handleMessage(msg);
+    try {
+      await handleMessage(msg);
+    } catch (err) {
+      console.error('Error in message handler:', err);
+    }
   });
 
   client.on('group_join', async (notification: any) => {
@@ -248,18 +261,18 @@ async function handleMessage(msg: Message) {
         }
 
         const text = `╭══════════════════════╮\n` +
-                     `   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦\n` +
-                     `╰══════════════════════╯\n` +
-                     ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n\n` +
-                     `  Greetings, Cultivator!\n\n` +
-                     `  You have been summoned to the Astral Realm.\n` +
-                     `  I am Miss Astral, your guide to ascension.\n\n` +
-                     `  ✦ Species: ${user.species}\n` +
-                     `  ✦ Rarity: ${selectedSpecies.rarity}\n\n` +
-                     `  Your journey begins now.\n` +
-                     ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-                     `  Use !scroll to view all commands\n` +
-                     `╰══════════════════════╯`;
+                 `   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦\n` +
+                 `╰══════════════════════╯\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n\n` +
+                 `  Greetings, Cultivator!\n\n` +
+                 `  You have been summoned to the Astral Realm.\n` +
+                 `  I am Miss Astral, your guide to ascension.\n\n` +
+                 `  ✦ Species: ${user.species}\n` +
+                 `  ✦ Rarity: ${selectedSpecies.rarity}\n\n` +
+                 `  Your journey begins now.\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  Use !scroll to view all commands\n` +
+                 `╰══════════════════════╯`;
         
         try {
           const media = await pkg.MessageMedia.fromFilePath('client/public/assets/start.jpg');
@@ -468,7 +481,7 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
                  `▸ !scroll — view all commands`;
     
     try {
-      const media = await pkg.MessageMedia.fromFilePath('client/public/assets/help.png');
+      const media = await pkg.MessageMedia.fromFilePath('client/public/assets/help.jpg');
       await client.sendMessage(msg.from, media, { caption: text });
     } catch (e) {
       await msg.reply(text);
@@ -504,6 +517,7 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
                  `  🎁 !getcard ↳ daily claim\n` +
                  `  📚 !cardcollection ↳ view cards\n` +
                  `  🔍 !card [num] ↳ view card info\n` +
+                 `  🤝 !givecard @user [num] ↳ trade card\n` +
                  ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
                  `  🏯 SECT\n` +
                  `  🚪 !joinsect [name] ↳ join a sect\n` +
@@ -528,8 +542,27 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
       await msg.reply(text);
     }
   }
-  else if (cmd === '!getcard_old' || cmd === '!cardcollection_old' || cmd === '!card_old' || cmd === '!givecard') {
-    await msg.reply(`The card system has been retired. Focus on your cultivation!`);
+  else if (cmd === '!givecard') {
+    if (args.length < 3) return msg.reply(`Usage: !givecard @user [card_number]`);
+    const targetMention = args[1];
+    const cardIndex = parseInt(args[2]) - 1;
+
+    const targetPhoneId = targetMention.replace('@', '').replace(/[^0-9]/g, '') + '@c.us';
+    const userCards = await storage.getCardsByOwner(phoneId);
+
+    if (isNaN(cardIndex) || cardIndex < 0 || cardIndex >= userCards.length) {
+      return msg.reply("Invalid card number!");
+    }
+
+    const card = userCards[cardIndex];
+    const targetUser = await storage.getUserByPhone(targetPhoneId);
+    
+    if (!targetUser) return msg.reply("Target user not found in the realm!");
+
+    await storage.updateCard(card.id, { ownerPhoneId: targetPhoneId });
+    await msg.reply(`Successfully transferred [${card.rarity}] ${card.name} to @${targetUser.phoneId.split('@')[0]}!`, {
+      mentions: [targetPhoneId] as any
+    });
   }
   else if (cmd === '!createsect') {
     if (args.length < 3) return msg.reply(`Usage: !createsect [SectName] [SectTag]`);

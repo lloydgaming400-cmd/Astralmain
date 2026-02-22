@@ -25,7 +25,8 @@ export interface IStorage {
   getCardsByOwner(phoneId: string): Promise<Card[]>;
   createCard(card: InsertCard): Promise<Card>;
   deleteCard(id: number): Promise<void>;
-  updateCardOwner(cardId: number, newOwnerPhoneId: string): Promise<Card>;
+  updateCard(id: number, updates: Partial<InsertCard>): Promise<Card>;
+  resetDatabase(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -89,6 +90,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCard(id: number): Promise<void> {
     await db.delete(cards).where(eq(cards.id, id));
+  }
+
+  async updateCard(id: number, updates: Partial<InsertCard>): Promise<Card> {
+    const [updated] = await db.update(cards)
+      .set(updates)
+      .where(eq(cards.id, id))
+      .returning();
+    return updated;
   }
 
   async resetDatabase(): Promise<void> {
