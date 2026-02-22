@@ -262,9 +262,10 @@ async function handleMessage(msg: Message) {
                      `╰══════════════════════╯`;
         
         try {
-          const media = await pkg.MessageMedia.fromFilePath('attached_assets/download_(17)_1771770818179.jfif');
+          const media = await pkg.MessageMedia.fromFilePath('client/public/assets/start.jpg');
           await client.sendMessage(msg.from, media, { caption: text });
         } catch (e) {
+          console.error('Failed to send media:', e);
           await msg.reply(text);
         }
         return;
@@ -520,9 +521,10 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
                  `╰══════════════════════╯`;
 
     try {
-      const media = await pkg.MessageMedia.fromFilePath('attached_assets/ִֶָ_𓂃⊹_ִֶָ_vera_1771770818180.jfif');
+      const media = await pkg.MessageMedia.fromFilePath('client/public/assets/scroll.jpg');
       await client.sendMessage(msg.from, media, { caption: text });
     } catch (e) {
+      console.error('Failed to send media:', e);
       await msg.reply(text);
     }
   }
