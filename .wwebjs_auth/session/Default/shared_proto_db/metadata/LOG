@@ -1,1 +1,2 @@
-2026/02/22-12:22:08.965 3e9 Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/shared_proto_db/metadata/MANIFEST-000001
+2026/02/22-12:30:26.817 42d Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/shared_proto_db/metadata since it was missing.
+2026/02/22-12:30:26.825 42d Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/shared_proto_db/metadata/MANIFEST-000001
