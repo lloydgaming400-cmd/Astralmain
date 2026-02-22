@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   sectTag: text("sect_tag"),
   species: text("species").notNull().default("Human"),
   lastCardClaim: timestamp("last_card_claim"),
+  inventory: text("inventory").array().notNull().default([]),
 });
 
 export const sects = pgTable("sects", {

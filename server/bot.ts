@@ -332,12 +332,65 @@ async function fetchRandomCharacter() {
   };
 }
 
+const SHOP_ITEMS = [
+  { name: "Blood Rune", price: 1000, description: "Steal XP from another user." },
+  { name: "Eclipse Stone", price: 1200, description: "Hide your race and XP from everyone for 24 hours." },
+  { name: "Phantom Seal", price: 1100, description: "Vanish from the leaderboard for 24 hours." },
+  { name: "Cursed Coin", price: 200, description: "Unknown outcome. Flip and find out." },
+  { name: "Mirror Shard", price: 1300, description: "Copy another user's race for 30 minutes." }
+];
+
 async function handleCommands(msg: Message, body: string, user: User, chat: Chat, contact: Contact) {
   const args = body.split(' ');
   const cmd = args[0].toLowerCase();
   const phoneId = user.phoneId;
 
-  if (cmd === '!rank') {
+  if (cmd === '!shop') {
+    let text = `🏪 *Shop*\n\n`;
+    SHOP_ITEMS.forEach(item => {
+      text += `*${item.name}* — ${item.price} XP\n${item.description}\n\n`;
+    });
+    text += `Type !buy [item name] to purchase.`;
+    await msg.reply(text);
+  }
+  else if (cmd === '!buy') {
+    const itemName = args.slice(1).join(' ').trim();
+    if (!itemName) return msg.reply("Type !buy followed by an item name. Example: !buy Cursed Coin");
+
+    if (itemName.toLowerCase() === "living core") {
+      return msg.reply("❌ The Living Core is not for sale. It cannot be bought.");
+    }
+
+    const item = SHOP_ITEMS.find(i => i.name.toLowerCase() === itemName.toLowerCase());
+    if (!item) return msg.reply("❌ That item does not exist in the shop. Type !shop to see available items.");
+
+    const inventory = user.inventory || [];
+    if (inventory.some(i => i.toLowerCase() === itemName.toLowerCase())) {
+      return msg.reply(`❌ You already own a ${item.name}. Use it before buying another.`);
+    }
+
+    if (user.xp < item.price) {
+      return msg.reply(`⚠️ *Insufficient XP*\n\nYou do not have enough XP to purchase ${item.name}.\n\n${item.name} — ${item.price} XP\nYour XP — ${user.xp} XP\n\nEarn more XP by chatting and come back.`);
+    }
+
+    const updatedUser = await storage.updateUser(phoneId, {
+      xp: user.xp - item.price,
+      inventory: [...inventory, item.name]
+    });
+
+    await msg.reply(`✅ *Purchase Successful*\n\nYou bought a ${item.name}.\nIt has been added to your inventory.\n\nRemaining XP: ${updatedUser.xp}\n\nType !inventory to see your items.`);
+  }
+  else if (cmd === '!inventory') {
+    const inventory = user.inventory || [];
+    if (inventory.length === 0) return msg.reply("Your inventory is empty!");
+    
+    let text = `🎒 *Your Inventory*\n\n`;
+    inventory.forEach((item, i) => {
+      text += `${i + 1}. ${item}\n`;
+    });
+    await msg.reply(text);
+  }
+  else if (cmd === '!rank') {
     const text = `【﻿Ｓｔａｔｕｓ】\n` +
                  `-------------------------\n` +
                  `▸ Rank: ${getRank(user.xp)}\n` +
@@ -512,6 +565,11 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
                  `  📈 !stats ↳ view your stats\n` +
                  `  👤 !profile ↳ view your profile\n` +
                  `  🏆 !leaderboard ↳ top cultivators\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  🛒 SHOP & ITEMS\n` +
+                 `  🏪 !shop ↳ view shop\n` +
+                 `  🛍️ !buy [item] ↳ purchase item\n` +
+                 `  🎒 !inventory ↳ view items\n` +
                  ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
                  `  🎴 CARDS\n` +
                  `  🎁 !getcard ↳ daily claim\n` +
