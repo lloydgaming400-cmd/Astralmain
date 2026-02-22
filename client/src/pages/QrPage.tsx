@@ -5,22 +5,8 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function QrPage() {
-  const { data, isLoading, error } = useQrStatus();
+  const { data, error } = useQrStatus();
   const { mutate: refreshQr, isPending: isRefreshing } = useRefreshQr();
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="relative">
-          <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full"></div>
-          <Loader2 className="w-12 h-12 text-primary animate-spin relative z-10" />
-        </div>
-        <p className="mt-4 text-muted-foreground font-display tracking-widest text-sm">
-          ESTABLISHING SPIRIT CONNECTION...
-        </p>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -49,18 +35,24 @@ export default function QrPage() {
             <h2 className="text-3xl font-bold text-green-400 font-display tracking-widest">CONNECTED</h2>
             <p className="text-muted-foreground">The Astral Bot is active and monitoring the realm.</p>
           </motion.div>
-        ) : data?.qrCode ? (
+        ) : (
           <motion.div
             key="qr"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             className="flex flex-col items-center space-y-8"
           >
-            <div className="p-6 bg-white rounded-2xl shadow-[0_0_50px_rgba(255,255,255,0.1)] transition-transform hover:scale-[1.02]">
-              <QRCodeSVG value={data.qrCode} size={300} level="H" includeMargin={true} />
+            <div className="p-6 bg-white rounded-2xl shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+              {data?.qrCode ? (
+                <QRCodeSVG value={data.qrCode} size={300} level="H" includeMargin={true} />
+              ) : (
+                <div className="w-[300px] h-[300px] flex items-center justify-center bg-muted animate-pulse">
+                  <Smartphone className="w-12 h-12 text-muted-foreground" />
+                </div>
+              )}
             </div>
             <div className="text-center space-y-6">
-              <p className="text-muted-foreground font-display tracking-[0.2em] text-sm uppercase animate-pulse">
+              <p className="text-muted-foreground font-display tracking-[0.2em] text-sm uppercase">
                 Scan to bind your soul
               </p>
               <Button 
@@ -75,16 +67,6 @@ export default function QrPage() {
               </Button>
             </div>
           </motion.div>
-        ) : (
-          <div className="flex flex-col items-center space-y-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse"></div>
-              <Loader2 className="w-16 h-16 text-primary animate-spin relative z-10" />
-            </div>
-            <p className="text-lg text-muted-foreground font-display tracking-[0.3em] animate-pulse">
-              AWAKENING...
-            </p>
-          </div>
         )}
       </AnimatePresence>
     </div>

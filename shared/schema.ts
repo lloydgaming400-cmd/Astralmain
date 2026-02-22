@@ -27,11 +27,11 @@ export const sects = pgTable("sects", {
 export const cards = pgTable("cards", {
   id: serial("id").primaryKey(),
   ownerPhoneId: text("owner_phone_id").notNull(),
-  malCharacterId: integer("mal_character_id").notNull(),
+  characterId: integer("character_id").notNull(),
   name: text("name").notNull(),
   series: text("series").notNull(),
   imageUrl: text("image_url").notNull(),
-  rarity: text("rarity").notNull(), // Common, Rare, Epic, Legendary
+  rarity: text("rarity").notNull(), // D, C, B, A, S
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });

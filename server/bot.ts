@@ -209,10 +209,6 @@ async function handleMessage(msg: Message) {
       const cmd = args[0].toLowerCase();
       
       if (cmd === '!start') {
-        if (user.messages > 1) {
-          return msg.reply(`You're already awake, ${user.name}!`);
-        }
-
         const speciesOptions = [
           { name: "Human", weight: 65, rarity: "Common" },
           { name: "Demon", weight: 15, rarity: "Uncommon" },
@@ -233,10 +229,23 @@ async function handleMessage(msg: Message) {
           }
         }
 
-        user = await storage.updateUser(phoneId, { 
-          species: selectedSpecies.name,
-          messages: 2
-        });
+        if (!user || user.messages === 0) {
+          user = await storage.createUser({
+            phoneId,
+            name,
+            xp: 0,
+            messages: 2,
+            sectId: null,
+            sectTag: null,
+            species: selectedSpecies.name,
+            lastCardClaim: null
+          });
+        } else {
+          user = await storage.updateUser(phoneId, { 
+            species: selectedSpecies.name,
+            messages: user.messages + 1
+          });
+        }
 
         const text = `╭══════════════════════╮\n` +
                      `   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦\n` +
@@ -253,7 +262,7 @@ async function handleMessage(msg: Message) {
                      `╰══════════════════════╯`;
         
         try {
-          const media = await pkg.MessageMedia.fromFilePath('client/public/assets/start.png');
+          const media = await pkg.MessageMedia.fromFilePath('attached_assets/download_(17)_1771770818179.jfif');
           await client.sendMessage(msg.from, media, { caption: text });
         } catch (e) {
           await msg.reply(text);
@@ -261,13 +270,52 @@ async function handleMessage(msg: Message) {
         return;
       }
 
-      if (user.messages === 0) return;
+      if (!user || user.messages === 0) {
+        return msg.reply("You must use !start to awaken and register before using any other commands!");
+      }
 
       await handleCommands(msg, body, user, chat, contact);
     }
   } catch (err) {
     console.error('Error handling message:', err);
   }
+}
+
+async function fetchRandomCharacter() {
+  const rarities = [
+    { tier: 'D', chance: 40 },
+    { tier: 'C', chance: 30 },
+    { tier: 'B', chance: 15 },
+    { tier: 'A', chance: 10 },
+    { tier: 'S', chance: 5 }
+  ];
+  
+  const random = Math.random() * 100;
+  let tier = 'D';
+  let sum = 0;
+  for (const r of rarities) {
+    sum += r.chance;
+    if (random <= sum) {
+      tier = r.tier;
+      break;
+    }
+  }
+
+  // Use Jikan API (MyAnimeList) for characters as it's free and reliable
+  // We'll pick a random ID range for variety
+  const randomPage = Math.floor(Math.random() * 50) + 1;
+  const response = await fetch(`https://api.jikan.moe/v4/top/characters?page=${randomPage}`);
+  const data = await response.json();
+  const characters = data.data;
+  const character = characters[Math.floor(Math.random() * characters.length)];
+  
+  return {
+    characterId: character.mal_id,
+    name: character.name,
+    series: character.about?.split('\n')[0] || "Unknown Anime",
+    imageUrl: character.images.jpg.image_url,
+    rarity: tier
+  };
 }
 
 async function handleCommands(msg: Message, body: string, user: User, chat: Chat, contact: Contact) {
@@ -282,6 +330,80 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
                  `▸ XP: ${user.xp}\n` +
                  `▸ Messages: ${user.messages}`;
     await msg.reply(text);
+  }
+  else if (cmd === '!getcard') {
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (user.lastCardClaim && (now - new Date(user.lastCardClaim).getTime() < oneDay)) {
+      const timeLeft = oneDay - (now - new Date(user.lastCardClaim).getTime());
+      const hours = Math.floor(timeLeft / (60 * 60 * 1000));
+      const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+      return msg.reply(`You must wait ${hours}h ${minutes}m before claiming another card!`);
+    }
+
+    try {
+      const char = await fetchRandomCharacter();
+      await storage.createCard({
+        ownerPhoneId: phoneId,
+        characterId: char.characterId,
+        name: char.name,
+        series: char.series,
+        imageUrl: char.imageUrl,
+        rarity: char.rarity
+      });
+      await storage.updateUser(phoneId, { lastCardClaim: new Date() });
+
+      const text = `╭══════════════════════╮\n` +
+                   `   ✦┊【Ｎｅｗ Ｃｈａｒａｃｔｅｒ】┊✦\n` +
+                   `╰══════════════════════╯\n` +
+                   `  ▸ Name: ${char.name}\n` +
+                   `  ▸ Series: ${char.series}\n` +
+                   `  ▸ Tier: ${char.rarity}\n` +
+                   `╰══════════════════════╯`;
+      
+      const media = await pkg.MessageMedia.fromUrl(char.imageUrl);
+      await client.sendMessage(msg.from, media, { caption: text });
+    } catch (e) {
+      console.error(e);
+      await msg.reply("Failed to summon a character. Try again later!");
+    }
+  }
+  else if (cmd === '!cardcollection') {
+    const userCards = await storage.getCardsByOwner(phoneId);
+    if (userCards.length === 0) return msg.reply("Your collection is empty! Use !getcard to start.");
+    
+    let text = `╭══════════════════════╮\n` +
+               `   ✦┊【Ｃｏｌｌｅｃｔｉｏｎ】┊✦\n` +
+               `╰══════════════════════╯\n`;
+    userCards.forEach((c, i) => {
+      text += `  ${i + 1}. [${c.rarity}] ${c.name}\n`;
+    });
+    text += `╰══════════════════════╯\n` +
+            `Use !card [number] to view a character!`;
+    await msg.reply(text);
+  }
+  else if (cmd === '!card') {
+    const index = parseInt(args[1]) - 1;
+    const userCards = await storage.getCardsByOwner(phoneId);
+    if (isNaN(index) || index < 0 || index >= userCards.length) {
+      return msg.reply("Invalid card number!");
+    }
+    
+    const card = userCards[index];
+    const text = `╭══════════════════════╮\n` +
+                 `   ✦┊【Ｃｈａｒａｃｔｅｒ】┊✦\n` +
+                 `╰══════════════════════╯\n` +
+                 `  ▸ Name: ${card.name}\n` +
+                 `  ▸ Series: ${card.series}\n` +
+                 `  ▸ Tier: ${card.rarity}\n` +
+                 `╰══════════════════════╯`;
+    
+    try {
+      const media = await pkg.MessageMedia.fromUrl(card.imageUrl);
+      await client.sendMessage(msg.from, media, { caption: text });
+    } catch (e) {
+      await msg.reply(text + `\n(Image failed to load: ${card.imageUrl})`);
+    }
   }
   else if (cmd === '!stats') {
     let sectMemberCount = 0;
@@ -377,6 +499,11 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
                  `  👤 !profile ↳ view your profile\n` +
                  `  🏆 !leaderboard ↳ top cultivators\n` +
                  ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  🎴 CARDS\n` +
+                 `  🎁 !getcard ↳ daily claim\n` +
+                 `  📚 !cardcollection ↳ view cards\n` +
+                 `  🔍 !card [num] ↳ view card info\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
                  `  🏯 SECT\n` +
                  `  🚪 !joinsect [name] ↳ join a sect\n` +
                  `  🏯 !mysect ↳ view sect details\n` +
@@ -393,13 +520,13 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
                  `╰══════════════════════╯`;
 
     try {
-      const media = await pkg.MessageMedia.fromFilePath('client/public/assets/scroll.png');
+      const media = await pkg.MessageMedia.fromFilePath('attached_assets/ִֶָ_𓂃⊹_ִֶָ_vera_1771770818180.jfif');
       await client.sendMessage(msg.from, media, { caption: text });
     } catch (e) {
       await msg.reply(text);
     }
   }
-  else if (cmd === '!getcard' || cmd === '!cardcollection' || cmd === '!card' || cmd === '!givecard') {
+  else if (cmd === '!getcard_old' || cmd === '!cardcollection_old' || cmd === '!card_old' || cmd === '!givecard') {
     await msg.reply(`The card system has been retired. Focus on your cultivation!`);
   }
   else if (cmd === '!createsect') {

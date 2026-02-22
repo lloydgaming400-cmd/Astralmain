@@ -31,5 +31,10 @@ export async function registerRoutes(
     res.status(200).json({ users, sects });
   });
 
+  app.post("/api/reset", async (req, res) => {
+    await storage.resetDatabase();
+    res.status(200).json({ success: true });
+  });
+
   return httpServer;
 }

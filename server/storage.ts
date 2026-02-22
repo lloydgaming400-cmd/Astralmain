@@ -91,9 +91,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(cards).where(eq(cards.id, id));
   }
 
-  async updateCardOwner(cardId: number, newOwnerPhoneId: string): Promise<Card> {
-    const [updated] = await db.update(cards).set({ ownerPhoneId: newOwnerPhoneId }).where(eq(cards.id, cardId)).returning();
-    return updated;
+  async resetDatabase(): Promise<void> {
+    await db.delete(cards);
+    await db.delete(sects);
+    await db.delete(users);
   }
 }
 
