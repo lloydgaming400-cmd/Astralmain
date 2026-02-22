@@ -409,3 +409,44 @@
 2026/02/22-10:13:43.069 ce0 Delete type=2 #391
 2026/02/22-10:13:43.069 ce0 Delete type=2 #392
 2026/02/22-10:13:43.069 ce0 Delete type=2 #395
+2026/02/22-10:15:05.137 ce0 Level-0 table #400: started
+2026/02/22-10:15:05.202 ce0 Level-0 table #400: 1075373 bytes OK
+2026/02/22-10:15:05.225 ce0 Delete type=0 #394
+2026/02/22-10:15:23.950 ce0 Compacting 1@1 + 2@2 files
+2026/02/22-10:15:24.086 ce0 Generated table #401@1: 49487 keys, 2208950 bytes
+2026/02/22-10:15:24.184 ce0 Generated table #402@1: 34528 keys, 2201000 bytes
+2026/02/22-10:15:24.187 ce0 Generated table #403@1: 315 keys, 13234 bytes
+2026/02/22-10:15:24.187 ce0 Compacted 1@1 + 2@2 files => 4423184 bytes
+2026/02/22-10:15:24.192 ce0 compacted to: files[ 0 0 5 0 0 0 0 ]
+2026/02/22-10:15:24.192 ce0 Delete type=2 #396
+2026/02/22-10:15:24.192 ce0 Delete type=2 #397
+2026/02/22-10:15:24.192 ce0 Delete type=2 #400
+2026/02/22-10:16:34.036 cdf Level-0 table #405: started
+2026/02/22-10:16:34.055 cdf Level-0 table #405: 184639 bytes OK
+2026/02/22-10:16:34.072 cdf Delete type=0 #399
+2026/02/22-10:16:34.072 cdf Manual compaction at level-0 from '\x00\x83\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x84\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/02/22-10:16:34.305 ce0 Compacting 1@1 + 5@2 files
+2026/02/22-10:16:34.357 ce0 Generated table #406@1: 49572 keys, 2208143 bytes
+2026/02/22-10:16:34.409 ce0 Generated table #407@1: 34524 keys, 2203524 bytes
+2026/02/22-10:16:34.417 ce0 Generated table #408@1: 7964 keys, 261735 bytes
+2026/02/22-10:16:34.417 ce0 Compacted 1@1 + 5@2 files => 4673402 bytes
+2026/02/22-10:16:34.422 ce0 compacted to: files[ 0 0 3 0 0 0 0 ]
+2026/02/22-10:16:34.422 ce0 Delete type=2 #393
+2026/02/22-10:16:34.422 ce0 Delete type=2 #398
+2026/02/22-10:16:34.423 ce0 Delete type=2 #401
+2026/02/22-10:16:34.423 ce0 Delete type=2 #402
+2026/02/22-10:16:34.423 ce0 Delete type=2 #403
+2026/02/22-10:16:34.423 ce0 Delete type=2 #405
+2026/02/22-10:35:02.025 ce0 Level-0 table #410: started
+2026/02/22-10:35:02.062 ce0 Level-0 table #410: 1081746 bytes OK
+2026/02/22-10:35:02.069 ce0 Delete type=0 #404
+2026/02/22-10:36:08.098 ce2 Compacting 1@1 + 3@2 files
+2026/02/22-10:36:08.187 ce2 Generated table #411@1: 49589 keys, 2208550 bytes
+2026/02/22-10:36:08.243 ce2 Generated table #412@1: 35424 keys, 2203863 bytes
+2026/02/22-10:36:08.257 ce2 Generated table #413@1: 10553 keys, 448033 bytes
+2026/02/22-10:36:08.258 ce2 Compacted 1@1 + 3@2 files => 4860446 bytes
+2026/02/22-10:36:08.274 ce2 compacted to: files[ 0 0 3 0 0 0 0 ]
+2026/02/22-10:36:08.274 ce2 Delete type=2 #406
+2026/02/22-10:36:08.274 ce2 Delete type=2 #407
+2026/02/22-10:36:08.274 ce2 Delete type=2 #408
+2026/02/22-10:36:08.274 ce2 Delete type=2 #410

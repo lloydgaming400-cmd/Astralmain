@@ -1,0 +1,123 @@
+when they use mysect command:
+
+╭══════════════════════╮
+   ✦┊【Ｓｅｃｔ】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ♔ Name: [sect name]
+  ❧ Emblem: [sect emblem]
+  ♛ Leader: [leader name]
+  ✦ Members: [current]/[max]
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ❦ ROSTER
+  1. [member name] (Leader)
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ✧ Treasury: [treasury xp] XP
+╰══════════════════════╯
+
+when they use leaderboard command:
+
+╭══════════════════════╮
+   ✦┊【Ｔｏｐ Ｃｕｌｔｉｖａｔｏｒｓ】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🥇 1. [username] — [xp] XP
+  🥈 2. [username] — [xp] XP
+  🥉 3. [username] — [xp] XP
+  ✦  4. [username] — [xp] XP
+  ✦  5. [username] — [xp] XP
+  ✦  6. [username] — [xp] XP
+  ✦  7. [username] — [xp] XP
+  ✦  8. [username] — [xp] XP
+  ✦  9. [username] — [xp] XP
+  ✦ 10. [username] — [xp] XP
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ❧ Your Rank: #[server rank]
+  ❧ Your XP: [current xp]
+  ❧ World Ranking: #[world rank in leaderboard]
+╰══════════════════════╯
+
+
+when they use help command:
+
+【Ａｓｔｒａｌ Ｂｏｔ】
+-------------------------
+Greetings, Cultivator! ✨
+
+Astral Bot is your path to ascension —
+collect spirit cards, climb the ranks,
+and forge your legacy in the realm.
+
+▸ 🃏 Collect rare anime cards
+▸ 🏅 Rank up & gain glory
+▸ ⚔️ Join a sect & conquer
+▸ 📜 Respect the sacred laws
+
+-------------------------
+▸ !rules — view the sacred laws
+▸ !scroll — view all commands
+
+Your ascension begins with one step.
+
+when they use rules command:
+
+【Ａｓｔｒａｌ Ｌａｗｓ】
+-------------------------
+Heed these laws, Cultivator.
+Violations shall not go unpunished. ⚡
+
+▸ 1️⃣ No Spamming Commands
+      ↳ Spam & you shall be silenced
+
+▸ 2️⃣ No Disrespect
+      ↳ Honour all cultivators
+
+▸ 3️⃣ No Bug Exploitation
+      ↳ Report bugs, never abuse them
+
+▸ 4️⃣ No Begging
+      ↳ Earn your cards & XP with honour
+
+▸ 5️⃣ Respect Sect Leaders
+      ↳ Their word is law within the sect
+
+▸ 6️⃣ No Alternate Accounts
+      ↳ One soul, one path
+
+▸ 7️⃣ Respect All Decisions
+      ↳ Admin rulings are final & absolute
+
+Break the laws. Face the consequences. ⚔️
+
+when they use scroll command:
+
+╭══════════════════════╮
+   ✦┊【Ａｓｔｒａｌ Ｓｃｒｏｌｌ】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  📊 PROFILE & STATS
+  🏅 !rank ↳ check your rank
+  📈 !stats ↳ view your stats
+  👤 !profile ↳ view your profile
+  🏆 !leaderboard ↳ top cultivators
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🃏 ANIME CARDS
+  ✨ !getcard ↳ claim your daily card
+  📚 !cardcollection ↳ view collection
+  🔍 !card [num] ↳ inspect a card
+  🎁 !givecard [num] ↳ gift a card
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🏯 SECT
+  🚪 !joinsect [name] ↳ join a sect
+  🏯 !mysect ↳ view sect details
+  💰 !donate [amount] ↳ donate XP
+  📊 !sectranking ↳ sect leaderboard
+  🚶 !sectleave ↳ leave your sect
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👑 LEADER ONLY
+  🖼️ !setsectpfp ↳ set sect image
+  🥾 !kickmember [username] ↳ kick member
+  ⚡ !punish [username] ↳ punish member
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
+╰══════════════════════╯
