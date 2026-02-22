@@ -6,6 +6,8 @@ import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { users, sects, cards, type User } from '@shared/schema';
 import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
@@ -29,22 +31,39 @@ function getRank(xp: number) {
 }
 
 let client: Client;
+let isInitializing = false;
 
-export function initBot() {
+export async function initBot() {
+  if (isInitializing) return;
+  isInitializing = true;
+
   if (client) {
     try {
-      client.destroy();
+      await client.destroy();
     } catch(e) {}
   }
 
   connectionStatus = "DISCONNECTED";
   currentQrCode = undefined;
   
+  const authPath = path.join(process.cwd(), '.wwebjs_auth');
+  if (!fs.existsSync(authPath)) {
+    fs.mkdirSync(authPath, { recursive: true });
+  }
+
   client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth({
+      dataPath: authPath
+    }),
     puppeteer: {
       executablePath: execSync('which chromium').toString().trim(),
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-zygote'
+      ]
     }
   });
 
@@ -59,6 +78,17 @@ export function initBot() {
     console.log('Client is ready!');
     currentQrCode = undefined;
     connectionStatus = "CONNECTED";
+  });
+
+  client.on('authenticated', () => {
+    console.log('Authenticated!');
+  });
+
+  client.on('auth_failure', (msg) => {
+    console.error('Authentication failure', msg);
+    connectionStatus = "DISCONNECTED";
+    currentQrCode = undefined;
+    setTimeout(initBot, 5000);
   });
 
   client.on('disconnected', (reason) => {
@@ -86,10 +116,15 @@ export function initBot() {
     }
   });
 
-  client.initialize().catch(err => {
-    console.error('Failed to initialize client:', err);
-    connectionStatus = "DISCONNECTED";
-  });
+  client.initialize()
+    .then(() => {
+      isInitializing = false;
+    })
+    .catch(err => {
+      console.error('Failed to initialize client:', err);
+      connectionStatus = "DISCONNECTED";
+      isInitializing = false;
+    });
 }
 
 export function refreshQr() {
@@ -249,7 +284,7 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
     if (!user.sectId) return msg.reply(`You are not in a sect.`);
     const amount = parseInt(args[1]);
     if (isNaN(amount) || amount <= 0) return msg.reply(`Invalid amount.`);
-    if (amount > 100) return msg.reply(`You can only donate up to 100 XP per day.`);
+    if (amount > 100) return msg.reply(`You can only donate up to 100 XP at a time.`);
     if (user.xp < amount) return msg.reply(`You don't have enough XP.`);
     
     const sect = await storage.getSectById(user.sectId);
@@ -336,8 +371,9 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
     if (!malClientId) return msg.reply(`MAL_CLIENT_ID is not configured. Admin needs to set it in secrets.`);
     
     try {
-      // Pick a random popular anime ID from 1 to 10000 
-      const randomAnimeId = Math.floor(Math.random() * 5000) + 1;
+      // Pick a random popular anime ID from 1 to 500
+      // We limit to top 500 to ensure we get results with characters
+      const randomAnimeId = Math.floor(Math.random() * 500) + 1;
       const res = await fetch(`https://api.myanimelist.net/v2/anime/${randomAnimeId}?fields=characters`, {
         headers: { 'X-MAL-CLIENT-ID': malClientId }
       });
