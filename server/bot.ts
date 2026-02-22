@@ -65,9 +65,9 @@ export async function initBot() {
         '--no-zygote'
       ]
     }
-  });
+  }) as any;
 
-  client.on('qr', (qr) => {
+  client.on('qr', (qr: string) => {
     currentQrCode = qr;
     connectionStatus = "WAITING_FOR_QR";
     console.log('SCAN THIS QR CODE TO CONNECT:');
@@ -84,14 +84,14 @@ export async function initBot() {
     console.log('Authenticated!');
   });
 
-  client.on('auth_failure', (msg) => {
+  client.on('auth_failure', (msg: string) => {
     console.error('Authentication failure', msg);
     connectionStatus = "DISCONNECTED";
     currentQrCode = undefined;
     setTimeout(initBot, 5000);
   });
 
-  client.on('disconnected', (reason) => {
+  client.on('disconnected', (reason: string) => {
     console.log('Client was disconnected', reason);
     connectionStatus = "DISCONNECTED";
     currentQrCode = undefined;
@@ -101,11 +101,11 @@ export async function initBot() {
     setTimeout(initBot, 5000);
   });
 
-  client.on('message', async (msg) => {
+  client.on('message', async (msg: any) => {
     await handleMessage(msg);
   });
 
-  client.on('group_join', async (notification) => {
+  client.on('group_join', async (notification: any) => {
     try {
       const groupChat = await notification.getChat();
       for (const participant of notification.recipientIds) {
@@ -159,12 +159,17 @@ async function handleMessage(msg: Message) {
         phoneId,
         name,
         xp: 0,
+        messages: 0,
         sectId: null,
         sectTag: null,
+        species: "Human",
         lastCardClaim: null
       });
-    } else if (user.name !== name) {
-      user = await storage.updateUser(phoneId, { name });
+    } else {
+      const update: Partial<User> = {};
+      if (user.name !== name) update.name = name;
+      update.messages = (user.messages || 0) + 1;
+      user = await storage.updateUser(phoneId, update);
     }
 
     const oldRank = getRank(user.xp);
@@ -196,7 +201,7 @@ async function handleMessage(msg: Message) {
         `You ascended from ${oldRank} to ${newRank}!\n` +
         `Current XP: ${newXp}\n` +
         `Next Rank at: ${nextReq} XP`,
-        { mentions: [contact] }
+        { mentions: [contact as any] }
       );
     }
 
@@ -216,20 +221,137 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
   const phoneId = user.phoneId;
 
   // 1. HELP & PROFILES
-  if (cmd === '!rank' || cmd === '!stats') {
-    const sectInfo = user.sectTag ? `\n🏯 Sect: [${user.sectTag}]` : "";
-    await msg.reply(`🏅 Rank: ${getRank(user.xp)}\n📈 XP: ${user.xp}${sectInfo}`);
-  }
-  else if (cmd === '!leaderboard') {
-    const users = await storage.getUsers();
-    let text = "🏆 *Top Cultivators* 🏆\n";
-    for(let i=0; i < Math.min(10, users.length); i++) {
-      text += `${i+1}. ${users[i].name} - ${users[i].xp} XP\n`;
-    }
+  if (cmd === '!rank') {
+    const text = `【﻿Ｓｔａｔｕｓ】\n` +
+                 `-------------------------\n` +
+                 `▸ Rank: ${getRank(user.xp)}\n` +
+                 `▸ XP: ${user.xp}\n` +
+                 `▸ Messages: ${user.messages}`;
     await msg.reply(text);
   }
-  else if (cmd === '!help' || cmd === '!scroll') {
-    await msg.reply(`🌌 *ASTRAL BOT* 🌌\n\nProfile:\n!rank, !stats, !leaderboard\n\nCards:\n!getcard, !cardcollection, !card [num], !givecard [num]\n\nSects:\n!createsect [Name] [Tag], !joinsect [Name], !mysect, !donate [amount], !sectranking, !sectleave\n\nSect Leader:\n!setsectpfp, !kickmember [username], !punish [username]`);
+  else if (cmd === '!stats') {
+    let sectMemberCount = 0;
+    if (user.sectId) {
+      const sect = await storage.getSectById(user.sectId);
+      sectMemberCount = sect?.membersCount || 0;
+    }
+    
+    // Species member count (mock for now since we don't have species table)
+    const allUsers = await storage.getUsers();
+    const speciesMemberCount = allUsers.filter(u => u.species === user.species).length;
+
+    const text = `【Ｓｔａｔｕｓ】\n` +
+                 `-------------------------\n` +
+                 `▸ Rank: ${getRank(user.xp)}\n` +
+                 `▸ XP: ${user.xp}\n` +
+                 `▸ Messages: ${user.messages}\n` +
+                 `▸ Sect Members: ${sectMemberCount}\n` +
+                 `▸ Species Members: ${speciesMemberCount}`;
+    await msg.reply(text);
+  }
+  else if (cmd === '!profile') {
+    const sectName = user.sectId ? (await storage.getSectById(user.sectId))?.name || "None" : "None";
+    const text = `【Ｐｒｏｆｉｌｅ】\n` +
+                 `-------------------------\n` +
+                 `▸ Name: ${user.name}\n` +
+                 `▸ Sect: ${sectName}\n` +
+                 `▸ Rank: ${getRank(user.xp)}\n` +
+                 `▸ Species: ${user.species}`;
+    await msg.reply(text);
+  }
+  else if (cmd === '!leaderboard') {
+    const usersList = await storage.getUsers();
+    let text = "╭══════════════════════╮\n" +
+               "   ✦┊【Ｔｏｐ Ｃｕｌｔｉｖａｔｏｒｓ】┊✦\n" +
+               "╰══════════════════════╯\n" +
+               " ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n";
+    
+    const medals = ["🥇", "🥈", "🥉"];
+    for(let i=0; i < Math.min(10, usersList.length); i++) {
+      const prefix = i < 3 ? medals[i] : "✦ ";
+      text += `  ${prefix} ${i+1}. ${usersList[i].name} — ${usersList[i].xp} XP\n`;
+    }
+    
+    const userRank = usersList.findIndex(u => u.phoneId === phoneId) + 1;
+    
+    text += " ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n" +
+            `  ❧ Your Rank: #${userRank}\n` +
+            `  ❧ Your XP: ${user.xp}\n` +
+            `  ❧ World Ranking: #${userRank}\n` +
+            "╰══════════════════════╯";
+    await msg.reply(text);
+  }
+  else if (cmd === '!help') {
+    const text = `【Ａｓｔｒａｌ Ｂｏｔ】\n` +
+                 `-------------------------\n` +
+                 `Greetings, Cultivator! ✨\n\n` +
+                 `Astral Bot is your path to ascension —\n` +
+                 `collect spirit cards, climb the ranks,\n` +
+                 `and forge your legacy in the realm.\n\n` +
+                 `▸ 🃏 Collect rare anime cards\n` +
+                 `▸ 🏅 Rank up & gain glory\n` +
+                 `▸ ⚔️ Join a sect & conquer\n` +
+                 `▸ 📜 Respect the sacred laws\n\n` +
+                 `-------------------------\n` +
+                 `▸ !rules — view the sacred laws\n` +
+                 `▸ !scroll — view all commands\n\n` +
+                 `Your ascension begins with one step.`;
+    await msg.reply(text);
+  }
+  else if (cmd === '!rules') {
+    const text = `【Ａｓｔｒａｌ Ｌａｗｓ】\n` +
+                 `-------------------------\n` +
+                 `Heed these laws, Cultivator.\n` +
+                 `Violations shall not go unpunished. ⚡\n\n` +
+                 `▸ 1️⃣ No Spamming Commands\n` +
+                 `      ↳ Spam & you shall be silenced\n\n` +
+                 `▸ 2️⃣ No Disrespect\n` +
+                 `      ↳ Honour all cultivators\n\n` +
+                 `▸ 3️⃣ No Bug Exploitation\n` +
+                 `      ↳ Report bugs, never abuse them\n\n` +
+                 `▸ 4️⃣ No Begging\n` +
+                 `      ↳ Earn your cards & XP with honour\n\n` +
+                 `▸ 5️⃣ Respect Sect Leaders\n` +
+                 `      ↳ Their word is law within the sect\n\n` +
+                 `▸ 6️⃣ No Alternate Accounts\n` +
+                 `      ↳ One soul, one path\n\n` +
+                 `▸ 7️⃣ Respect All Decisions\n` +
+                 `      ↳ Admin rulings are final & absolute\n\n` +
+                 `Break the laws. Face the consequences. ⚔️`;
+    await msg.reply(text);
+  }
+  else if (cmd === '!scroll') {
+    const text = `╭══════════════════════╮\n` +
+                 `   ✦┊【Ａｓｔｒａｌ Ｓｃｒｏｌｌ】┊✦\n` +
+                 `╰══════════════════════╯\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  📊 PROFILE & STATS\n` +
+                 `  🏅 !rank ↳ check your rank\n` +
+                 `  📈 !stats ↳ view your stats\n` +
+                 `  👤 !profile ↳ view your profile\n` +
+                 `  🏆 !leaderboard ↳ top cultivators\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  🃏 ANIME CARDS\n` +
+                 `  ✨ !getcard ↳ claim your daily card\n` +
+                 `  📚 !cardcollection ↳ view collection\n` +
+                 `  🔍 !card [num] ↳ inspect a card\n` +
+                 `  🎁 !givecard [num] ↳ gift a card\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  🏯 SECT\n` +
+                 `  🚪 !joinsect [name] ↳ join a sect\n` +
+                 `  🏯 !mysect ↳ view sect details\n` +
+                 `  💰 !donate [amount] ↳ donate XP\n` +
+                 `  📊 !sectranking ↳ sect leaderboard\n` +
+                 `  🚶 !sectleave ↳ leave your sect\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  👑 LEADER ONLY\n` +
+                 `  🖼️ !setsectpfp ↳ set sect image\n` +
+                 `  🥾 !kickmember [username] ↳ kick member\n` +
+                 `  ⚡ !punish [username] ↳ punish member\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼\n` +
+                 `╰══════════════════════╯`;
+    await msg.reply(text);
   }
   
   // 2. SECT SYSTEM
@@ -275,9 +397,22 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
     if (!sect) return;
     
     const sectMembers = (await storage.getUsers()).filter(u => u.sectId === sect.id);
-    let roster = sectMembers.map((m, i) => `${i+1}. ${m.name} ${m.phoneId === sect.leaderPhoneId ? '(Leader)' : ''}`).join('\n  ');
+    let roster = sectMembers.map((m, i) => `${i+1}. ${m.name}${m.phoneId === sect.leaderPhoneId ? ' (Leader)' : ''}`).join('\n  ');
     
-    let text = `――――――――――――――――――――――\n        [${sect.tag}] ${sect.name}        \n――――――――――――――――――――――\n  Leader: ${sectMembers.find(m => m.phoneId === sect.leaderPhoneId)?.name || 'Unknown'}\n  Members: ${sect.membersCount}/20\n――――――――――――――――――――――\n  ROSTER\n  ${roster}\n――――――――――――――――――――――\n  TREASURY: ${sect.treasuryXp} XP\n――――――――――――――――――――――`;
+    const text = `╭══════════════════════╮\n` +
+                 `   ✦┊【Ｓｅｃｔ】┊✦\n` +
+                 `╰══════════════════════╯\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  ♔ Name: ${sect.name}\n` +
+                 `  ❧ Emblem: [${sect.tag}]\n` +
+                 `  ♛ Leader: ${sectMembers.find(m => m.phoneId === sect.leaderPhoneId)?.name || 'Unknown'}\n` +
+                 `  ✦ Members: ${sect.membersCount}/20\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  ❦ ROSTER\n` +
+                 `  ${roster}\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  ✧ Treasury: ${sect.treasuryXp} XP\n` +
+                 `╰══════════════════════╯`;
     await msg.reply(text);
   }
   else if (cmd === '!donate') {
@@ -297,10 +432,19 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
   else if (cmd === '!sectranking') {
     const sects = await storage.getSects();
     if (sects.length === 0) return msg.reply(`No sects exist yet.`);
-    let text = "🏯 *Sect Rankings* 🏯\n\n";
+    let text = "╭══════════════════════╮\n" +
+               "   ✦┊【Ｓｅｃｔ Ｒａｎｋｉｎｇｓ】┊✦\n" +
+               "╰══════════════════════╯\n" +
+               " ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n";
+    
     sects.forEach((s, i) => {
-      text += `${i+1}. [${s.tag}] ${s.name} - ${s.membersCount}/20 members - ${s.treasuryXp} XP\n`;
+      const medal = i === 0 ? "🥇 " : (i === 1 ? "🥈 " : (i === 2 ? "🥉 " : "✦  "));
+      text += `  ${medal}${i+1}. [${s.tag}] ${s.name}\n` +
+              `     ↳ ${s.membersCount}/20 members • ${s.treasuryXp} XP\n`;
     });
+    
+    text += " ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n" +
+            "╰══════════════════════╯";
     await msg.reply(text);
   }
   else if (cmd === '!sectleave') {
@@ -385,45 +529,99 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
       
       const randomChar = data.characters[Math.floor(Math.random() * data.characters.length)].node;
       
+      // Fetch character details for better image and name
+      const charRes = await fetch(`https://api.myanimelist.net/v2/characters/${randomChar.id}?fields=name,main_picture`, {
+        headers: { 'X-MAL-CLIENT-ID': malClientId }
+      });
+      
+      let charDetail = randomChar;
+      if (charRes.ok) {
+        charDetail = await charRes.json();
+      }
+
       const r = Math.random();
       const rarity = r > 0.95 ? 'Legendary' : (r > 0.8 ? 'Epic' : (r > 0.5 ? 'Rare' : 'Common'));
       
       const card = await storage.createCard({
         ownerPhoneId: phoneId,
-        malCharacterId: randomChar.id,
-        name: randomChar.name,
+        malCharacterId: charDetail.id,
+        name: charDetail.name,
         series: data.title,
-        imageUrl: randomChar.main_picture?.large || randomChar.main_picture?.medium || "",
+        imageUrl: charDetail.main_picture?.large || charDetail.main_picture?.medium || "",
         rarity
       });
       
       await storage.updateUser(phoneId, { lastCardClaim: now });
       
-      let msgText = `✨ You claimed a ${rarity} card!\n\nName: ${card.name}\nSeries: ${card.series}`;
-      await msg.reply(msgText);
+      let msgText = `✨ You claimed a ${rarity} card!\n\n` +
+                    `🃏 *${card.name}*\n` +
+                    `📺 Series: ${card.series}\n` +
+                    `🌟 Rarity: ${card.rarity}`;
+      
+      if (card.imageUrl) {
+        try {
+          const media = await pkg.MessageMedia.fromUrl(card.imageUrl);
+          await client.sendMessage(msg.from, media, { caption: msgText });
+        } catch (e) {
+          await msg.reply(msgText + `\n\n(Spirit visualization failed, but card is in your collection)`);
+        }
+      } else {
+        await msg.reply(msgText);
+      }
     } catch(err) {
       console.error(err);
       msg.reply(`Error claiming card.`);
     }
   }
   else if (cmd === '!cardcollection') {
-    const cards = await storage.getCardsByOwner(phoneId);
-    if (cards.length === 0) return msg.reply(`You have no spirit cards.`);
+    const userCards = await storage.getCardsByOwner(phoneId);
+    if (userCards.length === 0) return msg.reply(`You have no spirit cards.`);
     
-    let text = `📚 *Your Card Collection*\n\n`;
-    cards.forEach((c, i) => {
-      text += `[${i+1}] ${c.name} (${c.series}) - ${c.rarity}\n`;
+    let text = "╭══════════════════════╮\n" +
+               "   ✦┊【Ｃｏｌｌｅｃｔｉｏｎ】┊✦\n" +
+               "╰══════════════════════╯\n" +
+               " ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n";
+    
+    userCards.forEach((c, i) => {
+      const rarityIcon = c.rarity === 'Legendary' ? '🌈' : (c.rarity === 'Epic' ? '🔥' : (c.rarity === 'Rare' ? '💎' : '⚪'));
+      text += `  ${rarityIcon} [${i+1}] ${c.name}\n` +
+              `     ↳ ${c.series}\n`;
     });
+    
+    text += " ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n" +
+            `  ❧ Total Spirits: ${userCards.length}\n` +
+            "╰══════════════════════╯";
     await msg.reply(text);
   }
   else if (cmd === '!card') {
     const num = parseInt(args[1]);
     if (isNaN(num) || num < 1) return msg.reply(`Usage: !card [num]`);
-    const cards = await storage.getCardsByOwner(phoneId);
-    if (num > cards.length) return msg.reply(`Card not found in collection.`);
+    const userCards = await storage.getCardsByOwner(phoneId);
+    if (num > userCards.length) return msg.reply(`Card not found in collection.`);
     
-    const c = cards[num - 1];
-    await msg.reply(`🃏 *${c.name}*\nSeries: ${c.series}\nRarity: ${c.rarity}\nImage: ${c.imageUrl}`);
+    const c = userCards[num - 1];
+    const rarityIcon = c.rarity === 'Legendary' ? '🌈' : (c.rarity === 'Epic' ? '🔥' : (c.rarity === 'Rare' ? '💎' : '⚪'));
+    
+    const text = `╭══════════════════════╮\n` +
+                 `   ✦┊【Ｓｐｉｒｉｔ】┊✦\n` +
+                 `╰══════════════════════╯\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `  🃏 Name: ${c.name}\n` +
+                 `  📺 Series: ${c.series}\n` +
+                 `  ✨ Rarity: ${rarityIcon} ${c.rarity}\n` +
+                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+                 `╰══════════════════════╯`;
+    
+    if (c.imageUrl) {
+      try {
+        const media = await pkg.MessageMedia.fromUrl(c.imageUrl);
+        await client.sendMessage(msg.from, media, { caption: text });
+      } catch (e) {
+        await msg.reply(text);
+      }
+    } else {
+      await msg.reply(text);
+    }
   }
   else if (cmd === '!givecard') {
     if (!msg.hasQuotedMsg) return msg.reply(`You must reply to a user's message to give them a card.`);
@@ -444,7 +642,7 @@ async function handleCommands(msg: Message, body: string, user: User, chat: Chat
     if (!targetUser) return msg.reply(`That user hasn't registered in the bot yet.`);
     
     await storage.updateCardOwner(c.id, targetPhoneId);
-    await msg.reply(`🎁 You gave ${c.name} to @${quotedContact.id.user}!`, { mentions: [quotedContact] });
+    await msg.reply(`🎁 You gave ${c.name} to @${quotedContact.id.user}!`, { mentions: [quotedContact as any] } as any);
   }
 }
 

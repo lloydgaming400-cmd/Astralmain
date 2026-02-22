@@ -7,8 +7,10 @@ export const users = pgTable("users", {
   phoneId: text("phone_id").notNull().unique(), // WhatsApp ID
   name: text("name").notNull(),
   xp: integer("xp").notNull().default(0),
+  messages: integer("messages").notNull().default(0),
   sectId: integer("sect_id"), 
   sectTag: text("sect_tag"),
+  species: text("species").notNull().default("Human"),
   lastCardClaim: timestamp("last_card_claim"),
 });
 
