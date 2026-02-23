@@ -29,6 +29,8 @@ export const users = pgTable("users", {
   isConstellation: boolean("is_constellation").notNull().default(false),
   dustDomainUntil: timestamp("dust_domain_until"),
   hasShadowVeil: boolean("has_shadow_veil").notNull().default(false),
+  lastSuckAt: timestamp("last_suck_at"),
+  lastMessageReset: timestamp("last_message_reset").notNull().defaultNow(),
   disease: text("disease"),
   infectedAt: timestamp("infected_at"),
 });

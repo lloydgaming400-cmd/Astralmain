@@ -24,6 +24,10 @@ export default function QrPage() {
         <div className="p-6 bg-white rounded-2xl shadow-[0_0_50px_rgba(255,255,255,0.1)]">
           {data?.qrCode ? (
             <QRCodeSVG value={data.qrCode} size={300} level="H" includeMargin={true} />
+          ) : data?.status === 'CONNECTED' ? (
+            <div className="w-[300px] h-[300px] flex items-center justify-center bg-muted/50 border-2 border-primary/20 rounded-xl">
+              <CheckCircle2 className="w-16 h-16 text-primary animate-pulse" />
+            </div>
           ) : (
             <div className="w-[300px] h-[300px] flex items-center justify-center bg-muted">
               <Smartphone className="w-12 h-12 text-muted-foreground" />

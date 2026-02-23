@@ -25,12 +25,19 @@ export interface IStorage {
   // Global Stats
   getGlobalStats(): Promise<any>;
   updateGlobalStats(updates: any): Promise<void>;
+  resetDatabase(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
   async getUserByPhone(phoneId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.phoneId, phoneId));
     return user;
+  }
+
+  async resetDatabase(): Promise<void> {
+    await db.delete(cards);
+    await db.delete(sects);
+    await db.delete(users);
   }
 
   async getUsers(): Promise<User[]> {

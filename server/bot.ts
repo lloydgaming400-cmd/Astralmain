@@ -69,6 +69,8 @@ const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
   "phantom seal": { price: 1100, description: "Vanish from the leaderboard for 24hrs." },
   "cursed coin": { price: 200, description: "Unknown outcome. Flip and find out." },
   "mirror shard": { price: 1300, description: "Copy another user's race for 30mins." },
+  "vampire tooth": { price: 1500, description: "Become a vampire for a week." },
+  "cursed bone": { price: 2000, description: "Attract shadows for permanent protection." },
   "grey rot cure": { price: 500, description: "Cures the Grey Rot. (Human)" },
   "hellfire suppressant": { price: 600, description: "Cures Hellfire Fever. (Demon)" },
   "feral antidote": { price: 600, description: "Cures the Feral Plague. (Beast Clan)" },
@@ -244,6 +246,29 @@ async function handleMessage(msg: Message) {
 
   // XP Gain
   if (body.length >= 3 && !body.startsWith("!")) {
+    const now = new Date();
+    const lastReset = user.lastMessageReset ? new Date(user.lastMessageReset) : new Date(0);
+    
+    // Reset daily count at midnight
+    if (now.setHours(0,0,0,0) !== lastReset.setHours(0,0,0,0)) {
+      await storage.updateUser(phoneId, { dailyMessageCount: 1, lastMessageReset: new Date() });
+    } else {
+      const newCount = (user.dailyMessageCount || 0) + 1;
+      await storage.updateUser(phoneId, { dailyMessageCount: newCount });
+      
+      // Item Drop Logic
+      if (newCount === 1100) {
+        const inventory = (user.inventory as any[]) || [];
+        const hasBone = inventory.some(i => i.name.toLowerCase() === "cursed bone");
+        
+        if (!hasBone && Math.random() < 0.65) {
+          const newInv = [...inventory, { name: "Cursed Bone", quantity: 1 }];
+          await storage.updateUser(phoneId, { inventory: newInv });
+          await client.sendMessage(msg.from, "Something cold and wrong materializes near you.\n\n🦴 A Cursed Bone has appeared in your inventory.\nType !inventory to see your items.");
+        }
+      }
+    }
+
     const rate = user.isConstellation ? 1000 : (user.dustDomainUntil && new Date() < new Date(user.dustDomainUntil) ? 500 : 5);
     await storage.updateUser(phoneId, { xp: user.xp + rate, messages: user.messages + 1 });
   }
@@ -489,6 +514,17 @@ ${list}
     const newInventory = [...inventory, { name: itemName, quantity: 1 }];
     const remainingXp = user.xp - item.price;
     await storage.updateUser(phoneId, { xp: remainingXp, inventory: newInventory });
+    
+    let useMessage = "";
+    if (itemName.toLowerCase() === "vampire tooth") {
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + 7);
+      await storage.updateUser(phoneId, { isVampire: true, vampireUntil: expiry });
+      useMessage = `\n\n🦷 You are now a Vampire.\nUse !suck @user to feed.\nYour thirst lasts for one week.\nExpires: ${expiry.toDateString()}`;
+    } else if (itemName.toLowerCase() === "cursed bone") {
+      await storage.updateUser(phoneId, { hasShadowVeil: true });
+      useMessage = `\n\n🦴 Shadow Veil active.\nYou are now protected from all races diseases and plagues.\nThe shadows walk with you.`;
+    }
 
     return msg.reply(`╭══════════════════════╮
   ✅ PURCHASE SUCCESSFUL
@@ -498,8 +534,34 @@ ${list}
   💰 Cost: ${item.price} XP
   ✨ Remaining XP: ${remainingXp}
   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !inventory to see your items
+  Use !inventory to see your items${useMessage}
 ╰══════════════════════╯`);
+  }
+
+  if (body.startsWith("!suck ") && user.isVampire) {
+    if (user.vampireUntil && new Date() > new Date(user.vampireUntil)) {
+      await storage.updateUser(phoneId, { isVampire: false });
+      return msg.reply("Your fangs are gone. The hunger has passed.\nYou are no longer a Vampire.");
+    }
+
+    const mentions = await msg.getMentions();
+    if (mentions.length === 0) return msg.reply("You must mention a user to feed.");
+    const targetContact = mentions[0];
+    const targetPhoneId = targetContact.id._serialized;
+    const target = await storage.getUserByPhone(targetPhoneId);
+
+    if (!target) return msg.reply("That soul does not exist in this realm.");
+    
+    if (target.xp > user.xp * 1.5) {
+      return msg.reply(`Your prey senses you coming.\nTheir power repels you.\n\n🦷 @${targetContact.pushname || targetContact.number} resisted your suck.\nThey are too powerful for you right now.`);
+    }
+
+    const amount = Math.floor(Math.random() * 200) + 50;
+    await storage.updateUser(targetPhoneId, { xp: Math.max(0, target.xp - amount) });
+    await storage.updateUser(phoneId, { xp: user.xp + amount, lastSuckAt: new Date() });
+
+    await client.sendMessage(targetPhoneId, `Something cold grips you in the dark.\nYou lost ${amount} XP to an unknown force.\nRemaining XP: ${Math.max(0, target.xp - amount)}`);
+    return msg.reply(`You sink into the shadows and feed.\n\n🦷 You drained ${amount} XP from @${targetContact.pushname || targetContact.number}.\nYour XP: ${user.xp + amount}`);
   }
 
   if (body === "!inventory") {
