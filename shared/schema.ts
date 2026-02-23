@@ -17,6 +17,27 @@ export const users = pgTable("users", {
   missAstralMemory: jsonb("miss_astral_memory").notNull().default([]),
   missAstralLastUsed: timestamp("miss_astral_last_used"),
   missAstralUsageCount: integer("miss_astral_usage_count").notNull().default(0),
+  isRegistered: boolean("is_registered").notNull().default(false),
+  rank: integer("rank").notNull().default(1),
+  condition: text("condition").notNull().default("Healthy"),
+  lastDailyReset: timestamp("last_daily_reset").notNull().defaultNow(),
+  dailyMessageCount: integer("daily_message_count").notNull().default(0),
+  dragonEggHatched: boolean("dragon_egg_hatched").notNull().default(false),
+  dragonEggProgress: integer("dragon_egg_progress").notNull().default(0),
+  isVampire: boolean("is_vampire").notNull().default(false),
+  vampireUntil: timestamp("vampire_until"),
+  isConstellation: boolean("is_constellation").notNull().default(false),
+  dustDomainUntil: timestamp("dust_domain_until"),
+  hasShadowVeil: boolean("has_shadow_veil").notNull().default(false),
+  disease: text("disease"),
+  infectedAt: timestamp("infected_at"),
+});
+
+export const globalStats = pgTable("global_stats", {
+  id: serial("id").primaryKey(),
+  totalMessages: integer("total_messages").notNull().default(0),
+  voidFragmentThreshold: integer("void_fragment_threshold").notNull().default(300000),
+  starDustThreshold: integer("star_dust_threshold").notNull().default(10000),
 });
 
 export const sects = pgTable("sects", {

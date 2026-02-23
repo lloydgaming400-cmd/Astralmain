@@ -1,0 +1,223 @@
+Add this to the bot:
+
+DISEASE AND PLAGUE SYSTEM:
+
+The bot randomly triggers a disease outbreak for a 
+specific race at random intervals with no admin input. 
+When an outbreak begins the bot announces it in the 
+group. The disease lasts a random duration between 
+1 day and 7 days. When it ends the bot announces it.
+
+Users protected by a Shadow Veil from the Cursed Bone 
+are completely immune to all diseases and cannot 
+contract or spread them.
+
+Constellation race cannot contract any disease or plague.
+
+---
+
+HOW INFECTION WORKS:
+
+When a disease is active for a race any user of that 
+race who uses !leaderboard or !profile automatically 
+contracts the disease. Once infected the user loses 
+100 XP every 30 minutes automatically until cured or 
+the outbreak ends. Users cannot go below 0 XP from 
+disease drain.
+
+Private message when infected:
+You have been infected.
+The sickness spreads through your veins.
+You are losing 100 XP every 30 minutes.
+Visit the shop to find a cure.
+
+---
+
+DISEASES BY RACE:
+
+---
+
+Human — The Grey Rot:
+A creeping decay that spreads through the veins of 
+ordinary folk. The infected appear pale and sluggish. 
+Their connection to the world weakens as their life 
+force slowly drains away.
+
+Group announcement when outbreak starts:
+A deadly disease has spread throughout the Human race.
+The Grey Rot is consuming them from within.
+Humans are advised to avoid !leaderboard and !profile 
+for the time being.
+Those who do not heed this warning risk infection.
+
+Group announcement when outbreak ends:
+The Grey Rot has run its course.
+The Human race can breathe again.
+
+Cure name in shop: Grey Rot Cure
+Cure price: 500 XP
+
+---
+
+Demon — Hellfire Fever:
+An infernal sickness born from corrupted dark energy. 
+The infected burn from the inside with an uncontrollable 
+heat that consumes their power rather than fueling it.
+
+Group announcement when outbreak starts:
+A plague has ignited within the Demon race.
+Hellfire Fever is burning through their ranks.
+Demons are advised to avoid !leaderboard and !profile 
+for the time being.
+The fire does not discriminate.
+
+Group announcement when outbreak ends:
+The flames have died down.
+Hellfire Fever has left the Demon race.
+
+Cure name in shop: Hellfire Suppressant
+Cure price: 600 XP
+
+---
+
+Beast Clan — Feral Plague:
+A savage sickness that breaks down the primal bond 
+between a beast and their instincts. The infected 
+lose control of their raw power as it turns against 
+them slowly eating away at their strength.
+
+Group announcement when outbreak starts:
+A plague has broken loose within the Beast Clan.
+The Feral Plague is tearing through their kind.
+Beast Clan members are advised to avoid !leaderboard 
+and !profile for the time being.
+The wild has turned on its own.
+
+Group announcement when outbreak ends:
+The Feral Plague has been contained.
+The Beast Clan rises again.
+
+Cure name in shop: Feral Antidote
+Cure price: 600 XP
+
+---
+
+Fallen Angel — Corruption Blight:
+A divine sickness that festers in those who have 
+already fallen. It attacks the remnants of their 
+holy energy twisting it into something that corrodes 
+them from within. A cruel reminder of what they lost.
+
+Group announcement when outbreak starts:
+A blight has swept through the Fallen Angel race.
+Corruption Blight is consuming what little grace 
+they have left.
+Fallen Angels are advised to avoid !leaderboard 
+and !profile for the time being.
+Even the fallen can fall further.
+
+Group announcement when outbreak ends:
+The Corruption Blight has faded.
+The Fallen Angels endure once more.
+
+Cure name in shop: Grace Restoration Vial
+Cure price: 700 XP
+
+---
+
+Dragon — Scale Sickness:
+A rare and devastating plague that attacks the 
+legendary hide of a Dragon. Their scales begin to 
+crack and their immense power leaks out uncontrollably. 
+Few have witnessed a sick Dragon and lived to speak of it.
+
+Group announcement when outbreak starts:
+A sickness has infected the Dragon race.
+Scale Sickness is cracking through their legendary hides.
+Dragons are advised to avoid !leaderboard and !profile 
+for the time being.
+Even the mightiest can be brought low.
+
+Group announcement when outbreak ends:
+Scale Sickness has passed.
+The Dragon race stands unbroken.
+
+Cure name in shop: Scale Restoration Salve
+Cure price: 800 XP
+
+---
+
+Elf — Rootwither:
+An ancient curse disguised as a sickness. It severs 
+the deep connection Elves share with nature and the 
+arcane. Without that bond their power withers like 
+a dying tree starved of water and light.
+
+Group announcement when outbreak starts:
+A withering has begun among the Elf race.
+Rootwither is severing their bond with the ancient world.
+Elves are advised to avoid !leaderboard and !profile 
+for the time being.
+The forest does not mourn quietly.
+
+Group announcement when outbreak ends:
+Rootwither has retreated into the earth.
+The Elf race is restored.
+
+Cure name in shop: Rootwither Remedy
+Cure price: 700 XP
+
+---
+
+CURE SYSTEM:
+
+All cures are available in the shop at all times 
+regardless of whether an outbreak is active. A user 
+can only use a cure that matches their current race 
+disease. If they try to use a cure for a different 
+race the bot sends: This cure was not made for you.
+
+Add all cures to the !shop display under a separate 
+section labeled:
+
+💊 Cures
+Grey Rot Cure — 500 XP
+Hellfire Suppressant — 600 XP
+Feral Antidote — 600 XP
+Grace Restoration Vial — 700 XP
+Scale Restoration Salve — 800 XP
+Rootwither Remedy — 700 XP
+
+When a user buys and uses a cure matching their 
+active disease they are instantly cured. The 100 XP 
+drain stops immediately. The cure is consumed after use.
+
+Bot message when cured:
+The sickness retreats. Your strength returns.
+
+💊 You have been cured of [DISEASE NAME].
+Your XP drain has stopped.
+Current XP: [CURRENT XP]
+
+Bot message if they try to use a cure with no disease:
+You are not infected. Save it for when you need it.
+
+Bot message if they use the wrong race cure:
+This cure was not made for you.
+It has no effect.
+
+---
+
+GENERAL DISEASE RULES:
+
+The bot triggers outbreaks randomly on its own with 
+no pattern the users can predict.
+Only one race can have an active outbreak at a time.
+A new outbreak cannot start until the current one ends.
+Constellation race is fully immune to all diseases.
+Shadow Veil users are fully immune to all diseases.
+Users cannot go below 0 XP from disease drain.
+Cures are race specific and only work on your own disease.
+A user can hold one cure at a time.
+If a user changes race while infected their infection 
+is cleared automatically and the drain stops.

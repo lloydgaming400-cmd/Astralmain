@@ -1,0 +1,220 @@
+Add this to the bot:
+
+UPDATED FINDABLE ITEMS:
+
+---
+
+Dragon Egg:
+Rarity: Legendary
+Hidden message threshold: 1500 messages in a day
+Drop chance once threshold is met: 40%
+What it does: When hatched the egg begins draining 1500 
+XP from random active users in the group total over time 
+draining 30 XP per user per day silently until 1500 XP 
+has been collected. Once fully hatched the user receives 
+500 XP per day passively on top of their normal XP rate 
+permanently until a race change item is used on them.
+Consumed after use.
+
+Bot message when found:
+Something warm and heavy settles into your possession.
+
+🥚 A Dragon Egg has appeared in your inventory.
+It is alive. Type !inventory to see your items.
+
+Bot message when used:
+The egg begins to pulse. Something inside stirs awake.
+It has begun feeding.
+
+🐉 Dragon Egg is hatching.
+It is drawing energy from those around you.
+You will know when it is done.
+
+Bot message when fully hatched privately to user:
+The shell shatters. Something ancient rises.
+
+🐉 Your Dragon Egg has fully hatched.
++500 XP per day added to your earnings permanently.
+
+Private message to users being drained 
+(do not reveal who owns the egg or why):
+A strange fatigue washes over you.
+Something is feeding nearby.
+You lost 30 XP.
+
+---
+
+Void Fragment:
+Rarity: Rare
+Hidden message threshold: 300000 messages overall 
+across all time not per day. Count secretly and never 
+reveal the count or threshold to anyone. Once claimed 
+the threshold resets and the next user who reaches 
+300000 overall messages can claim it again.
+Drop chance once threshold is met: guaranteed
+What it does: Transforms the user permanently into 
+the Constellation race replacing their current race. 
+Constellation earns 1000 XP per message. This race 
+can only be changed by a Living Core. Consumed after use.
+
+Bot message when found:
+A crack in reality slips into your possession.
+
+🌑 A Void Fragment has appeared in your inventory.
+It hums with something beyond this world.
+Type !inventory to see your items.
+
+Bot message when used:
+The fragment dissolves into your skin.
+Stars tear through your veins.
+You are no longer bound to what you were.
+
+🌑 Race Transformed.
+Former Race: [OLD RACE]
+New Race: ✨ Constellation
+XP Rate: 1000 XP per message
+
+You are something the world has never seen.
+
+---
+
+Star Dust:
+Rarity: Uncommon
+Hidden message threshold: 10000 messages overall 
+across all time not per day. Count secretly. Once 
+claimed the counter resets and the next 10000 messages 
+overall allows it to be claimed again. Can only be 
+claimed once per reset.
+Drop chance once threshold is met: guaranteed
+What it does: When used the user enters the Dust Domain 
+for exactly one hour. Inside the Dust Domain they earn 
+5000 XP per every 10 messages they send during that 
+hour. After one hour the domain closes and normal XP 
+rate resumes. One time use per claim.
+
+Bot message when found:
+Something shimmering and weightless drifts into 
+your possession.
+
+✨ Star Dust has appeared in your inventory.
+Type !inventory to see your items.
+
+Bot message when used:
+The dust scatters and the world around you shifts.
+A domain of light opens before you.
+
+✨ Dust Domain active.
+You earn 5000 XP per 10 messages for the next hour.
+Make it count.
+Expires: [TIME]
+
+Bot message when domain expires:
+The light fades. The domain closes.
+You have returned.
+
+✨ Dust Domain has ended.
+Total XP earned inside: [AMOUNT]
+
+---
+
+Vampire Tooth:
+Rarity: Epic
+Hidden message threshold: 1600 messages in a day
+Drop chance once threshold is met: 35%
+What it does: When used the user becomes a Vampire 
+for exactly one week. During that week they can use 
+the command !suck @user to attempt to drain a random 
+amount of XP between 50 and 300 from the target. 
+If the target has more than double the XP of the 
+attacker at the time of the suck they automatically 
+resist and the suck fails. After one week the Vampire 
+state ends and !suck no longer works. The tooth is 
+consumed after use.
+
+Bot message when found:
+Something sharp and ancient pierces into your possession.
+
+🦷 A Vampire Tooth has appeared in your inventory.
+Type !inventory to see your items.
+
+Bot message when used:
+The tooth dissolves into your jaw.
+A hunger you have never known takes hold.
+
+🦷 You are now a Vampire.
+Use !suck @user to feed.
+Your thirst lasts for one week.
+Expires: [DATE]
+
+Bot message when !suck @user succeeds:
+To attacker:
+You sink into the shadows and feed.
+
+🦷 You drained [AMOUNT] XP from @[TARGET].
+Your XP: [NEW TOTAL]
+
+Private message to target:
+Something cold grips you in the dark.
+You lost [AMOUNT] XP to an unknown force.
+Remaining XP: [NEW TOTAL]
+
+Bot message when !suck @user is resisted:
+Your prey senses you coming.
+Their power repels you.
+
+🦷 @[TARGET] resisted your suck.
+They are too powerful for you right now.
+
+Bot message when Vampire week ends privately:
+The hunger fades. The shadows release you.
+
+🦷 Your Vampire state has ended.
+You are yourself again.
+
+Bot message if !suck is used after the week ends:
+Your fangs are gone. The hunger has passed.
+You are no longer a Vampire.
+
+---
+
+Cursed Bone:
+Rarity: Uncommon
+Hidden message threshold: 1100 messages in a day
+Drop chance once threshold is met: 65%
+What it does: When used the Cursed Bone attracts shadows 
+to the user. These shadows form a protective aura around 
+them that makes them immune to all race diseases and 
+plagues permanently until a race change item is used 
+on them or until the disease and plague system 
+specifically overrides it. Consumed after use.
+
+Bot message when found:
+Something cold and wrong materializes near you.
+
+🦴 A Cursed Bone has appeared in your inventory.
+Type !inventory to see your items.
+
+Bot message when used:
+The bone splinters and dissolves into the air around you.
+Shadows creep in from every corner and wrap around 
+your form.
+
+🦴 Shadow Veil active.
+You are now protected from all races diseases and plagues.
+The shadows walk with you.
+
+---
+
+GENERAL RULES FOR ALL FOUND ITEMS:
+
+The bot never reveals thresholds or drop chances to anyone.
+If asked the bot says: Some things reveal themselves in time.
+Spam under 3 characters does not count toward any threshold.
+Repeated identical messages only count once per minute.
+Bot commands do not count toward any threshold.
+Daily thresholds reset at midnight every day.
+Overall thresholds never reset unless stated.
+Items go straight to inventory when found.
+A user can only hold one of each item at a time.
+If a user already holds that item the drop is skipped 
+and the threshold resets.

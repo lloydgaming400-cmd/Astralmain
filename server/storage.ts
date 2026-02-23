@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { users, sects, cards, type User, type InsertUser, type Sect, type InsertSect, type Card, type InsertCard } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { users, sects, cards, globalStats, type User, type InsertUser, type Sect, type InsertSect, type Card, type InsertCard } from "@shared/schema";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUserByPhone(phoneId: string): Promise<User | undefined>;
@@ -21,6 +21,10 @@ export interface IStorage {
   createCard(card: InsertCard): Promise<Card>;
   getCard(id: number): Promise<Card | undefined>;
   deleteCard(id: number): Promise<void>;
+
+  // Global Stats
+  getGlobalStats(): Promise<any>;
+  updateGlobalStats(updates: any): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -91,6 +95,17 @@ export class DatabaseStorage implements IStorage {
   async deleteCard(id: number): Promise<void> {
     await db.delete(cards).where(eq(cards.id, id));
   }
+
+  async getGlobalStats(): Promise<any> {
+    const [stats] = await db.select().from(globalStats).where(eq(globalStats.id, 1));
+    return stats;
+  }
+
+  async updateGlobalStats(updates: any): Promise<void> {
+    await db.update(globalStats).set(updates).where(eq(globalStats.id, 1));
+  }
 }
+
+export const storage = new DatabaseStorage();
 
 export const storage = new DatabaseStorage();
