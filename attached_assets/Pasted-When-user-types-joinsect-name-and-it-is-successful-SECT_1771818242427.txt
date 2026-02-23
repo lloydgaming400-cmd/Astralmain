@@ -1,0 +1,228 @@
+When user types !joinsect [name] and it is successful
+╭══════════════════════╮
+  🚪 SECT JOINED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Sect: [SECT NAME]
+  ✅ Welcome to the sect!
+╰══════════════════════╯
+
+When user types !joinsect [name] and sect does not exist
+╭══════════════════════╮
+  ❌ SECT NOT FOUND
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  That sect does not exist.
+  Use !sectranking to see all sects.
+╰══════════════════════╯
+
+When user types !joinsect [name] and they are already in a sect
+╭══════════════════════╮
+  ❌ ALREADY IN A SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Current Sect: [SECT NAME]
+  ⚠️ Leave your sect first to join another.
+  Use !sectleave to leave.
+╰══════════════════════╯
+
+When user types !createsect [name] and it is successful
+╭══════════════════════╮
+  🏯 SECT CREATED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Founder: [USERNAME]
+  🏯 Sect: [SECT NAME]
+  💰 Cost: 5000 XP
+  ✨ Remaining XP: [REMAINING XP]
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  You are now the sect leader!
+╰══════════════════════╯
+
+When user types !createsect [name] and 3 sects already exist
+╭══════════════════════╮
+  ❌ SECT LIMIT REACHED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  The maximum of 3 sects have been created.
+  No new sects can be formed.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !sectranking to see all sects
+  and !joinsect [name] to join one.
+╰══════════════════════╯
+
+When user types !createsect [name] and they don't have enough XP
+╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  💰 Required: 5000 XP
+  ✨ Your XP: [USER CURRENT XP] XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Keep chatting to earn more XP!
+╰══════════════════════╯
+
+When user types !createsect [name] and they are already in a sect
+╭══════════════════════╮
+  ❌ ALREADY IN A SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Current Sect: [SECT NAME]
+  ⚠️ Leave your sect before creating a new one.
+  Use !sectleave to leave.
+╰══════════════════════╯
+
+When user types !mysect
+╭══════════════════════╮
+  🏯 MY SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🏯 Sect: [SECT NAME]
+  👑 Leader: [LEADER USERNAME]
+  👥 Members: [MEMBER COUNT]
+  💰 Sect XP: [SECT XP]
+╰══════════════════════╯
+
+When user types !mysect and they are not in a sect
+╭══════════════════════╮
+  ❌ NO SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You are not in a sect.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !joinsect [name] to join one
+  or !createsect [name] to create one.
+╰══════════════════════╯
+
+When user types !donate [amount] and it is successful
+╭══════════════════════╮
+  💰 DONATION
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Sect: [SECT NAME]
+  ✨ Donated: [AMOUNT] XP
+  💰 Remaining XP: [REMAINING XP]
+  ✅ Your offering is appreciated!
+╰══════════════════════╯
+
+When user types !donate [amount] and they don't have enough XP
+╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  💰 You tried to donate: [AMOUNT] XP
+  ✨ Your XP: [USER CURRENT XP] XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  You cannot donate more than you own.
+╰══════════════════════╯
+
+When user types !donate [amount] and they are not in a sect
+╭══════════════════════╮
+  ❌ NO SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You are not in a sect.
+  Use !joinsect [name] to join one.
+╰══════════════════════╯
+
+When user types !sectranking
+╭══════════════════════╮
+  📊 SECT LEADERBOARD
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🥇 1. [SECT NAME] ↳ [XP] XP
+  🥈 2. [SECT NAME] ↳ [XP] XP
+  🥉 3. [SECT NAME] ↳ [XP] XP
+╰══════════════════════╯
+
+When user types !sectleave and it is successful
+╭══════════════════════╮
+  🚶 SECT LEFT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Sect: [SECT NAME]
+  👋 You have left the sect.
+╰══════════════════════╯
+
+When user types !sectleave and they are the leader
+╭══════════════════════╮
+  ❌ CANNOT LEAVE
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You are the sect leader.
+  You cannot leave while in charge.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Transfer leadership first or
+  use !kickmember to manage your sect.
+╰══════════════════════╯
+
+When user types !sectleave and they are not in a sect
+╭══════════════════════╮
+  ❌ NO SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You are not in a sect.
+╰══════════════════════╯
+
+When leader types !kickmember [username] and it is successful
+╭══════════════════════╮
+  🥾 MEMBER KICKED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👑 Leader: [LEADER USERNAME]
+  🏯 Sect: [SECT NAME]
+  ❌ [USERNAME] has been kicked.
+╰══════════════════════╯
+
+When leader types !kickmember [username] and user is not in their sect
+╭══════════════════════╮
+  ❌ NOT IN YOUR SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 [USERNAME] is not a member
+  of your sect.
+╰══════════════════════╯
+
+When leader types !kickmember [username] and they try to kick themselves
+╭══════════════════════╮
+  ❌ INVALID ACTION
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  You cannot kick yourself.
+╰══════════════════════╯
+
+When a non-leader tries !kickmember [username]
+╭══════════════════════╮
+  ❌ ACCESS DENIED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ⚠️ This command is for sect
+  leaders only.
+╰══════════════════════╯
+
+When leader types !punish [username] and it is successful
+╭══════════════════════╮
+  ⚡ PUNISHMENT ISSUED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👑 Leader: [LEADER USERNAME]
+  👤 Target: [USERNAME]
+  ⚠️ Punishment: [PUNISHMENT]
+  ❌ [USERNAME] is now banned
+  from using bot commands.
+╰══════════════════════╯
+
+When leader types !punish [username] and user is not in their sect
+╭══════════════════════╮
+  ❌ NOT IN YOUR SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 [USERNAME] is not a member
+  of your sect.
+╰══════════════════════╯
+
+When a non-leader tries !punish [username]
+╭══════════════════════╮
+  ❌ ACCESS DENIED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ⚠️ This command is for sect
+  leaders only.
+╰══════════════════════╯
+
+When a punished user tries any command
+╭══════════════════════╮
+  ❌ COMMAND BLOCKED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You have been punished by
+  your sect leader.
+  You cannot use bot commands.

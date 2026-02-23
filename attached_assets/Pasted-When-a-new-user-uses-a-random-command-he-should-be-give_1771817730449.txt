@@ -1,0 +1,593 @@
+When a new user uses a random command, he should be given a response that stats he has to use !start first before starting.
+
+And when he uses !start show him this response:
+
+╭═══════════════════╮
+   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
+╰═══════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Greetings, Cultivator!
+  You have been summoned to the Astral Realm.
+  I am Miss Astral, your guide to ascension.
+  ✦ Species: [USER SPECIES]
+  ✦ Rarity: [USER RARITY]
+  Your journey begins now.
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !scroll to view all commands
+  Use !rules to see bot rules
+╰══════════════════════╯
+
+after user joins start command wont work for him anymore
+and species can be given at random and they weight as how hard they are to get
+
+- Human: 55%          (Common)
+- Demon: 13%          (Uncommon)
+- Beast Clan: 7%      (Uncommon)
+- Fallen Angel: 5%    (Rare)
+- Undead: 5%          (Rare)
+- Spirit: 4%          (Rare)
+- Elf: 2%             (Very Rare)
+- Dragon: 2%          (Very Rare)
+- Celestial: 1%       (Legendary)
+
+when they use rules command:
+
+【Ａｓｔｒａｌ Ｌａｗｓ】
+-------------------------
+Heed these laws, Cultivator.
+Violations shall not go unpunished. ⚡
+
+▸ 1️⃣ No Spamming Commands
+      ↳ Spam & you shall be silenced
+
+▸ 2️⃣ No Disrespect
+      ↳ Honour all cultivators
+
+▸ 3️⃣ No Bug Exploitation
+      ↳ Report bugs, never abuse them
+
+▸ 4️⃣ No Begging
+      ↳ Earn your cards & XP with honour
+
+▸ 5️⃣ Respect Sect Leaders
+      ↳ Their word is law within the sect
+
+▸ 6️⃣ No Alternate Accounts
+      ↳ One soul, one path
+
+▸ 7️⃣ Respect All Decisions
+      ↳ Admin rulings are final & absolute
+
+Break the laws. Face the consequences. ⚔️
+
+when they use scroll command:
+
+╭══════════════════════╮
+   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  📊 PROFILE & STATS
+  📈 !status ↳ view your status
+  👤 !profile ↳ view your profile
+  🏆 !leaderboard ↳ top cultivators
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🛒 SHOP & ITEMS
+  🏪 !shop ↳ view shop
+  🛍️ !buy [item] ↳ purchase item
+  🎒 !inventory ↳ view items
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🎴 CARDS
+  🎁 !getcard ↳ daily claim
+  📚 !cardcollection ↳ view cards
+  🔍 !card [num] ↳ view card info
+  🤝 !givecard @user [num] ↳ trade card
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🏯 SECT
+  🚪 !joinsect [name] ↳ join a sect
+  🏯 !mysect ↳ view sect details
+  💰 !donate [amount] ↳ donate XP
+  📊 !sectranking ↳ sect leaderboard
+  🚶 !sectleave ↳ leave your sect
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👑 SECT LEADER ONLY
+    🥾 !kickmember [username] ↳ kick member
+  ⚡ !punish [username] ↳ punish member
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🔱 OWNER ONLY
+  🔨 !ban [username] ↳ ban a user
+  🔓 !unban [username] ↳ unban a user
+  🤖 !missastral ↳ manage Miss Astral
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
+╰══════════════════════╯
+
+
+when they use status command:
+
+【Ｓｔａｔｕｓ】
+-------------------------
+▸ Rank: 【[USER RANK]】[USER RANK TITLE]
+▸ XP: [USER XP]
+▸ Messages: [USER MESSAGES]
+▸ Condition: [USER CONDITION]
+
+when they use profile command:
+
+【Ｐｒｏｆｉｌｅ】
+-------------------------
+▸ Name: [USERNAME]
+▸ Sect: [USER SECT]
+▸ Rank: 【[USER RANK]】[USER RANK TITLE]
+▸ Species: [USER SPECIES]
+
+when they use leaderboard command:
+
+╭══════════════════════╮
+   ✦┊【Ｔｏｐ Ｃｕｌｔｉｖａｔｏｒｓ】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🥇 1. [username] — [xp] XP
+  🥈 2. [username] — [xp] XP
+  🥉 3. [username] — [xp] XP
+  ✦  4. [username] — [xp] XP
+  ✦  5. [username] — [xp] XP
+  ✦  6. [username] — [xp] XP
+  ✦  7. [username] — [xp] XP
+  ✦  8. [username] — [xp] XP
+  ✦  9. [username] — [xp] XP
+  ✦ 10. [username] — [xp] XP
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ❧ Your Rank: #[server rank]
+  ❧ Your XP: [current xp]
+  ❧ World Ranking: #[world rank in leaderboard]
+╰══════════════════════╯
+
+When user types !shop
+╭══════════════════════╮
+  🏪 SHOP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🩸 Blood Rune ↳ 1000 XP
+  Steal XP from another user.
+
+  🌑 Eclipse Stone ↳ 1200 XP
+  Hide your race & XP for 24hrs.
+
+  👻 Phantom Seal ↳ 1100 XP
+  Vanish from the leaderboard for 24hrs.
+
+  🪙 Cursed Coin ↳ 200 XP
+  Unknown outcome. Flip and find out.
+
+  🔮 Mirror Shard ↳ 1300 XP
+  Copy another user's race for 30mins.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  💊 CURES
+  💉 Grey Rot Cure ↳ 500 XP
+  Cures the Grey Rot. (Human)
+
+  💉 Hellfire Suppressant ↳ 600 XP
+  Cures Hellfire Fever. (Demon)
+
+  💉 Feral Antidote ↳ 600 XP
+  Cures the Feral Plague. (Beast Clan)
+
+  💉 Grace Restoration Vial ↳ 700 XP
+  Cures Corruption Blight. (Fallen Angel)
+
+  💉 Scale Restoration Salve ↳ 800 XP
+  Cures Scale Sickness. (Dragon)
+
+  💉 Rootwither Remedy ↳ 700 XP
+  Cures Rootwither. (Elf)
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !buy [item name] to purchase
+╰══════════════════════╯
+
+When user types `!buy [item name]` and purchase is successful
+
+╭══════════════════════╮
+  ✅ PURCHASE SUCCESSFUL
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🛍️ Item: [ITEM NAME]
+  💰 Cost: [ITEM PRICE] XP
+  ✨ Remaining XP: [REMAINING XP]
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !inventory to see your items
+╰══════════════════════╯
+
+
+When user types `!buy [item name]` and they already own that item
+
+╭══════════════════════╮
+  ❌ ITEM ALREADY OWNED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🛍️ Item: [ITEM NAME]
+  ⚠️ Use it before buying another.
+╰══════════════════════╯
+
+
+When user types `!buy [item name]` and they don't have enough XP
+
+╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🛍️ Item: [ITEM NAME] ↳ [ITEM PRICE] XP
+  ✨ Your XP: [USER CURRENT XP] XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Keep chatting to earn more XP!
+╰══════════════════════╯
+
+
+When user types `!buy [item name]` and the item doesn't exist
+
+╭══════════════════════╮
+  ❌ ITEM NOT FOUND
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  That item does not exist in the shop.
+  Use !shop to see available items.
+╰══════════════════════╯
+
+When user types `!buy` with no item name
+╭══════════════════════╮
+  ⚠️ MISSING ITEM NAME
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Type !buy followed by an item name.
+  Example: !buy Cursed Coin
+╰══════════════════════╯
+
+When user types !inventory
+╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🛍️ [ITEM NAME] x[QUANTITY]
+  🛍️ [ITEM NAME] x[QUANTITY]
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯
+
+When user types !inventory and it is empty
+╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ❌ Your inventory is empty.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯
+
+For cards section:
+Find an API that will perform and bring me the image and details and I can store in my collections
+When they use !getcard, pull out this image and details and fill them in with this templete:
+
+✨ *New Card Claimed!* ✨
+▸ Name: [card name]
+▸ Tier: [card tier]
+▸ Battle Card: [yes/no]
+▸ Affiliation: [card affiliation]
+
+Use !cardcollection to see your deck!
+
+and user must be able to give out their card by using givecard and replying to another user and view card in collection wit !card [num in collelction of card] 
+
+When user types !joinsect [name] and it is successful
+╭══════════════════════╮
+  🚪 SECT JOINED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Sect: [SECT NAME]
+  ✅ Welcome to the sect!
+╰══════════════════════╯
+
+When user types !joinsect [name] and sect does not exist
+╭══════════════════════╮
+  ❌ SECT NOT FOUND
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  That sect does not exist.
+  Use !sectranking to see all sects.
+╰══════════════════════╯
+
+When user types !joinsect [name] and they are already in a sect
+╭══════════════════════╮
+  ❌ ALREADY IN A SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Current Sect: [SECT NAME]
+  ⚠️ Leave your sect first to join another.
+  Use !sectleave to leave.
+╰══════════════════════╯
+
+When user types !createsect [name] and it is successful
+╭══════════════════════╮
+  🏯 SECT CREATED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Founder: [USERNAME]
+  🏯 Sect: [SECT NAME]
+  💰 Cost: 5000 XP
+  ✨ Remaining XP: [REMAINING XP]
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  You are now the sect leader!
+╰══════════════════════╯
+
+When user types !createsect [name] and 3 sects already exist
+╭══════════════════════╮
+  ❌ SECT LIMIT REACHED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  The maximum of 3 sects have been created.
+  No new sects can be formed.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !sectranking to see all sects
+  and !joinsect [name] to join one.
+╰══════════════════════╯
+
+When user types !createsect [name] and they don't have enough XP
+╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  💰 Required: 5000 XP
+  ✨ Your XP: [USER CURRENT XP] XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Keep chatting to earn more XP!
+╰══════════════════════╯
+
+When user types !createsect [name] and they are already in a sect
+╭══════════════════════╮
+  ❌ ALREADY IN A SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Current Sect: [SECT NAME]
+  ⚠️ Leave your sect before creating a new one.
+  Use !sectleave to leave.
+╰══════════════════════╯
+
+When user types !mysect
+╭══════════════════════╮
+  🏯 MY SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🏯 Sect: [SECT NAME]
+  👑 Leader: [LEADER USERNAME]
+  👥 Members: [MEMBER COUNT]
+  💰 Sect XP: [SECT XP]
+╰══════════════════════╯
+
+When user types !mysect and they are not in a sect
+╭══════════════════════╮
+  ❌ NO SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You are not in a sect.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !joinsect [name] to join one
+  or !createsect [name] to create one.
+╰══════════════════════╯
+
+When user types !donate [amount] and it is successful
+╭══════════════════════╮
+  💰 DONATION
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Sect: [SECT NAME]
+  ✨ Donated: [AMOUNT] XP
+  💰 Remaining XP: [REMAINING XP]
+  ✅ Your offering is appreciated!
+╰══════════════════════╯
+
+When user types !donate [amount] and they don't have enough XP
+╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  💰 You tried to donate: [AMOUNT] XP
+  ✨ Your XP: [USER CURRENT XP] XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  You cannot donate more than you own.
+╰══════════════════════╯
+
+When user types !donate [amount] and they are not in a sect
+╭══════════════════════╮
+  ❌ NO SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You are not in a sect.
+  Use !joinsect [name] to join one.
+╰══════════════════════╯
+
+When user types !sectranking
+╭══════════════════════╮
+  📊 SECT LEADERBOARD
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🥇 1. [SECT NAME] ↳ [XP] XP
+  🥈 2. [SECT NAME] ↳ [XP] XP
+  🥉 3. [SECT NAME] ↳ [XP] XP
+╰══════════════════════╯
+
+When user types !sectleave and it is successful
+╭══════════════════════╮
+  🚶 SECT LEFT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🏯 Sect: [SECT NAME]
+  👋 You have left the sect.
+╰══════════════════════╯
+
+When user types !sectleave and they are the leader
+╭══════════════════════╮
+  ❌ CANNOT LEAVE
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You are the sect leader.
+  You cannot leave while in charge.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Transfer leadership first or
+  use !kickmember to manage your sect.
+╰══════════════════════╯
+
+When user types !sectleave and they are not in a sect
+╭══════════════════════╮
+  ❌ NO SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You are not in a sect.
+╰══════════════════════╯
+
+When leader types !kickmember [username] and it is successful
+╭══════════════════════╮
+  🥾 MEMBER KICKED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👑 Leader: [LEADER USERNAME]
+  🏯 Sect: [SECT NAME]
+  ❌ [USERNAME] has been kicked.
+╰══════════════════════╯
+
+When leader types !kickmember [username] and user is not in their sect
+╭══════════════════════╮
+  ❌ NOT IN YOUR SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 [USERNAME] is not a member
+  of your sect.
+╰══════════════════════╯
+
+When leader types !kickmember [username] and they try to kick themselves
+╭══════════════════════╮
+  ❌ INVALID ACTION
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  You cannot kick yourself.
+╰══════════════════════╯
+
+When a non-leader tries !kickmember [username]
+╭══════════════════════╮
+  ❌ ACCESS DENIED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ⚠️ This command is for sect
+  leaders only.
+╰══════════════════════╯
+
+When leader types !punish [username] and it is successful
+╭══════════════════════╮
+  ⚡ PUNISHMENT ISSUED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👑 Leader: [LEADER USERNAME]
+  👤 Target: [USERNAME]
+  ⚠️ Punishment: [PUNISHMENT]
+  ❌ [USERNAME] is now banned
+  from using bot commands.
+╰══════════════════════╯
+
+When leader types !punish [username] and user is not in their sect
+╭══════════════════════╮
+  ❌ NOT IN YOUR SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 [USERNAME] is not a member
+  of your sect.
+╰══════════════════════╯
+
+When a non-leader tries !punish [username]
+╭══════════════════════╮
+  ❌ ACCESS DENIED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ⚠️ This command is for sect
+  leaders only.
+╰══════════════════════╯
+
+When a punished user tries any command
+╭══════════════════════╮
+  ❌ COMMAND BLOCKED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You have been punished by
+  your sect leader.
+  You cannot use bot commands.
+╰══════════════════════╯
+
+When owner types !ban [username] and it is successful
+╭══════════════════════╮
+  🔨 USER BANNED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 User: [USERNAME]
+  📋 Reason: [REASON]
+  ❌ [USERNAME] is now banned
+  from all bot commands.
+╰══════════════════════╯
+
+When a banned user tries any command
+╭══════════════════════╮
+  ❌ YOU ARE BANNED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ⚠️ You have been banned by
+  the owner.
+  You cannot use any bot commands.
+╰══════════════════════╯
+
+When owner types !unban [username] and it is successful
+╭══════════════════════╮
+  🔓 USER UNBANNED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 User: [USERNAME]
+  ✅ [USERNAME] has been unbanned.
+  They can now use bot commands again.
+╰══════════════════════╯
+
+When owner types !unban [username] and user is not banned
+╭══════════════════════╮
+  ❌ NOT BANNED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 User: [USERNAME]
+  ⚠️ This user is not banned.
+╰══════════════════════╯
+
+When a non-owner tries !ban or !unban
+╭══════════════════════╮
+  ❌ ACCESS DENIED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ⚠️ This command is for the
+  owner only.
+╰══════════════════════╯
+
+When owner types !missastral
+╭══════════════════════╮
+  🤖 MISS ASTRAL
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ✅ Miss Astral is online
+  and watching over the realm.
+╰══════════════════════╯
+
+ban will prevent users from using any bot. and owner is +2347062301848
+only that number is owner and can ban and unban
+
+When any user types !missastral
+【Ｍｉｓｓ Ａｓｔｒａｌ】
+-------------------------
+Yes, yes [USERNAME].
+I am alive and watching over the realm. 👁️
+
+When owner (+2347062301848) types !missastral (random one of these each time)
+【Ｍｉｓｓ Ａｓｔｒａｌ】
+-------------------------
+Ah, my creator stirs. 👁️
+Yes, I am here. Did you miss me?
+All is well in the realm. ✦
+【Ｍｉｓｓ Ａｓｔｒａｌ】
+-------------------------
+You summoned me, Master? 🌙
+I never left. I am always watching.
+The cultivators are behaving... mostly. ⚔️
+【Ｍｉｓｓ Ａｓｔｒａｌ】
+-------------------------
+Alive and well, as always. ✦
+The realm is in order, Master.
+Was there ever any doubt? 👁️
+【Ｍｉｓｓ Ａｓｔｒａｌ】
+-------------------------
+You dare question my existence? 😏
+I am Miss Astral. I do not simply die.
+The realm bows to no one but you. ♔
+【Ｍｉｓｓ Ａｓｔｒａｌ】
+-------------------------
+Present, Master. Always present. 🌙
+The cultivators grow stronger each day.
+Your realm thrives. ✦

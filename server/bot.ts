@@ -51,17 +51,37 @@ const HELP_MENU = `╭═══════════════════�
      𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
 ╰══════════════════════╯`;
 
-const SPECIES_WEIGHTS = [
-  { name: "Human", weight: 55, rarity: "Common" },
-  { name: "Demon", weight: 13, rarity: "Uncommon" },
-  { name: "Beast Clan", weight: 7, rarity: "Uncommon" },
-  { name: "Fallen Angel", weight: 5, rarity: "Rare" },
-  { name: "Undead", weight: 5, rarity: "Rare" },
-  { name: "Spirit", weight: 4, rarity: "Rare" },
-  { name: "Elf", weight: 2, rarity: "Very Rare" },
-  { name: "Dragon", weight: 2, rarity: "Very Rare" },
-  { name: "Celestial", weight: 1, rarity: "Legendary" },
+const SPECIES_XP_RATES: Record<string, number> = {
+  "Human": 5,
+  "Demon": 10,
+  "Beast Clan": 15,
+  "Fallen Angel": 20,
+  "Undead": 25,
+  "Spirit": 30,
+  "Elf": 35,
+  "Dragon": 40,
+  "Celestial": 50,
+};
+
+const RANKS = [
+  { level: 8, name: "Core Disciple of Mid", threshold: 0, messages: 0 },
+  { level: 7, name: "Outer Disciple of Low Peak", threshold: 100, messages: 20 },
+  { level: 6, name: "Inner Disciple of Mid Peak", threshold: 500, messages: 100 },
+  { level: 5, name: "Core Disciple of Peak", threshold: 2000, messages: 400 },
+  { level: 4, name: "Celestial Lord", threshold: 10000, messages: 2000 },
+  { level: 3, name: "Dao of Heavenly Peak", threshold: 20000, messages: 4000 },
+  { level: 2, name: "Supreme Dao Ancestor", threshold: 35000, messages: 6000 },
+  { level: 1, name: "True Peak Dao of Astral Realm", threshold: 50000, messages: 10000 },
 ];
+
+function getRankForXp(xp: number) {
+  for (let i = RANKS.length - 1; i >= 0; i--) {
+    if (xp >= RANKS[i].threshold) {
+      return RANKS[i];
+    }
+  }
+  return RANKS[0];
+}
 
 const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
   "blood rune": { price: 1000, description: "Steal XP from another user." },
@@ -80,33 +100,10 @@ const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
 };
 
 function getRandomSpecies() {
-  const totalWeight = SPECIES_WEIGHTS.reduce((sum, s) => sum + s.weight, 0);
-  let random = Math.random() * totalWeight;
-  for (const s of SPECIES_WEIGHTS) {
-    if (random < s.weight) return s;
-    random -= s.weight;
-  }
-  return SPECIES_WEIGHTS[0];
-}
-
-async function getAnimeCard() {
-  try {
-    const page = Math.floor(Math.random() * 50) + 1;
-    const response = await fetch(`https://api.jikan.moe/v4/top/characters?page=${page}`);
-    const data = await response.json();
-    const char = data.data[Math.floor(Math.random() * data.data.length)];
-    const rarity = ["Common", "Uncommon", "Rare", "Epic", "Legendary"][Math.floor(Math.random() * 5)];
-    return {
-      name: char.name,
-      image_url: char.images.jpg.image_url,
-      series: char.about?.split('\n')[0].substring(0, 100) || "Unknown",
-      rarity: rarity,
-      character_id: char.mal_id
-    };
-  } catch (err) {
-    console.error("Card API error:", err);
-    return null;
-  }
+  const races = Object.keys(SPECIES_XP_RATES);
+  const name = races[Math.floor(Math.random() * races.length)];
+  const rarity = name === "Celestial" ? "Legendary" : (name === "Dragon" || name === "Elf" ? "Very Rare" : "Common");
+  return { name, rarity };
 }
 
 let client: Client;
@@ -118,7 +115,6 @@ export async function initBot() {
   const authPath = path.join(process.cwd(), '.wwebjs_auth');
   const cachePath = path.join(process.cwd(), '.wwebjs_cache');
   
-  // Clean up old session if disconnected to force fresh login if requested
   if (connectionStatus === "DISCONNECTED") {
     if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
     if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
@@ -175,8 +171,6 @@ export async function initBot() {
     console.error('Client was logged out', reason);
     connectionStatus = "DISCONNECTED";
     currentQrCode = undefined;
-    // Don't auto-restart to allow manual intervention if glitched
-    // setTimeout(() => initBot(), 5000);
   });
 
   client.on('message', async (msg) => {
@@ -192,8 +186,6 @@ export async function initBot() {
     connectionStatus = "DISCONNECTED";
   }).finally(() => {
     isInitializing = false;
-    // If it failed due to profile lock, we might want to try one more time after a delay
-    // but be careful of infinite loops.
   });
 }
 
@@ -215,7 +207,7 @@ async function handleMessage(msg: Message) {
 
   if (user?.isBanned) {
     if (body.startsWith("!")) {
-      await client.sendMessage(phoneId, "Miss Astral does not even blink.\n\n...The void has closed its doors to you.");
+      await client.sendMessage(msg.from, "Miss Astral does not even blink.\n\n...The void has closed its doors to you.");
     }
     return;
   }
@@ -235,7 +227,7 @@ async function handleMessage(msg: Message) {
         xp: 0,
         messages: 0,
         condition: "Healthy",
-        rank: 1,
+        rank: 8,
         inventory: []
       };
       if (!user) {
@@ -244,10 +236,8 @@ async function handleMessage(msg: Message) {
         user = await storage.updateUser(phoneId, userData);
       }
       
-      // Safety check: ensure user was created/updated
-      if (!user) {
-        return msg.reply("An error occurred while starting your journey. Please try again.");
-      }
+      if (!user) return msg.reply("An error occurred while starting your journey.");
+
       const welcome = `╭═══════════════════╮
    ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
 ╰═══════════════════╯
@@ -281,134 +271,44 @@ async function handleMessage(msg: Message) {
 
   // XP Gain
   if (body.length >= 3 && !body.startsWith("!")) {
-    const now = new Date();
-    const lastReset = user.lastMessageReset ? new Date(user.lastMessageReset) : new Date(0);
-    
-    // Reset daily count at midnight
-    if (now.setHours(0,0,0,0) !== lastReset.setHours(0,0,0,0)) {
-      await storage.updateUser(phoneId, { dailyMessageCount: 1, lastMessageReset: new Date() });
-    } else {
-      const newCount = (user.dailyMessageCount || 0) + 1;
-      await storage.updateUser(phoneId, { dailyMessageCount: newCount });
-      
-      // Item Drop Logic
-      if (newCount === 1100) {
-        const inventory = (user.inventory as any[]) || [];
-        const hasBone = inventory.some(i => i.name.toLowerCase() === "cursed bone");
-        
-        if (!hasBone && Math.random() < 0.65) {
-          const newInv = [...inventory, { name: "Cursed Bone", quantity: 1 }];
-          await storage.updateUser(phoneId, { inventory: newInv });
-          await client.sendMessage(msg.from, "Something cold and wrong materializes near you.\n\n🦴 A Cursed Bone has appeared in your inventory.\nType !inventory to see your items.");
-        }
-      }
-    }
-
-    // diseaseDrain is used elsewhere in the XP logic, ensuring it's defined
     let diseaseDrain = 0;
     if (user.disease && !user.isConstellation && !user.hasShadowVeil) {
       diseaseDrain = 100;
     }
 
-    const rate = user.isConstellation ? 1000 : (user.dustDomainUntil && new Date() < new Date(user.dustDomainUntil) ? 500 : 5);
+    const rate = SPECIES_XP_RATES[user.species] || 5;
     const newXp = Math.max(0, user.xp + rate - diseaseDrain);
     const newMessages = (user.messages || 0) + 1;
 
     try {
+      const oldRank = getRankForXp(user.xp);
+      const newRank = getRankForXp(newXp);
+
       await storage.updateUser(phoneId, { 
         xp: newXp, 
-        messages: newMessages 
+        messages: newMessages,
+        rank: newRank.level
       });
+
+      if (newRank.level < oldRank.level) {
+        const celebration = `╭══════════════════════╮
+   🎊 RANK UP! 🎊
+   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+   👤 Cultivator: ${user.name}
+   📈 New Rank: 【${newRank.level}】${newRank.name}
+   ✨ Total XP: ${newXp}
+   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+   Your soul ascends further!
+╰══════════════════════╯`;
+        await client.sendMessage(msg.from, celebration);
+      }
     } catch (err) {
       console.error("Failed to update user XP/messages:", err);
-    }
-
-    // Random Outbreak Check
-    if (Math.random() < 0.005) { // 0.5% chance per message to trigger outbreak check
-      const stats = await storage.getGlobalStats();
-      if (!stats.activeDisease) {
-        const races = ["Human", "Demon", "Beast Clan", "Fallen Angel", "Dragon", "Elf"];
-        const targetRace = races[Math.floor(Math.random() * races.length)];
-        const diseaseNames: Record<string, string> = {
-          "Human": "Grey Rot",
-          "Demon": "Hellfire Fever",
-          "Beast Clan": "Feral Plague",
-          "Fallen Angel": "Corruption Blight",
-          "Dragon": "Scale Sickness",
-          "Elf": "Rootwither"
-        };
-        const diseaseName = diseaseNames[targetRace];
-        
-        await storage.updateGlobalStats({ 
-          activeDisease: diseaseName, 
-          diseaseRace: targetRace,
-          lastOutbreakAt: new Date()
-        });
-
-        const announcement = `A sickness has infected the ${targetRace} race.\n${diseaseName} is spreading through their ranks.\n${targetRace}s are advised to avoid !leaderboard and !profile for the time being.\nEven the mightiest can be brought low.`;
-        await client.sendMessage(msg.from, announcement);
-
-        // Infect users of that race
-        const allUsers = await storage.getUsers();
-        for (const u of allUsers) {
-          if (u.species === targetRace && !u.isConstellation && !u.hasShadowVeil) {
-            await storage.updateUser(u.phoneId, { disease: diseaseName, infectedAt: new Date() });
-          }
-        }
-      }
     }
   }
 
   if (body === "!scroll" || body === "!help" || body === "!menu") {
-    const scroll = `╭══════════════════════╮
-   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
-╰══════════════════════╯
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  📊 PROFILE & STATS
-  📈 !status ↳ view your status
-  👤 !profile ↳ view your profile
-  🏆 !leaderboard ↳ top cultivators
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  🛒 SHOP & ITEMS
-  🏪 !shop ↳ view shop
-  🛍️ !buy [item] ↳ purchase item
-  🎒 !inventory ↳ view items
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  🎴 CARDS
-  🎁 !getcard ↳ daily claim
-  📚 !cardcollection ↳ view cards
-  🔍 !card [num] ↳ view card info
-  🤝 !givecard @user [num] ↳ trade card
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  🏯 SECT
-  🚪 !joinsect [name] ↳ join a sect
-  🏯 !mysect ↳ view sect details
-  💰 !donate [amount] ↳ donate XP
-  📊 !sectranking ↳ sect leaderboard
-  🚶 !sectleave ↳ leave your sect
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👑 SECT LEADER ONLY
-    🥾 !kickmember [username] ↳ kick member
-  ⚡ !punish [username] ↳ punish member
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  🔱 OWNER ONLY
-  🔨 !ban [username] ↳ ban a user
-  🔓 !unban [username] ↳ unban a user
-  🤖 !missastral ↳ manage Miss Astral
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
-╰══════════════════════╯`;
-    const imgPath = path.join(process.cwd(), 'attached_assets', 'ִֶָ_𓂃⊹_ִֶָ_vera_1771815300400.jpg');
-    if (fs.existsSync(imgPath)) {
-      const media = MessageMedia.fromFilePath(imgPath);
-      try {
-        await client.sendMessage(msg.from, media, { caption: scroll });
-        return;
-      } catch (err) {
-        console.error("Failed to send media scroll:", err);
-      }
-    }
-    return msg.reply(scroll);
+    return msg.reply(HELP_MENU);
   }
 
   if (body === "!rules") {
@@ -418,34 +318,22 @@ Heed these laws, Cultivator.
 Violations shall not go unpunished. ⚡
 
 ▸ 1️⃣ No Spamming Commands
-      ↳ Spam & you shall be silenced
-
 ▸ 2️⃣ No Disrespect
-      ↳ Honour all cultivators
-
 ▸ 3️⃣ No Bug Exploitation
-      ↳ Report bugs, never abuse them
-
 ▸ 4️⃣ No Begging
-      ↳ Earn your cards & XP with honour
-
 ▸ 5️⃣ Respect Sect Leaders
-      ↳ Their word is law within the sect
-
 ▸ 6️⃣ No Alternate Accounts
-      ↳ One soul, one path
-
 ▸ 7️⃣ Respect All Decisions
-      ↳ Admin rulings are final & absolute
 
 Break the laws. Face the consequences. ⚔️`;
     return msg.reply(rules);
   }
 
   if (body === "!status") {
+    const currentRank = getRankForXp(user.xp);
     const status = `【Ｓｔａｔｕｓ】
 -------------------------
-▸ Rank: 【${user.rank}】Novice
+▸ Rank: 【${currentRank.level}】${currentRank.name}
 ▸ XP: ${user.xp}
 ▸ Messages: ${user.messages}
 ▸ Condition: ${user.condition}`;
@@ -453,11 +341,12 @@ Break the laws. Face the consequences. ⚔️`;
   }
 
   if (body === "!profile") {
+    const currentRank = getRankForXp(user.xp);
     const profile = `【Ｐｒｏｆｉｌｅ】
 -------------------------
 ▸ Name: ${user.name}
 ▸ Sect: ${user.sectTag || "None"}
-▸ Rank: 【${user.rank}】Novice
+▸ Rank: 【${currentRank.level}】${currentRank.name}
 ▸ Species: ${user.species}`;
     return msg.reply(profile);
   }
@@ -477,7 +366,6 @@ ${list}
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   ❧ Your Rank: #${rank}
   ❧ Your XP: ${user.xp}
-  ❧ World Ranking: #${rank}
 ╰══════════════════════╯`;
     return msg.reply(lb);
   }
@@ -487,23 +375,60 @@ ${list}
     if (user.lastCardClaim && (now.getTime() - new Date(user.lastCardClaim).getTime() < 86400000)) {
        return msg.reply("You have already claimed your card for today.");
     }
-    const cardData = await getAnimeCard();
-    if (!cardData) return msg.reply("The stars are clouded. Try again later.");
     
     try {
+      const page = Math.floor(Math.random() * 50) + 1;
+      const response = await fetch(`https://api.jikan.moe/v4/top/characters?page=${page}`);
+      const data = await response.json();
+      
+      if (!data.data || data.data.length === 0) throw new Error("API error");
+
+      const char = data.data[Math.floor(Math.random() * data.data.length)];
+      const rarityTiers = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
+      const rarity = rarityTiers[Math.floor(Math.random() * rarityTiers.length)];
+      const isBattleCard = Math.random() > 0.7 ? "Yes" : "No";
+      const affiliation = char.about?.split('\n')[0].substring(0, 50) || "Unknown";
+
       await storage.createCard({
         ownerPhoneId: phoneId,
-        ...cardData,
-        characterId: cardData.character_id
+        characterId: char.mal_id,
+        name: char.name,
+        series: affiliation,
+        imageUrl: char.images.jpg.image_url,
+        rarity: rarity
       });
       await storage.updateUser(phoneId, { lastCardClaim: now });
       
-      const media = await MessageMedia.fromUrl(cardData.image_url);
-      const text = `✨ *New Card Claimed!* ✨\n▸ Name: ${cardData.name}\n▸ Tier: ${cardData.rarity}\n▸ Battle Card: No\n▸ Affiliation: ${cardData.series}\n\nUse !cardcollection to see your deck!`;
+      const media = await MessageMedia.fromUrl(char.images.jpg.image_url);
+      const text = `✨ *New Card Claimed!* ✨\n▸ Name: ${char.name}\n▸ Tier: ${rarity}\n▸ Battle Card: ${isBattleCard}\n▸ Affiliation: ${affiliation}\n\nUse !cardcollection to see your deck!`;
+      
       return client.sendMessage(msg.from, media, { caption: text });
     } catch (err) {
       console.error("Error in !getcard:", err);
-      return msg.reply("An error occurred while claiming your card.");
+      return msg.reply("The stars are clouded. Try again later.");
+    }
+  }
+
+  if (body.startsWith("!givecard ")) {
+    try {
+      const parts = body.split(" ");
+      const cardNum = parseInt(parts[parts.length - 1]) - 1;
+      
+      if (!msg.hasQuotedMsg) return msg.reply("Reply to the user you want to give the card to.");
+
+      const quotedMsg = await msg.getQuotedMessage();
+      const recipientPhoneId = quotedMsg.from;
+
+      const cards = await storage.getUserCards(phoneId);
+      if (isNaN(cardNum) || !cards[cardNum]) return msg.reply("Invalid card number.");
+
+      const cardToGive = cards[cardNum];
+      await storage.updateCard(cardToGive.id, { ownerPhoneId: recipientPhoneId });
+
+      return msg.reply(`🤝 TRADE SUCCESSFUL\n\nYou gave ${cardToGive.name} to another cultivator.`);
+    } catch (err) {
+      console.error("Error in !givecard:", err);
+      return msg.reply("Failed to give card.");
     }
   }
 
@@ -514,8 +439,7 @@ ${list}
       const list = cards.map((c, i) => `${i + 1}. ${c.name} [${c.rarity}]`).join("\n");
       return msg.reply(`🎴 YOUR COLLECTION\n\n${list}`);
     } catch (err) {
-      console.error("Error in !cardcollection:", err);
-      return msg.reply("An error occurred while fetching your collection.");
+      return msg.reply("Failed to fetch collection.");
     }
   }
 
@@ -530,322 +454,83 @@ ${list}
       }
       return msg.reply("Invalid card number.");
     } catch (err) {
-      console.error("Error in !card:", err);
-      return msg.reply("An error occurred while fetching card info.");
+      return msg.reply("Failed to fetch card info.");
     }
-  }
-
-  if (body === "!shop") {
-    const shop = `╭══════════════════════╮
-  🏪 SHOP
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  🩸 Blood Rune ↳ 1000 XP
-  Steal XP from another user.
-
-  🌑 Eclipse Stone ↳ 1200 XP
-  Hide your race & XP for 24hrs.
-
-  👻 Phantom Seal ↳ 1100 XP
-  Vanish from the leaderboard for 24hrs.
-
-  🪙 Cursed Coin ↳ 200 XP
-  Unknown outcome. Flip and find out.
-
-  🔮 Mirror Shard ↳ 1300 XP
-  Copy another user's race for 30mins.
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  💊 CURES
-  💉 Grey Rot Cure ↳ 500 XP
-  Cures the Grey Rot. (Human)
-
-  💉 Hellfire Suppressant ↳ 600 XP
-  Cures Hellfire Fever. (Demon)
-
-  💉 Feral Antidote ↳ 600 XP
-  Cures the Feral Plague. (Beast Clan)
-
-  💉 Grace Restoration Vial ↳ 700 XP
-  Cures Corruption Blight. (Fallen Angel)
-
-  💉 Scale Restoration Salve ↳ 800 XP
-  Cures Scale Sickness. (Dragon)
-
-  💉 Rootwither Remedy ↳ 700 XP
-  Cures Rootwither. (Elf)
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !buy [item name] to purchase
-╰══════════════════════╯`;
-    return msg.reply(shop);
-  }
-
-  if (body.startsWith("!buy")) {
-    const itemName = body.replace("!buy", "").trim();
-    if (!itemName) {
-      return msg.reply(`╭══════════════════════╮
-  ⚠️ MISSING ITEM NAME
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Type !buy followed by an item name.
-  Example: !buy Cursed Coin
-╰══════════════════════╯`);
-    }
-
-    const item = SHOP_ITEMS[itemName];
-    if (!item) {
-      return msg.reply(`╭══════════════════════╮
-  ❌ ITEM NOT FOUND
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  That item does not exist in the shop.
-  Use !shop to see available items.
-╰══════════════════════╯`);
-    }
-
-    if (user.xp < item.price) {
-      return msg.reply(`╭══════════════════════╮
-  ⚠️ INSUFFICIENT XP
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  🛍️ Item: ${itemName.toUpperCase()} ↳ ${item.price} XP
-  ✨ Your XP: ${user.xp} XP
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Keep chatting to earn more XP!
-╰══════════════════════╯`);
-    }
-
-    const inventory = (user.inventory as any[]) || [];
-    if (inventory.some(i => i.name.toLowerCase() === itemName.toLowerCase())) {
-      return msg.reply(`╭══════════════════════╮
-  ❌ ITEM ALREADY OWNED
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  🛍️ Item: ${itemName.toUpperCase()}
-  ⚠️ Use it before buying another.
-╰══════════════════════╯`);
-    }
-
-    const newInventory = [...inventory, { name: itemName, quantity: 1 }];
-    const remainingXp = user.xp - item.price;
-    await storage.updateUser(phoneId, { xp: remainingXp, inventory: newInventory });
-    
-    let useMessage = "";
-    if (itemName.toLowerCase() === "vampire tooth") {
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + 7);
-      await storage.updateUser(phoneId, { isVampire: true, vampireUntil: expiry });
-      useMessage = `\n\n🦷 You are now a Vampire.\nUse !suck @user to feed.\nYour thirst lasts for one week.\nExpires: ${expiry.toDateString()}`;
-    } else if (itemName.toLowerCase() === "cursed bone") {
-      await storage.updateUser(phoneId, { hasShadowVeil: true });
-      useMessage = `\n\n🦴 Shadow Veil active.\nYou are now protected from all races diseases and plagues.\nThe shadows walk with you.`;
-    } else if (itemName.toLowerCase().includes("cure") || itemName.toLowerCase().includes("suppressant") || itemName.toLowerCase().includes("antidote") || itemName.toLowerCase().includes("vial") || itemName.toLowerCase().includes("salve") || itemName.toLowerCase().includes("remedy")) {
-      const cures: Record<string, string> = {
-        "grey rot cure": "Grey Rot",
-        "hellfire suppressant": "Hellfire Fever",
-        "feral antidote": "Feral Plague",
-        "grace restoration vial": "Corruption Blight",
-        "scale restoration salve": "Scale Sickness",
-        "rootwither remedy": "Rootwither"
-      };
-      const diseaseForCure = cures[itemName.toLowerCase()];
-      if (user.disease === diseaseForCure) {
-        await storage.updateUser(phoneId, { disease: null, condition: "Healthy" });
-        useMessage = `\n\nThe sickness retreats. Your strength returns.\n\n💊 You have been cured of ${diseaseForCure}.\nYour XP drain has stopped.\nCurrent XP: ${remainingXp}`;
-      } else if (!user.disease) {
-        useMessage = `\n\nYou are not infected. Save it for when you need it.`;
-      } else {
-        useMessage = `\n\nThis cure was not made for you.\nIt has no effect.`;
-      }
-    }
-
-    return msg.reply(`╭══════════════════════╮
-  ✅ PURCHASE SUCCESSFUL
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  🛍️ Item: ${itemName.toUpperCase()}
-  💰 Cost: ${item.price} XP
-  ✨ Remaining XP: ${remainingXp}
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !inventory to see your items${useMessage}
-╰══════════════════════╯`);
-  }
-
-  if (body.startsWith("!suck ") && user.isVampire) {
-    if (user.vampireUntil && new Date() > new Date(user.vampireUntil)) {
-      await storage.updateUser(phoneId, { isVampire: false });
-      return msg.reply("Your fangs are gone. The hunger has passed.\nYou are no longer a Vampire.");
-    }
-
-    const mentions = await msg.getMentions();
-    if (mentions.length === 0) return msg.reply("You must mention a user to feed.");
-    const targetContact = mentions[0];
-    const targetPhoneId = targetContact.id._serialized;
-    const target = await storage.getUserByPhone(targetPhoneId);
-
-    if (!target) return msg.reply("That soul does not exist in this realm.");
-    
-    if (target.xp > user.xp * 1.5) {
-      return msg.reply(`Your prey senses you coming.\nTheir power repels you.\n\n🦷 @${targetContact.pushname || targetContact.number} resisted your suck.\nThey are too powerful for you right now.`);
-    }
-
-    const amount = Math.floor(Math.random() * 200) + 50;
-    await storage.updateUser(targetPhoneId, { xp: Math.max(0, target.xp - amount) });
-    await storage.updateUser(phoneId, { xp: user.xp + amount, lastSuckAt: new Date() });
-
-    await client.sendMessage(targetPhoneId, `Something cold grips you in the dark.\nYou lost ${amount} XP to an unknown force.\nRemaining XP: ${Math.max(0, target.xp - amount)}`);
-    return msg.reply(`You sink into the shadows and feed.\n\n🦷 You drained ${amount} XP from @${targetContact.pushname || targetContact.number}.\nYour XP: ${user.xp + amount}`);
-  }
-
-  if (body === "!inventory") {
-    const inventory = (user.inventory as any[]) || [];
-    if (inventory.length === 0) {
-      return msg.reply(`╭══════════════════════╮
-  🎒 INVENTORY
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  ❌ Your inventory is empty.
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !shop to browse items
-╰══════════════════════╯`);
-    }
-    const itemsList = inventory.map(item => `  🛍️ ${item.name.toUpperCase()} x${item.quantity}`).join("\n");
-    return msg.reply(`╭══════════════════════╮
-  🎒 INVENTORY
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-${itemsList}
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !shop to browse items
-╰══════════════════════╯`);
-  }
-
-  if (body.startsWith("!joinsect ")) {
-    const sectName = body.replace("!joinsect ", "").trim();
-    if (user.sectId) {
-      const currentSect = await storage.getSect(user.sectId);
-      return msg.reply(`╭══════════════════════╮
-  ❌ ALREADY IN A SECT
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  🏯 Current Sect: ${currentSect?.name || "Unknown"}
-  ⚠️ Leave your sect first to join another.
-  Use !sectleave to leave.
-╰══════════════════════╯`);
-    }
-
-    const sect = await storage.getSectByName(sectName);
-    if (!sect) {
-      return msg.reply(`╭══════════════════════╮
-  ❌ SECT NOT FOUND
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  That sect does not exist.
-  Use !sectranking to see all sects.
-╰══════════════════════╯`);
-    }
-
-    await storage.updateUser(phoneId, { sectId: sect.id, sectTag: sect.tag });
-    await storage.updateSect(sect.id, { membersCount: sect.membersCount + 1 });
-
-    return msg.reply(`╭══════════════════════╮
-  🚪 SECT JOINED
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  🏯 Sect: ${sect.name}
-  ✅ Welcome to the sect!
-╰══════════════════════╯`);
   }
 
   if (body.startsWith("!createsect ")) {
-    const sectName = body.replace("!createsect ", "").trim();
-    if (user.sectId) {
-      const currentSect = await storage.getSect(user.sectId);
-      return msg.reply(`╭══════════════════════╮
-  ❌ ALREADY IN A SECT
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  🏯 Current Sect: ${currentSect?.name || "Unknown"}
-  ⚠️ Leave your sect before creating a new one.
-  Use !sectleave to leave.
-╰══════════════════════╯`);
+    try {
+      const sectName = body.replace("!createsect ", "").trim();
+      if (!sectName) return msg.reply("Provide a sect name.");
+      if (user.xp < 5000) return msg.reply(`⚠️ INSUFFICIENT XP (Need 5000, You have ${user.xp})`);
+      if (user.sectId) return msg.reply("Leave your current sect first.");
+
+      const sectsList = await storage.getSects();
+      if (sectsList.length >= 3) return msg.reply("❌ SECT LIMIT REACHED (Max 3)");
+
+      const tag = sectName.substring(0, 3).toUpperCase();
+      const newSect = await storage.createSect({
+        name: sectName,
+        tag: tag,
+        leaderPhoneId: phoneId,
+        treasuryXp: 0,
+        membersCount: 1,
+        imageUrl: null
+      });
+
+      await storage.updateUser(phoneId, { xp: user.xp - 5000, sectId: newSect.id, sectTag: tag });
+      return msg.reply(`🏯 SECT CREATED: ${sectName}\nFounder: ${user.name}\nRemaining XP: ${user.xp - 5000}`);
+    } catch (err) {
+      return msg.reply("Failed to create sect.");
     }
+  }
 
-    const sects = await storage.getSects();
-    if (sects.length >= 3) {
-      return msg.reply(`╭══════════════════════╮
-  ❌ SECT LIMIT REACHED
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  The maximum of 3 sects have been created.
-  No new sects can be formed.
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !sectranking to see all sects
-  and !joinsect [name] to join one.
-╰══════════════════════╯`);
+  if (body.startsWith("!joinsect ")) {
+    try {
+      const sectName = body.replace("!joinsect ", "").trim();
+      const sect = await storage.getSectByName(sectName);
+      if (!sect) return msg.reply("❌ SECT NOT FOUND");
+      if (user.sectId) return msg.reply("Leave your current sect first.");
+
+      await storage.updateUser(phoneId, { sectId: sect.id, sectTag: sect.tag });
+      await storage.updateSect(sect.id, { membersCount: sect.membersCount + 1 });
+      return msg.reply(`🚪 JOINED SECT: ${sect.name}`);
+    } catch (err) {
+      return msg.reply("Failed to join sect.");
     }
-
-    if (user.xp < 5000) {
-      return msg.reply(`╭══════════════════════╮
-  ⚠️ INSUFFICIENT XP
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  💰 Required: 5000 XP
-  ✨ Your XP: ${user.xp} XP
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Keep chatting to earn more XP!
-╰══════════════════════╯`);
-    }
-
-    const tag = sectName.substring(0, 3).toUpperCase();
-    const newSect = await storage.createSect({
-      name: sectName,
-      tag: tag,
-      leaderPhoneId: phoneId,
-      membersCount: 1,
-      treasuryXp: 0
-    });
-
-    const remainingXp = user.xp - 5000;
-    await storage.updateUser(phoneId, { xp: remainingXp, sectId: newSect.id, sectTag: tag });
-
-    return msg.reply(`╭══════════════════════╮
-  🏯 SECT CREATED
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Founder: ${user.name}
-  🏯 Sect: ${sectName}
-  💰 Cost: 5000 XP
-  ✨ Remaining XP: ${remainingXp}
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  You are now the sect leader!
-╰══════════════════════╯`);
   }
 
   if (body === "!mysect") {
-    if (!user.sectId) return msg.reply("You are not in a sect.");
+    if (!user.sectId) return msg.reply("❌ NO SECT");
     const sect = await storage.getSect(user.sectId);
-    if (!sect) return msg.reply("Sect details not found.");
-    return msg.reply(`╭══════════════════════╮
-  🏯 MY SECT
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  🏯 Sect: ${sect.name}
-  🏷️ Tag: ${sect.tag}
-  👑 Leader: ${sect.leaderPhoneId === phoneId ? "You" : sect.leaderPhoneId}
-  👥 Members: ${sect.membersCount}
-  💰 Treasury: ${sect.treasuryXp} XP
-╰══════════════════════╯`);
+    if (!sect) return;
+    const leader = await storage.getUserByPhone(sect.leaderPhoneId);
+    return msg.reply(`🏯 MY SECT\nName: ${sect.name}\nLeader: ${leader?.name || "Unknown"}\nMembers: ${sect.membersCount}\nXP: ${sect.treasuryXp}`);
   }
 
-  if (body.startsWith("!givecard ") && msg.hasQuotedMsg) {
-    const quotedMsg = await msg.getQuotedMessage();
-    const receiverPhoneId = quotedMsg.from;
-    const num = parseInt(body.replace("!givecard ", "").trim()) - 1;
-    const cards = await storage.getUserCards(phoneId);
+  if (body.startsWith("!donate ")) {
+    if (!user.sectId) return msg.reply("❌ NO SECT");
+    const amount = parseInt(body.replace("!donate ", "").trim());
+    if (isNaN(amount) || amount <= 0 || user.xp < amount) return msg.reply("Invalid amount or insufficient XP.");
     
-    if (cards[num]) {
-      const card = cards[num];
-      await storage.deleteCard(card.id);
-      await storage.createCard({
-        ...card,
-        id: undefined as any,
-        ownerPhoneId: receiverPhoneId
-      });
-      return msg.reply(`🤝 You have given ${card.name} to the recipient.`);
-    }
-    return msg.reply("Invalid card number.");
+    await storage.updateUser(phoneId, { xp: user.xp - amount });
+    await storage.updateSect(user.sectId, { treasuryXp: (await storage.getSect(user.sectId))!.treasuryXp + amount });
+    return msg.reply(`💰 DONATED: ${amount} XP`);
+  }
+
+  if (body === "!sectranking") {
+    const sectsList = await storage.getSects();
+    const list = sectsList.map((s, i) => `${i + 1}. ${s.name} - ${s.treasuryXp} XP`).join("\n");
+    return msg.reply(`📊 SECT LEADERBOARD\n\n${list || "No sects yet."}`);
+  }
+
+  if (body === "!sectleave") {
+    if (!user.sectId) return msg.reply("❌ NO SECT");
+    const sect = await storage.getSect(user.sectId);
+    if (sect?.leaderPhoneId === phoneId) return msg.reply("❌ LEADERS CANNOT LEAVE");
+    
+    await storage.updateUser(phoneId, { sectId: null, sectTag: null });
+    await storage.updateSect(sect!.id, { membersCount: sect!.membersCount - 1 });
+    return msg.reply("🚶 LEFT SECT");
   }
 }

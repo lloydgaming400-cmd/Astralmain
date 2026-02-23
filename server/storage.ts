@@ -20,6 +20,7 @@ export interface IStorage {
   getUserCards(phoneId: string): Promise<Card[]>;
   createCard(card: InsertCard): Promise<Card>;
   getCard(id: number): Promise<Card | undefined>;
+  updateCard(id: number, updates: Partial<InsertCard>): Promise<Card>;
   deleteCard(id: number): Promise<void>;
 
   // Global Stats
@@ -97,6 +98,11 @@ export class DatabaseStorage implements IStorage {
   async getCard(id: number): Promise<Card | undefined> {
     const [card] = await db.select().from(cards).where(eq(cards.id, id));
     return card;
+  }
+
+  async updateCard(id: number, updates: Partial<InsertCard>): Promise<Card> {
+    const [updated] = await db.update(cards).set(updates).where(eq(cards.id, id)).returning();
+    return updated;
   }
 
   async deleteCard(id: number): Promise<void> {
