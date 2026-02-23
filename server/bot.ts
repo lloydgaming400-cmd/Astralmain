@@ -98,7 +98,7 @@ export async function initBot() {
   if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
   if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
-  client = new Client({
+    client = new Client({
     authStrategy: new LocalAuth({ dataPath: authPath }),
     restartOnAuthFail: true,
     puppeteer: {
@@ -123,41 +123,39 @@ export async function initBot() {
         '--font-render-hinting=none'
       ]
     }
-  }) as any;
+  });
 
-  client.on('qr', (qr: string) => {
+  (client as any).on('qr', (qr: string) => {
     currentQrCode = qr;
     connectionStatus = "WAITING_FOR_QR";
     console.log('New QR code received');
-    // qrcode.generate(qr, { small: true }); // Keep terminal QR for debugging but let frontend handle it
   });
 
-  client.on('ready', () => {
+  (client as any).on('ready', () => {
     connectionStatus = "CONNECTED";
     currentQrCode = undefined;
     console.log('Bot is ready');
   });
 
-  client.on('authenticated', () => {
+  (client as any).on('authenticated', () => {
     connectionStatus = "CONNECTED";
     console.log('Authenticated');
   });
 
-  client.on('auth_failure', (msg) => {
+  (client as any).on('auth_failure', (msg: any) => {
     console.error('Auth failure:', msg);
     connectionStatus = "DISCONNECTED";
     currentQrCode = undefined;
   });
 
-  client.on('disconnected', (reason) => {
+  (client as any).on('disconnected', (reason: any) => {
     console.error('Client was logged out', reason);
     connectionStatus = "DISCONNECTED";
     currentQrCode = undefined;
-    // Attempt to reconnect if disconnected
     setTimeout(() => initBot(), 5000);
   });
 
-  client.on('message', async (msg: any) => {
+  (client as any).on('message', async (msg: any) => {
     await handleMessage(msg);
   });
 

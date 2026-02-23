@@ -31,8 +31,13 @@ export async function registerRoutes(
   });
 
   app.post("/api/reset", async (req, res) => {
-    await storage.resetDatabase();
-    res.status(200).json({ success: true });
+    // Check if resetDatabase exists, otherwise use a fallback or skip
+    if (typeof (storage as any).resetDatabase === 'function') {
+      await (storage as any).resetDatabase();
+      res.status(200).json({ success: true });
+    } else {
+      res.status(501).json({ error: "Reset not implemented" });
+    }
   });
 
   return httpServer;
