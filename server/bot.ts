@@ -47,7 +47,7 @@ const HELP_MENU = `╭═══════════════════�
   🔓 !unban [username] ↳ unban a user
   🤖 !missastral ↳ manage Miss Astral
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
+     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
 ╰══════════════════════╯`;
 
 const SPECIES_WEIGHTS = [
@@ -217,6 +217,11 @@ async function handleMessage(msg: Message) {
         user = await storage.updateUser(phoneId, userData);
       }
       const welcome = `╭═══════════════════╮\n   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦\n╰═══════════════════╯\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Greetings, Cultivator!\n  You have been summoned to the Astral Realm.\n  I am Miss Astral, your guide to ascension.\n  ✦ Species: ${sp.name}\n  ✦ Rarity: ${sp.rarity}\n  Your journey begins now.\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !scroll to view all commands\n  Use !rules to see bot rules\n╰══════════════════════╯`;
+      const imgPath = path.join(process.cwd(), 'attached_assets', 'download_(17)_(1)_1771813308970.jpg');
+      if (fs.existsSync(imgPath)) {
+        const media = MessageMedia.fromFilePath(imgPath);
+        return client.sendMessage(msg.from, media, { caption: welcome });
+      }
       return msg.reply(welcome);
     } else if (body.startsWith("!")) {
       return msg.reply("You must use !start first before starting your journey.");
@@ -236,7 +241,7 @@ async function handleMessage(msg: Message) {
 
   // Commands
   if (body === "!scroll" || body === "!help" || body === "!menu") {
-    const imgPath = path.join(process.cwd(), 'attached_assets', 'download_(17)_(1)_1771813308970.jpg');
+    const imgPath = path.join(process.cwd(), 'attached_assets', 'ִֶָ_𓂃⊹_ִֶָ_vera_1771813308969.jpg');
     if (fs.existsSync(imgPath)) {
       const media = MessageMedia.fromFilePath(imgPath);
       return client.sendMessage(msg.from, media, { caption: HELP_MENU });
@@ -280,7 +285,8 @@ async function handleMessage(msg: Message) {
     
     await storage.createCard({
       ownerPhoneId: phoneId,
-      ...cardData
+      ...cardData,
+      characterId: cardData.character_id
     });
     await storage.updateUser(phoneId, { lastCardClaim: now });
     
@@ -308,37 +314,37 @@ async function handleMessage(msg: Message) {
   }
 
   if (body === "!shop") {
-    const shop = `╭══════════════════════╮\n  🏪 SHOP\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  🩸 Blood Rune ↳ 1000 XP\n  Steal XP from another user.\\n\\n  🌑 Eclipse Stone ↳ 1200 XP\\n  Hide your race & XP for 24hrs.\\n\\n  👻 Phantom Seal ↳ 1100 XP\\n  Vanish from the leaderboard for 24hrs.\\n\\n  🪙 Cursed Coin ↳ 200 XP\\n  Unknown outcome. Flip and find out.\\n\\n  🔮 Mirror Shard ↳ 1300 XP\\n  Copy another user's race for 30mins.\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  💊 CURES\\n  💉 Grey Rot Cure ↳ 500 XP\\n  Cures the Grey Rot. (Human)\\n\\n  💉 Hellfire Suppressant ↳ 600 XP\\n  Cures Hellfire Fever. (Demon)\\n\\n  💉 Feral Antidote ↳ 600 XP\\n  Cures the Feral Plague. (Beast Clan)\\n\\n  💉 Grace Restoration Vial ↳ 700 XP\\n  Cures Corruption Blight. (Fallen Angel)\\n\\n  💉 Scale Restoration Salve ↳ 800 XP\\n  Cures Scale Sickness. (Dragon)\\n\\n  💉 Rootwither Remedy ↳ 700 XP\\n  Cures Rootwither. (Elf)\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  Use !buy [item name] to purchase\\n╰══════════════════════╯\`;
+    const shop = `╭══════════════════════╮\n  🏪 SHOP\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  🩸 Blood Rune ↳ 1000 XP\n  Steal XP from another user.\n\n  🌑 Eclipse Stone ↳ 1200 XP\n  Hide your race & XP for 24hrs.\n\n  👻 Phantom Seal ↳ 1100 XP\n  Vanish from the leaderboard for 24hrs.\n\n  🪙 Cursed Coin ↳ 200 XP\n  Unknown outcome. Flip and find out.\n\n  🔮 Mirror Shard ↳ 1300 XP\n  Copy another user's race for 30mins.\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  💊 CURES\n  💉 Grey Rot Cure ↳ 500 XP\n  Cures the Grey Rot. (Human)\n\n  💉 Hellfire Suppressant ↳ 600 XP\n  Cures Hellfire Fever. (Demon)\n\n  💉 Feral Antidote ↳ 600 XP\n  Cures the Feral Plague. (Beast Clan)\n\n  💉 Grace Restoration Vial ↳ 700 XP\n  Cures Corruption Blight. (Fallen Angel)\n\n  💉 Scale Restoration Salve ↳ 800 XP\n  Cures Scale Sickness. (Dragon)\n\n  💉 Rootwither Remedy ↳ 700 XP\n  Cures Rootwither. (Elf)\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !buy [item name] to purchase\n╰══════════════════════╯`;
     return msg.reply(shop);
   }
 
   if (body.startsWith("!buy ")) {
     const itemName = body.replace("!buy ", "").trim();
     const item = SHOP_ITEMS[itemName];
-    if (!item) return msg.reply("╭══════════════════════╮\\n  ❌ ITEM NOT FOUND\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  That item does not exist in the shop.\\n  Use !shop to see available items.\\n╰══════════════════════╯");
+    if (!item) return msg.reply("╭══════════════════════╮\n  ❌ ITEM NOT FOUND\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  That item does not exist in the shop.\n  Use !shop to see available items.\n╰══════════════════════╯");
     
     if (user.xp < item.price) {
-      return msg.reply(`╭══════════════════════╮\\n  ⚠️ INSUFFICIENT XP\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  👤 Cultivator: \${user.name}\\n  🛍️ Item: \${itemName.toUpperCase()} ↳ \${item.price} XP\\n  ✨ Your XP: \${user.xp} XP\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  Keep chatting to earn more XP!\\n╰══════════════════════╯`);
+      return msg.reply(`╭══════════════════════╮\n  ⚠️ INSUFFICIENT XP\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n  🛍️ Item: ${itemName.toUpperCase()} ↳ ${item.price} XP\n  ✨ Your XP: ${user.xp} XP\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Keep chatting to earn more XP!\n╰══════════════════════╯`);
     }
 
     const inventory = (user.inventory as any[]) || [];
     if (inventory.includes(itemName)) {
-      return msg.reply(`╭══════════════════════╮\\n  ❌ ITEM ALREADY OWNED\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  👤 Cultivator: \${user.name}\\n  🛍️ Item: \${itemName.toUpperCase()}\\n  ⚠️ Use it before buying another.\\n╰══════════════════════╯`);
+      return msg.reply(`╭══════════════════════╮\n  ❌ ITEM ALREADY OWNED\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n  🛍️ Item: ${itemName.toUpperCase()}\n  ⚠️ Use it before buying another.\n╰══════════════════════╯`);
     }
 
     const newInventory = [...inventory, itemName];
     const remainingXp = user.xp - item.price;
     await storage.updateUser(phoneId, { xp: remainingXp, inventory: newInventory });
     
-    return msg.reply(\`╭══════════════════════╮\\n  ✅ PURCHASE SUCCESSFUL\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  👤 Cultivator: \${user.name}\\n  🛍️ Item: \${itemName.toUpperCase()}\\n  💰 Cost: \${item.price} XP\\n  ✨ Remaining XP: \${remainingXp}\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  Use !inventory to see your items\\n╰══════════════════════╯\`);
+    return msg.reply(`╭══════════════════════╮\n  ✅ PURCHASE SUCCESSFUL\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n  🛍️ Item: ${itemName.toUpperCase()}\n  💰 Cost: ${item.price} XP\n  ✨ Remaining XP: ${remainingXp}\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !inventory to see your items\n╰══════════════════════╯`);
   }
 
   if (body === "!inventory") {
     const inventory = (user.inventory as any[]) || [];
     if (inventory.length === 0) {
-      return msg.reply(\`╭══════════════════════╮\\n  🎒 INVENTORY\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  👤 Cultivator: \${user.name}\\n  ❌ Your inventory is empty.\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  Use !shop to browse items\\n╰══════════════════════╯\`);
+      return msg.reply(`╭══════════════════════╮\n  🎒 INVENTORY\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n  ❌ Your inventory is empty.\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !shop to browse items\n╰══════════════════════╯`);
     }
-    const itemsList = inventory.map(item => \`  🛍️ \${item.toUpperCase()} x1\`).join("\\n");
-    return msg.reply(\`╭══════════════════════╮\\n  🎒 INVENTORY\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  👤 Cultivator: \${user.name}\\n\${itemsList}\\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\\n  Use !shop to browse items\\n╰══════════════════════╯\`);
+    const itemsList = inventory.map(item => `  🛍️ ${item.toUpperCase()} x1`).join("\n");
+    return msg.reply(`╭══════════════════════╮\n  🎒 INVENTORY\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n${itemsList}\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !shop to browse items\n╰══════════════════════╯`);
   }
 }
