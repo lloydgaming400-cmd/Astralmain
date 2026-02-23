@@ -134,10 +134,11 @@ export async function initBot() {
         '--no-sandbox', 
         '--disable-setuid-sandbox', 
         '--disable-dev-shm-usage', 
-        '--disable-gpu', 
-        '--no-zygote', 
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
         '--single-process',
-        '--disable-extensions'
+        '--disable-gpu'
       ]
     }
   });
@@ -247,8 +248,13 @@ async function handleMessage(msg: Message) {
 ╰══════════════════════╯`;
       const imgPath = path.join(process.cwd(), 'attached_assets', 'download_(17)_(1)_1771815300401.jpg');
       if (fs.existsSync(imgPath)) {
-        const media = MessageMedia.fromFilePath(imgPath);
-        return client.sendMessage(msg.from, media, { caption: welcome });
+        try {
+          const media = MessageMedia.fromFilePath(imgPath);
+          await client.sendMessage(msg.from, media, { caption: welcome });
+          return;
+        } catch (err) {
+          console.error("Failed to send welcome media:", err);
+        }
       }
       return msg.reply(welcome);
     } else if (body.startsWith("!")) {
@@ -282,14 +288,20 @@ async function handleMessage(msg: Message) {
       }
     }
 
-    // Disease Drain
+    // diseaseDrain is used elsewhere in the XP logic, ensuring it's defined
     let diseaseDrain = 0;
     if (user.disease && !user.isConstellation && !user.hasShadowVeil) {
       diseaseDrain = 100;
     }
 
     const rate = user.isConstellation ? 1000 : (user.dustDomainUntil && new Date() < new Date(user.dustDomainUntil) ? 500 : 5);
-    await storage.updateUser(phoneId, { xp: Math.max(0, user.xp + rate - diseaseDrain), messages: user.messages + 1 });
+    const newXp = Math.max(0, user.xp + rate - diseaseDrain);
+    const newMessages = (user.messages || 0) + 1;
+
+    await storage.updateUser(phoneId, { 
+      xp: newXp, 
+      messages: newMessages 
+    });
 
     // Random Outbreak Check
     if (Math.random() < 0.005) { // 0.5% chance per message to trigger outbreak check
