@@ -1,2 +1,2 @@
-2026/02/23-10:00:07.213 336 Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/shared_proto_db since it was missing.
-2026/02/23-10:00:07.222 336 Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/shared_proto_db/MANIFEST-000001
+2026/02/23-10:10:52.192 9cc Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/shared_proto_db since it was missing.
+2026/02/23-10:10:52.221 9cc Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/shared_proto_db/MANIFEST-000001
