@@ -180,7 +180,11 @@ export async function initBot() {
   });
 
   client.on('message', async (msg) => {
-    await handleMessage(msg);
+    try {
+      await handleMessage(msg);
+    } catch (err) {
+      console.error('Error handling message:', err);
+    }
   });
 
   client.initialize().catch(err => {
@@ -216,7 +220,7 @@ async function handleMessage(msg: Message) {
     return;
   }
 
-  if (body === "!start" && user.isRegistered) {
+  if (body === "!start" && user?.isRegistered) {
     return msg.reply("Your journey has already begun. You cannot start again.");
   }
 
@@ -238,6 +242,11 @@ async function handleMessage(msg: Message) {
         user = await storage.createUser(userData);
       } else {
         user = await storage.updateUser(phoneId, userData);
+      }
+      
+      // Safety check: ensure user was created/updated
+      if (!user) {
+        return msg.reply("An error occurred while starting your journey. Please try again.");
       }
       const welcome = `╭═══════════════════╮
    ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
@@ -481,34 +490,49 @@ ${list}
     const cardData = await getAnimeCard();
     if (!cardData) return msg.reply("The stars are clouded. Try again later.");
     
-    await storage.createCard({
-      ownerPhoneId: phoneId,
-      ...cardData,
-      characterId: cardData.character_id
-    });
-    await storage.updateUser(phoneId, { lastCardClaim: now });
-    
-    const media = await MessageMedia.fromUrl(cardData.image_url);
-    const text = `✨ *New Card Claimed!* ✨\n▸ Name: ${cardData.name}\n▸ Tier: ${cardData.rarity}\n▸ Battle Card: No\n▸ Affiliation: ${cardData.series}\n\nUse !cardcollection to see your deck!`;
-    return client.sendMessage(msg.from, media, { caption: text });
+    try {
+      await storage.createCard({
+        ownerPhoneId: phoneId,
+        ...cardData,
+        characterId: cardData.character_id
+      });
+      await storage.updateUser(phoneId, { lastCardClaim: now });
+      
+      const media = await MessageMedia.fromUrl(cardData.image_url);
+      const text = `✨ *New Card Claimed!* ✨\n▸ Name: ${cardData.name}\n▸ Tier: ${cardData.rarity}\n▸ Battle Card: No\n▸ Affiliation: ${cardData.series}\n\nUse !cardcollection to see your deck!`;
+      return client.sendMessage(msg.from, media, { caption: text });
+    } catch (err) {
+      console.error("Error in !getcard:", err);
+      return msg.reply("An error occurred while claiming your card.");
+    }
   }
 
   if (body === "!cardcollection") {
-    const cards = await storage.getUserCards(phoneId);
-    if (cards.length === 0) return msg.reply("Your collection is empty.");
-    const list = cards.map((c, i) => `${i + 1}. ${c.name} [${c.rarity}]`).join("\n");
-    return msg.reply(`🎴 YOUR COLLECTION\n\n${list}`);
+    try {
+      const cards = await storage.getUserCards(phoneId);
+      if (cards.length === 0) return msg.reply("Your collection is empty.");
+      const list = cards.map((c, i) => `${i + 1}. ${c.name} [${c.rarity}]`).join("\n");
+      return msg.reply(`🎴 YOUR COLLECTION\n\n${list}`);
+    } catch (err) {
+      console.error("Error in !cardcollection:", err);
+      return msg.reply("An error occurred while fetching your collection.");
+    }
   }
 
   if (body.startsWith("!card ")) {
-    const num = parseInt(body.split(" ")[1]) - 1;
-    const cards = await storage.getUserCards(phoneId);
-    if (cards[num]) {
-      const c = cards[num];
-      const media = await MessageMedia.fromUrl(c.imageUrl);
-      return client.sendMessage(msg.from, media, { caption: `🎴 CARD INFO\n\nName: ${c.name}\nSeries: ${c.series}\nRarity: ${c.rarity}` });
+    try {
+      const num = parseInt(body.split(" ")[1]) - 1;
+      const cards = await storage.getUserCards(phoneId);
+      if (cards[num]) {
+        const c = cards[num];
+        const media = await MessageMedia.fromUrl(c.imageUrl);
+        return client.sendMessage(msg.from, media, { caption: `🎴 CARD INFO\n\nName: ${c.name}\nSeries: ${c.series}\nRarity: ${c.rarity}` });
+      }
+      return msg.reply("Invalid card number.");
+    } catch (err) {
+      console.error("Error in !card:", err);
+      return msg.reply("An error occurred while fetching card info.");
     }
-    return msg.reply("Invalid card number.");
   }
 
   if (body === "!shop") {
