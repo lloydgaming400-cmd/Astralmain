@@ -159,7 +159,8 @@ export async function initBot() {
     console.error('Client was logged out', reason);
     connectionStatus = "DISCONNECTED";
     currentQrCode = undefined;
-    setTimeout(() => initBot(), 5000);
+    // Don't auto-restart to allow manual intervention if glitched
+    // setTimeout(() => initBot(), 5000);
   });
 
   client.on('message', async (msg) => {
@@ -197,7 +198,10 @@ async function handleMessage(msg: Message) {
     return;
   }
 
-  // Handle unregistered users
+  if (body === "!start" && user.isRegistered) {
+    return msg.reply("Your journey has already begun. You cannot start again.");
+  }
+
   if (!user || !user.isRegistered) {
     if (body === "!start") {
       const sp = getRandomSpecies();
@@ -217,21 +221,25 @@ async function handleMessage(msg: Message) {
       } else {
         user = await storage.updateUser(phoneId, userData);
       }
-      const welcome = `╭═══════════════════╮\n   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦\n╰═══════════════════╯\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Greetings, Cultivator!\n  You have been summoned to the Astral Realm.\n  I am Miss Astral, your guide to ascension.\n  ✦ Species: ${sp.name}\n  ✦ Rarity: ${sp.rarity}\n  Your journey begins now.\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !scroll to view all commands\n  Use !rules to see bot rules\n╰══════════════════════╯`;
-      const imgPath = path.join(process.cwd(), 'attached_assets', 'download_(17)_(1)_1771813308970.jpg');
-      if (fs.existsSync(imgPath)) {
-        const media = MessageMedia.fromFilePath(imgPath);
-        return client.sendMessage(msg.from, media, { caption: welcome });
-      }
+      const welcome = `╭═══════════════════╮
+   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
+╰═══════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Greetings, Cultivator!
+  You have been summoned to the Astral Realm.
+  I am Miss Astral, your guide to ascension.
+  ✦ Species: ${sp.name}
+  ✦ Rarity: ${sp.rarity}
+  Your journey begins now.
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !scroll to view all commands
+  Use !rules to see bot rules
+╰══════════════════════╯`;
       return msg.reply(welcome);
     } else if (body.startsWith("!")) {
       return msg.reply("You must use !start first before starting your journey.");
     }
     return;
-  }
-
-  if (body === "!start" && user.isRegistered) {
-    return msg.reply("Your journey has already begun. You cannot start again.");
   }
 
   // XP Gain
@@ -240,28 +248,96 @@ async function handleMessage(msg: Message) {
     await storage.updateUser(phoneId, { xp: user.xp + rate, messages: user.messages + 1 });
   }
 
-  // Commands
   if (body === "!scroll" || body === "!help" || body === "!menu") {
-    const imgPath = path.join(process.cwd(), 'attached_assets', 'ִֶָ_𓂃⊹_ִֶָ_vera_1771813308969.jpg');
-    if (fs.existsSync(imgPath)) {
-      const media = MessageMedia.fromFilePath(imgPath);
-      return client.sendMessage(msg.from, media, { caption: HELP_MENU });
-    }
-    return msg.reply(HELP_MENU);
+    const scroll = `╭══════════════════════╮
+   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  📊 PROFILE & STATS
+  📈 !status ↳ view your status
+  👤 !profile ↳ view your profile
+  🏆 !leaderboard ↳ top cultivators
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🛒 SHOP & ITEMS
+  🏪 !shop ↳ view shop
+  🛍️ !buy [item] ↳ purchase item
+  🎒 !inventory ↳ view items
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🎴 CARDS
+  🎁 !getcard ↳ daily claim
+  📚 !cardcollection ↳ view cards
+  🔍 !card [num] ↳ view card info
+  🤝 !givecard @user [num] ↳ trade card
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🏯 SECT
+  🚪 !joinsect [name] ↳ join a sect
+  🏯 !mysect ↳ view sect details
+  💰 !donate [amount] ↳ donate XP
+  📊 !sectranking ↳ sect leaderboard
+  🚶 !sectleave ↳ leave your sect
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👑 SECT LEADER ONLY
+    🥾 !kickmember [username] ↳ kick member
+  ⚡ !punish [username] ↳ punish member
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🔱 OWNER ONLY
+  🔨 !ban [username] ↳ ban a user
+  🔓 !unban [username] ↳ unban a user
+  🤖 !missastral ↳ manage Miss Astral
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
+╰══════════════════════╯`;
+    return msg.reply(scroll);
   }
 
   if (body === "!rules") {
-    const rules = `【Ａｓｔｒａｌ Ｌａｗｓ】\n-------------------------\nHeed these laws, Cultivator.\nViolations shall not go unpunished. ⚡\n\n▸ 1️⃣ No Spamming Commands\n      ↳ Spam & you shall be silenced\n\n▸ 2️⃣ No Disrespect\n      ↳ Honour all cultivators\n\n▸ 3️⃣ No Bug Exploitation\n      ↳ Report bugs, never abuse them\n\n▸ 4️⃣ No Begging\n      ↳ Earn your cards & XP with honour\n\n▸ 5️⃣ Respect Sect Leaders\n      ↳ Their word is law within the sect\n\n▸ 6️⃣ No Alternate Accounts\n      ↳ One soul, one path\n\n▸ 7️⃣ Respect All Decisions\n      ↳ Admin rulings are final & absolute\n\nBreak the laws. Face the consequences. ⚔️`;
+    const rules = `【Ａｓｔｒａｌ Ｌａｗｓ】
+-------------------------
+Heed these laws, Cultivator.
+Violations shall not go unpunished. ⚡
+
+▸ 1️⃣ No Spamming Commands
+      ↳ Spam & you shall be silenced
+
+▸ 2️⃣ No Disrespect
+      ↳ Honour all cultivators
+
+▸ 3️⃣ No Bug Exploitation
+      ↳ Report bugs, never abuse them
+
+▸ 4️⃣ No Begging
+      ↳ Earn your cards & XP with honour
+
+▸ 5️⃣ Respect Sect Leaders
+      ↳ Their word is law within the sect
+
+▸ 6️⃣ No Alternate Accounts
+      ↳ One soul, one path
+
+▸ 7️⃣ Respect All Decisions
+      ↳ Admin rulings are final & absolute
+
+Break the laws. Face the consequences. ⚔️`;
     return msg.reply(rules);
   }
 
   if (body === "!status") {
-    const status = `【Ｓｔａｔｕｓ】\n-------------------------\n▸ Rank: 【${user.rank}】Novice\n▸ XP: ${user.xp}\n▸ Messages: ${user.messages}\n▸ Condition: ${user.condition}`;
+    const status = `【Ｓｔａｔｕｓ】
+-------------------------
+▸ Rank: 【${user.rank}】Novice
+▸ XP: ${user.xp}
+▸ Messages: ${user.messages}
+▸ Condition: ${user.condition}`;
     return msg.reply(status);
   }
 
   if (body === "!profile") {
-    const profile = `【Ｐｒｏｆｉｌｅ】\n-------------------------\n▸ Name: ${user.name}\n▸ Sect: ${user.sectTag || "None"}\n▸ Rank: 【${user.rank}】Novice\n▸ Species: ${user.species}`;
+    const profile = `【Ｐｒｏｆｉｌｅ】
+-------------------------
+▸ Name: ${user.name}
+▸ Sect: ${user.sectTag || "None"}
+▸ Rank: 【${user.rank}】Novice
+▸ Species: ${user.species}`;
     return msg.reply(profile);
   }
 
@@ -272,7 +348,16 @@ async function handleMessage(msg: Message) {
       const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "✦";
       return `  ${medal} ${i + 1}. ${u.name} — ${u.xp} XP`;
     }).join("\n");
-    const lb = `╭══════════════════════╮\n   ✦┊【Ｔｏｐ Ｃｕｌｔｉｖａｔｏｒｓ】┊✦\n╰══════════════════════╯\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n${list}\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  ❧ Your Rank: #${rank}\n  ❧ Your XP: ${user.xp}\n  ❧ World Ranking: #${rank}\n╰══════════════════════╯`;
+    const lb = `╭══════════════════════╮
+   ✦┊【Ｔｏｐ Ｃｕｌｔｉｖａｔｏｒｓ】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+${list}
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ❧ Your Rank: #${rank}
+  ❧ Your XP: ${user.xp}
+  ❧ World Ranking: #${rank}
+╰══════════════════════╯`;
     return msg.reply(lb);
   }
 
@@ -315,37 +400,261 @@ async function handleMessage(msg: Message) {
   }
 
   if (body === "!shop") {
-    const shop = `╭══════════════════════╮\n  🏪 SHOP\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  🩸 Blood Rune ↳ 1000 XP\n  Steal XP from another user.\n\n  🌑 Eclipse Stone ↳ 1200 XP\n  Hide your race & XP for 24hrs.\n\n  👻 Phantom Seal ↳ 1100 XP\n  Vanish from the leaderboard for 24hrs.\n\n  🪙 Cursed Coin ↳ 200 XP\n  Unknown outcome. Flip and find out.\n\n  🔮 Mirror Shard ↳ 1300 XP\n  Copy another user's race for 30mins.\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  💊 CURES\n  💉 Grey Rot Cure ↳ 500 XP\n  Cures the Grey Rot. (Human)\n\n  💉 Hellfire Suppressant ↳ 600 XP\n  Cures Hellfire Fever. (Demon)\n\n  💉 Feral Antidote ↳ 600 XP\n  Cures the Feral Plague. (Beast Clan)\n\n  💉 Grace Restoration Vial ↳ 700 XP\n  Cures Corruption Blight. (Fallen Angel)\n\n  💉 Scale Restoration Salve ↳ 800 XP\n  Cures Scale Sickness. (Dragon)\n\n  💉 Rootwither Remedy ↳ 700 XP\n  Cures Rootwither. (Elf)\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !buy [item name] to purchase\n╰══════════════════════╯`;
+    const shop = `╭══════════════════════╮
+  🏪 SHOP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🩸 Blood Rune ↳ 1000 XP
+  Steal XP from another user.
+
+  🌑 Eclipse Stone ↳ 1200 XP
+  Hide your race & XP for 24hrs.
+
+  👻 Phantom Seal ↳ 1100 XP
+  Vanish from the leaderboard for 24hrs.
+
+  🪙 Cursed Coin ↳ 200 XP
+  Unknown outcome. Flip and find out.
+
+  🔮 Mirror Shard ↳ 1300 XP
+  Copy another user's race for 30mins.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  💊 CURES
+  💉 Grey Rot Cure ↳ 500 XP
+  Cures the Grey Rot. (Human)
+
+  💉 Hellfire Suppressant ↳ 600 XP
+  Cures Hellfire Fever. (Demon)
+
+  💉 Feral Antidote ↳ 600 XP
+  Cures the Feral Plague. (Beast Clan)
+
+  💉 Grace Restoration Vial ↳ 700 XP
+  Cures Corruption Blight. (Fallen Angel)
+
+  💉 Scale Restoration Salve ↳ 800 XP
+  Cures Scale Sickness. (Dragon)
+
+  💉 Rootwither Remedy ↳ 700 XP
+  Cures Rootwither. (Elf)
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !buy [item name] to purchase
+╰══════════════════════╯`;
     return msg.reply(shop);
   }
 
-  if (body.startsWith("!buy ")) {
-    const itemName = body.replace("!buy ", "").trim();
+  if (body.startsWith("!buy")) {
+    const itemName = body.replace("!buy", "").trim();
+    if (!itemName) {
+      return msg.reply(`╭══════════════════════╮
+  ⚠️ MISSING ITEM NAME
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Type !buy followed by an item name.
+  Example: !buy Cursed Coin
+╰══════════════════════╯`);
+    }
+
     const item = SHOP_ITEMS[itemName];
-    if (!item) return msg.reply("╭══════════════════════╮\n  ❌ ITEM NOT FOUND\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  That item does not exist in the shop.\n  Use !shop to see available items.\n╰══════════════════════╯");
-    
+    if (!item) {
+      return msg.reply(`╭══════════════════════╮
+  ❌ ITEM NOT FOUND
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  That item does not exist in the shop.
+  Use !shop to see available items.
+╰══════════════════════╯`);
+    }
+
     if (user.xp < item.price) {
-      return msg.reply(`╭══════════════════════╮\n  ⚠️ INSUFFICIENT XP\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n  🛍️ Item: ${itemName.toUpperCase()} ↳ ${item.price} XP\n  ✨ Your XP: ${user.xp} XP\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Keep chatting to earn more XP!\n╰══════════════════════╯`);
+      return msg.reply(`╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🛍️ Item: ${itemName.toUpperCase()} ↳ ${item.price} XP
+  ✨ Your XP: ${user.xp} XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Keep chatting to earn more XP!
+╰══════════════════════╯`);
     }
 
     const inventory = (user.inventory as any[]) || [];
-    if (inventory.includes(itemName)) {
-      return msg.reply(`╭══════════════════════╮\n  ❌ ITEM ALREADY OWNED\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n  🛍️ Item: ${itemName.toUpperCase()}\n  ⚠️ Use it before buying another.\n╰══════════════════════╯`);
+    if (inventory.some(i => i.name.toLowerCase() === itemName.toLowerCase())) {
+      return msg.reply(`╭══════════════════════╮
+  ❌ ITEM ALREADY OWNED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🛍️ Item: ${itemName.toUpperCase()}
+  ⚠️ Use it before buying another.
+╰══════════════════════╯`);
     }
 
-    const newInventory = [...inventory, itemName];
+    const newInventory = [...inventory, { name: itemName, quantity: 1 }];
     const remainingXp = user.xp - item.price;
     await storage.updateUser(phoneId, { xp: remainingXp, inventory: newInventory });
-    
-    return msg.reply(`╭══════════════════════╮\n  ✅ PURCHASE SUCCESSFUL\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n  🛍️ Item: ${itemName.toUpperCase()}\n  💰 Cost: ${item.price} XP\n  ✨ Remaining XP: ${remainingXp}\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !inventory to see your items\n╰══════════════════════╯`);
+
+    return msg.reply(`╭══════════════════════╮
+  ✅ PURCHASE SUCCESSFUL
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🛍️ Item: ${itemName.toUpperCase()}
+  💰 Cost: ${item.price} XP
+  ✨ Remaining XP: ${remainingXp}
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !inventory to see your items
+╰══════════════════════╯`);
   }
 
   if (body === "!inventory") {
     const inventory = (user.inventory as any[]) || [];
     if (inventory.length === 0) {
-      return msg.reply(`╭══════════════════════╮\n  🎒 INVENTORY\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n  ❌ Your inventory is empty.\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !shop to browse items\n╰══════════════════════╯`);
+      return msg.reply(`╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  ❌ Your inventory is empty.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯`);
     }
-    const itemsList = inventory.map(item => `  🛍️ ${item.toUpperCase()} x1`).join("\n");
-    return msg.reply(`╭══════════════════════╮\n  🎒 INVENTORY\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  👤 Cultivator: ${user.name}\n${itemsList}\n  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !shop to browse items\n╰══════════════════════╯`);
+    const itemsList = inventory.map(item => `  🛍️ ${item.name.toUpperCase()} x${item.quantity}`).join("\n");
+    return msg.reply(`╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+${itemsList}
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯`);
+  }
+
+  if (body.startsWith("!joinsect ")) {
+    const sectName = body.replace("!joinsect ", "").trim();
+    if (user.sectId) {
+      const currentSect = await storage.getSect(user.sectId);
+      return msg.reply(`╭══════════════════════╮
+  ❌ ALREADY IN A SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🏯 Current Sect: ${currentSect?.name || "Unknown"}
+  ⚠️ Leave your sect first to join another.
+  Use !sectleave to leave.
+╰══════════════════════╯`);
+    }
+
+    const sect = await storage.getSectByName(sectName);
+    if (!sect) {
+      return msg.reply(`╭══════════════════════╮
+  ❌ SECT NOT FOUND
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  That sect does not exist.
+  Use !sectranking to see all sects.
+╰══════════════════════╯`);
+    }
+
+    await storage.updateUser(phoneId, { sectId: sect.id, sectTag: sect.tag });
+    await storage.updateSect(sect.id, { membersCount: sect.membersCount + 1 });
+
+    return msg.reply(`╭══════════════════════╮
+  🚪 SECT JOINED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🏯 Sect: ${sect.name}
+  ✅ Welcome to the sect!
+╰══════════════════════╯`);
+  }
+
+  if (body.startsWith("!createsect ")) {
+    const sectName = body.replace("!createsect ", "").trim();
+    if (user.sectId) {
+      const currentSect = await storage.getSect(user.sectId);
+      return msg.reply(`╭══════════════════════╮
+  ❌ ALREADY IN A SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🏯 Current Sect: ${currentSect?.name || "Unknown"}
+  ⚠️ Leave your sect before creating a new one.
+  Use !sectleave to leave.
+╰══════════════════════╯`);
+    }
+
+    const sects = await storage.getSects();
+    if (sects.length >= 3) {
+      return msg.reply(`╭══════════════════════╮
+  ❌ SECT LIMIT REACHED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  The maximum of 3 sects have been created.
+  No new sects can be formed.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !sectranking to see all sects
+  and !joinsect [name] to join one.
+╰══════════════════════╯`);
+    }
+
+    if (user.xp < 5000) {
+      return msg.reply(`╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  💰 Required: 5000 XP
+  ✨ Your XP: ${user.xp} XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Keep chatting to earn more XP!
+╰══════════════════════╯`);
+    }
+
+    const tag = sectName.substring(0, 3).toUpperCase();
+    const newSect = await storage.createSect({
+      name: sectName,
+      tag: tag,
+      leaderPhoneId: phoneId,
+      membersCount: 1,
+      treasuryXp: 0
+    });
+
+    const remainingXp = user.xp - 5000;
+    await storage.updateUser(phoneId, { xp: remainingXp, sectId: newSect.id, sectTag: tag });
+
+    return msg.reply(`╭══════════════════════╮
+  🏯 SECT CREATED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Founder: ${user.name}
+  🏯 Sect: ${sectName}
+  💰 Cost: 5000 XP
+  ✨ Remaining XP: ${remainingXp}
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  You are now the sect leader!
+╰══════════════════════╯`);
+  }
+
+  if (body === "!mysect") {
+    if (!user.sectId) return msg.reply("You are not in a sect.");
+    const sect = await storage.getSect(user.sectId);
+    if (!sect) return msg.reply("Sect details not found.");
+    return msg.reply(`╭══════════════════════╮
+  🏯 MY SECT
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🏯 Sect: ${sect.name}
+  🏷️ Tag: ${sect.tag}
+  👑 Leader: ${sect.leaderPhoneId === phoneId ? "You" : sect.leaderPhoneId}
+  👥 Members: ${sect.membersCount}
+  💰 Treasury: ${sect.treasuryXp} XP
+╰══════════════════════╯`);
+  }
+
+  if (body.startsWith("!givecard ") && msg.hasQuotedMsg) {
+    const quotedMsg = await msg.getQuotedMessage();
+    const receiverPhoneId = quotedMsg.from;
+    const num = parseInt(body.replace("!givecard ", "").trim()) - 1;
+    const cards = await storage.getUserCards(phoneId);
+    
+    if (cards[num]) {
+      const card = cards[num];
+      await storage.deleteCard(card.id);
+      await storage.createCard({
+        ...card,
+        id: undefined as any,
+        ownerPhoneId: receiverPhoneId
+      });
+      return msg.reply(`🤝 You have given ${card.name} to the recipient.`);
+    }
+    return msg.reply("Invalid card number.");
   }
 }
