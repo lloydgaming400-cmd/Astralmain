@@ -1,5 +1,6 @@
-import pkg, { type Message, MessageMedia } from 'whatsapp-web.js';
-const { Client, LocalAuth } = pkg;
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth, MessageMedia } = pkg;
+type Message = pkg.Message;
 import { storage } from './storage';
 import { type User, type Card, type Sect } from '@shared/schema';
 import { execSync } from 'child_process';
