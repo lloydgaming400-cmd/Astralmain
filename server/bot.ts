@@ -150,7 +150,7 @@ export async function initBot() {
   client.on('qr', (qr) => {
     currentQrCode = qr;
     connectionStatus = "WAITING_FOR_QR";
-    console.log('New QR code received');
+    console.log('New QR code received:', qr.substring(0, 20) + "...");
   });
 
   client.on('ready', () => {
@@ -161,6 +161,7 @@ export async function initBot() {
 
   client.on('authenticated', () => {
     connectionStatus = "CONNECTED";
+    currentQrCode = undefined;
     console.log('Authenticated');
   });
 
