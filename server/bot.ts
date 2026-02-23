@@ -374,7 +374,7 @@ ${list}
   if (body === "!getcard") {
     const now = new Date();
     if (user.lastCardClaim && (now.getTime() - new Date(user.lastCardClaim).getTime() < 86400000)) {
-       return msg.reply("You have already claimed your card for today.");
+       return msg.reply("⏳ The stars are still aligning for your next vision. Come back in " + Math.ceil((86400000 - (now.getTime() - new Date(user.lastCardClaim).getTime())) / 3600000) + " hours.");
     }
     
     try {
@@ -388,7 +388,7 @@ ${list}
       const rarityTiers = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
       const rarity = rarityTiers[Math.floor(Math.random() * rarityTiers.length)];
       const isBattleCard = Math.random() > 0.7 ? "Yes" : "No";
-      const affiliation = char.about?.split('\n')[0].substring(0, 50) || "Unknown";
+      const affiliation = char.about?.split('\n')[0].substring(0, 50) || "Unknown Realm";
       const imageUrl = char.images?.jpg?.image_url || null;
 
       await storage.createCard({
@@ -401,56 +401,63 @@ ${list}
       });
       await storage.updateUser(phoneId, { lastCardClaim: now });
       
-      let text = `✨ *New Card Claimed!* ✨\n▸ Name: ${char.name}\n▸ Tier: ${rarity}\n▸ Battle Card: ${isBattleCard}\n▸ Affiliation: ${affiliation}\n\nUse !cardcollection to see your deck!`;
+      const template = `✨ *New Card Claimed!* ✨
+▸ Name: ${char.name}
+▸ Tier: ${rarity}
+▸ Battle Card: ${isBattleCard}
+▸ Affiliation: ${affiliation}
+
+Use !cardcollection to see your deck!`;
       
       if (imageUrl) {
         try {
           const media = await MessageMedia.fromUrl(imageUrl);
-          return client.sendMessage(msg.from, media, { caption: text });
+          return client.sendMessage(msg.from, media, { caption: template });
         } catch (mediaErr) {
-          console.error("Failed to fetch image media:", mediaErr);
-          return msg.reply(text);
+          return msg.reply(template);
         }
       } else {
-        return msg.reply(text);
+        return msg.reply(template);
       }
     } catch (err) {
-      console.error("Error in !getcard:", err);
-      return msg.reply("The stars are clouded. Try again later.");
+      return msg.reply("🌑 The void remains silent. The Jikan spirits are unreachable at this moment.");
     }
   }
 
   if (body.startsWith("!givecard ")) {
     try {
+      if (!msg.hasQuotedMsg) return msg.reply("⚠️ To bestow a card, you must reply to the recipient's message.");
+
       const parts = body.split(" ");
       const cardNum = parseInt(parts[parts.length - 1]) - 1;
       
-      if (!msg.hasQuotedMsg) return msg.reply("Reply to the user you want to give the card to.");
-
       const quotedMsg = await msg.getQuotedMessage();
       const recipientPhoneId = quotedMsg.author || quotedMsg.from;
+      const recipient = await storage.getUserByPhone(recipientPhoneId);
+
+      if (!recipient) return msg.reply("❌ That individual is not recognized by the Astral Realm.");
 
       const cards = await storage.getUserCards(phoneId);
-      if (isNaN(cardNum) || !cards[cardNum]) return msg.reply("Invalid card number.");
+      if (isNaN(cardNum) || !cards[cardNum]) return msg.reply("❌ That card does not exist in your collection.");
 
       const cardToGive = cards[cardNum];
       await storage.updateCard(cardToGive.id, { ownerPhoneId: recipientPhoneId });
 
-      return msg.reply(`🤝 TRADE SUCCESSFUL\n\nYou gave ${cardToGive.name} to another cultivator.`);
+      return msg.reply(`🤝 *BOND FORGED*\n\nYou have transferred [${cardToGive.name}] to ${recipient.name}. Their power grows.`);
     } catch (err) {
-      console.error("Error in !givecard:", err);
-      return msg.reply("Failed to give card.");
+      return msg.reply("❌ The trade was interrupted by shifting shadows.");
     }
   }
 
   if (body === "!cardcollection") {
     try {
       const cards = await storage.getUserCards(phoneId);
-      if (cards.length === 0) return msg.reply("Your collection is empty.");
-      const list = cards.map((c, i) => `${i + 1}. ${c.name} [${c.rarity}]`).join("\n");
-      return msg.reply(`🎴 YOUR COLLECTION\n\n${list}`);
+      if (cards.length === 0) return msg.reply("📭 Your deck is empty. Use !getcard to begin your collection.");
+      
+      const list = cards.map((c, i) => `【${i + 1}】 ${c.name} — *${c.rarity}*`).join("\n");
+      return msg.reply(`🎴 *YOUR ASTRAL DECK*\n\n${list}\n\nUse !card [number] for details.`);
     } catch (err) {
-      return msg.reply("Failed to fetch collection.");
+      return msg.reply("❌ Failed to manifest your collection.");
     }
   }
 
@@ -460,12 +467,20 @@ ${list}
       const cards = await storage.getUserCards(phoneId);
       if (cards[num]) {
         const c = cards[num];
-        const media = await MessageMedia.fromUrl(c.imageUrl);
-        return client.sendMessage(msg.from, media, { caption: `🎴 CARD INFO\n\nName: ${c.name}\nSeries: ${c.series}\nRarity: ${c.rarity}` });
+        const info = `🎴 *CARD INSPECTION*\n\n▸ Name: ${c.name}\n▸ Series: ${c.series}\n▸ Rarity: ${c.rarity}`;
+        if (c.imageUrl) {
+          try {
+            const media = await MessageMedia.fromUrl(c.imageUrl);
+            return client.sendMessage(msg.from, media, { caption: info });
+          } catch (e) {
+            return msg.reply(info);
+          }
+        }
+        return msg.reply(info);
       }
-      return msg.reply("Invalid card number.");
+      return msg.reply("❌ Invalid index. Check !cardcollection.");
     } catch (err) {
-      return msg.reply("Failed to fetch card info.");
+      return msg.reply("❌ Failed to inspect the card.");
     }
   }
 
