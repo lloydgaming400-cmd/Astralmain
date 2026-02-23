@@ -89,13 +89,18 @@ export async function initBot() {
   const authPath = path.join(process.cwd(), '.wwebjs_auth');
   const cachePath = path.join(process.cwd(), '.wwebjs_cache');
   
-  if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
-  if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
-  fs.mkdirSync(authPath, { recursive: true });
-  fs.mkdirSync(cachePath, { recursive: true });
+  // Only remove auth files if not authenticated/connected
+  if (connectionStatus === "DISCONNECTED" && !fs.existsSync(path.join(authPath, 'session'))) {
+    if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
+    if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
+  }
+
+  if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
+  if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
   client = new Client({
     authStrategy: new LocalAuth({ dataPath: authPath }),
+    restartOnAuthFail: true,
     puppeteer: {
       executablePath: execSync('which chromium').toString().trim(),
       headless: true,
@@ -123,7 +128,8 @@ export async function initBot() {
   client.on('qr', (qr: string) => {
     currentQrCode = qr;
     connectionStatus = "WAITING_FOR_QR";
-    qrcode.generate(qr, { small: true });
+    console.log('New QR code received');
+    // qrcode.generate(qr, { small: true }); // Keep terminal QR for debugging but let frontend handle it
   });
 
   client.on('ready', () => {
@@ -133,12 +139,22 @@ export async function initBot() {
   });
 
   client.on('authenticated', () => {
+    connectionStatus = "CONNECTED";
     console.log('Authenticated');
   });
 
-  client.on('auth_failure', () => {
+  client.on('auth_failure', (msg) => {
+    console.error('Auth failure:', msg);
     connectionStatus = "DISCONNECTED";
     currentQrCode = undefined;
+  });
+
+  client.on('disconnected', (reason) => {
+    console.error('Client was logged out', reason);
+    connectionStatus = "DISCONNECTED";
+    currentQrCode = undefined;
+    // Attempt to reconnect if disconnected
+    setTimeout(() => initBot(), 5000);
   });
 
   client.on('message', async (msg: any) => {
