@@ -25,6 +25,7 @@ const HELP_MENU = `╭═══════════════════�
   🏪 !shop ↳ view shop
   🛍️ !buy [item] ↳ purchase item
   🎒 !inventory ↳ view items
+  🎒 !useitem [num] ↳ use item
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   🎴 CARDS
   🎁 !getcard ↳ daily claim
@@ -306,7 +307,7 @@ async function handleMessage(msg: Message) {
       }
 
       await storage.updateUser(phoneId, updates);
-`,old_string:
+
       if (newRank.level < oldRank.level) {
         const celebration = `╭══════════════════════╮
    🎊 RANK UP! 🎊
@@ -635,22 +636,42 @@ Use !cardcollection to see your deck!`;
   }
 
   if (body === "!inventory") {
-    const inv = user.inventory as string[];
-    if (!inv || inv.length === 0) return msg.reply("🎒 Your inventory is empty.");
-    const list = inv.map((item, i) => `【${i + 1}】 ${item}`).join("\n");
-    return msg.reply(`🎒 *YOUR INVENTORY*\n\n${list}\n\nUse !useitem [number] to use.`);
+    const inventory = user.inventory as string[] || [];
+    if (inventory.length === 0) {
+      return msg.reply(`╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  ❌ Your inventory is empty.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯`);
+    }
+
+    const itemList = inventory
+      .map((name, index) => `  【${index + 1}】 ${name.toUpperCase()}`)
+      .join("\n");
+
+    return msg.reply(`╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+${itemList}
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !useitem [number] to use
+╰══════════════════════╯`);
   }
 
   if (body.startsWith("!useitem ")) {
     try {
       const num = parseInt(body.split(" ")[1]) - 1;
-      const inv = [...(user.inventory as string[])];
-      if (isNaN(num) || !inv[num]) return msg.reply("❌ Invalid item index.");
+      const inventory = user.inventory as string[] || [];
+      if (isNaN(num) || !inventory[num]) return msg.reply("❌ Invalid item index.");
 
-      const item = inv[num].toLowerCase();
-      let response = `✨ You used ${inv[num]}!`;
+      const itemName = inventory[num].toLowerCase();
+      let response = `✨ You used ${inventory[num]}!`;
 
-      if (item === "cursed coin") {
+      if (itemName === "cursed coin") {
         const win = Math.random() > 0.5;
         const amount = Math.floor(Math.random() * 500) + 100;
         if (win) {
@@ -661,29 +682,31 @@ Use !cardcollection to see your deck!`;
           await storage.updateUser(phoneId, { xp: user.xp - loss });
           response = `🪙 *CURSED COIN*\n\nThe coin lands on TAILS! Shifting shadows steal ${loss} XP from you.`;
         }
-      } else if (item.includes("cure") || item.includes("suppressant") || item.includes("antidote") || item.includes("vial") || item.includes("salve") || item.includes("remedy")) {
+      } else if (itemName.includes("cure") || itemName.includes("suppressant") || itemName.includes("antidote") || itemName.includes("vial") || itemName.includes("salve") || itemName.includes("remedy")) {
         await storage.updateUser(phoneId, { condition: "Healthy", disease: null, infectedAt: null });
         response = `💉 *CURED*\n\nThe medicinal energies flow through you. Your condition is now Healthy.`;
-      } else if (item === "vampire tooth") {
+      } else if (itemName === "vampire tooth") {
         const until = new Date();
         until.setDate(until.getDate() + 7);
         await storage.updateUser(phoneId, { isVampire: true, vampireUntil: until });
         response = `🦷 *VAMPIRE TRANSFORMATION*\n\nYour fangs lengthen. You are now a vampire for 7 days.`;
-      } else if (item === "cursed bone") {
+      } else if (itemName === "cursed bone") {
         await storage.updateUser(phoneId, { hasShadowVeil: true });
         response = `🦴 *SHADOW PROTECTION*\n\nThe cursed bone dissolves into your skin. You now have permanent shadow protection.`;
       } else {
-        response = `✨ You used ${inv[num]}, but its power seems dormant for now.`;
+        response = `✨ You used ${inventory[num]}, but its power seems dormant for now.`;
       }
 
-      inv.splice(num, 1);
-      await storage.updateUser(phoneId, { inventory: inv });
+      const newInventory = [...inventory];
+      newInventory.splice(num, 1);
+      await storage.updateUser(phoneId, { inventory: newInventory });
       return msg.reply(response);
     } catch (err) {
+      console.error("Use item error:", err);
       return msg.reply("❌ Failed to use item.");
     }
   }
-`,old_string:
+
   if (body.startsWith("!buy")) {
     const itemName = body.replace("!buy", "").trim();
     if (!itemName) {
@@ -710,21 +733,19 @@ Use !cardcollection to see your deck!`;
   ⚠️ INSUFFICIENT XP
   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   👤 Cultivator: ${user.name}
-  🛍️ Item: ${itemName.toUpperCase()} ↳ ${item.price} XP
-  ✨ Your XP: ${user.xp} XP
+  💰 Price: ${item.price} XP
+  ✨ Your XP: ${user.xp}
   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Keep chatting to earn more XP!
+  You need ${item.price - user.xp} more XP.
 ╰══════════════════════╯`);
     }
 
     const inventory = user.inventory as string[] || [];
-    if (inventory.includes(itemName)) {
+    if (inventory.length >= 20) {
       return msg.reply(`╭══════════════════════╮
-  ❌ ITEM ALREADY OWNED
+  🎒 INVENTORY FULL
   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  🛍️ Item: ${itemName.toUpperCase()}
-  ⚠️ Use it before buying another.
+  Your bag cannot hold more items.
 ╰══════════════════════╯`);
     }
 
@@ -741,38 +762,6 @@ Use !cardcollection to see your deck!`;
   ✨ Remaining XP: ${newXp}
   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   Use !inventory to see your items
-╰══════════════════════╯`);
-  }
-
-  if (body === "!inventory") {
-    const inventory = user.inventory as string[] || [];
-    if (inventory.length === 0) {
-      return msg.reply(`╭══════════════════════╮
-  🎒 INVENTORY
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  ❌ Your inventory is empty.
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !shop to browse items
-╰══════════════════════╯`);
-    }
-
-    const itemCounts: Record<string, number> = {};
-    inventory.forEach(item => {
-      itemCounts[item] = (itemCounts[item] || 0) + 1;
-    });
-
-    const itemList = Object.entries(itemCounts)
-      .map(([name, count]) => `  🛍️ ${name.toUpperCase()} x${count}`)
-      .join("\n");
-
-    return msg.reply(`╭══════════════════════╮
-  🎒 INVENTORY
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-${itemList}
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !shop to browse items
 ╰══════════════════════╯`);
   }
 }
