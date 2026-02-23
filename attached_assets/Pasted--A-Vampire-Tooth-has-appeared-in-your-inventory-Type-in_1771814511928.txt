@@ -1,0 +1,84 @@
+🦷 A Vampire Tooth has appeared in your inventory.
+Type !inventory to see your items.
+
+Bot message when used:
+The tooth dissolves into your jaw.
+A hunger you have never known takes hold.
+
+🦷 You are now a Vampire.
+Use !suck @user to feed.
+Your thirst lasts for one week.
+Expires: [DATE]
+
+Bot message when !suck @user succeeds:
+To attacker:
+You sink into the shadows and feed.
+
+🦷 You drained [AMOUNT] XP from @[TARGET].
+Your XP: [NEW TOTAL]
+
+Private message to target:
+Something cold grips you in the dark.
+You lost [AMOUNT] XP to an unknown force.
+Remaining XP: [NEW TOTAL]
+
+Bot message when !suck @user is resisted:
+Your prey senses you coming.
+Their power repels you.
+
+🦷 @[TARGET] resisted your suck.
+They are too powerful for you right now.
+
+Bot message when Vampire week ends privately:
+The hunger fades. The shadows release you.
+
+🦷 Your Vampire state has ended.
+You are yourself again.
+
+Bot message if !suck is used after the week ends:
+Your fangs are gone. The hunger has passed.
+You are no longer a Vampire.
+
+---
+
+Cursed Bone:
+Rarity: Uncommon
+Hidden message threshold: 1100 messages in a day
+Drop chance once threshold is met: 65%
+What it does: When used the Cursed Bone attracts shadows 
+to the user. These shadows form a protective aura around 
+them that makes them immune to all race diseases and 
+plagues permanently until a race change item is used 
+on them or until the disease and plague system 
+specifically overrides it. Consumed after use.
+
+Bot message when found:
+Something cold and wrong materializes near you.
+
+🦴 A Cursed Bone has appeared in your inventory.
+Type !inventory to see your items.
+
+Bot message when used:
+The bone splinters and dissolves into the air around you.
+Shadows creep in from every corner and wrap around 
+your form.
+
+🦴 Shadow Veil active.
+You are now protected from all races diseases and plagues.
+The shadows walk with you.
+
+---
+
+GENERAL RULES FOR ALL FOUND ITEMS:
+
+The bot never reveals thresholds or drop chances to anyone.
+If asked the bot says: Some things reveal themselves in time.
+Spam under 3 characters does not count toward any threshold.
+Repeated identical messages only count once per minute.
+Bot commands do not count toward any threshold.
+Daily thresholds reset at midnight every day.
+Overall thresholds never reset unless stated.
+Items go straight to inventory when found.
+A user can only hold one of each item at a time.
+If a user already holds that item the drop is skipped 
+and the threshold resets.
