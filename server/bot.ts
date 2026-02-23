@@ -117,10 +117,13 @@ export async function initBot() {
   isInitializing = true;
   const authPath = path.join(process.cwd(), '.wwebjs_auth');
   const cachePath = path.join(process.cwd(), '.wwebjs_cache');
-  if (connectionStatus === "DISCONNECTED" && !fs.existsSync(path.join(authPath, 'session'))) {
+  
+  // Clean up old session if disconnected to force fresh login if requested
+  if (connectionStatus === "DISCONNECTED") {
     if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
     if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
   }
+
   if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
   if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
@@ -131,14 +134,15 @@ export async function initBot() {
       executablePath: execSync('which chromium').toString().trim(),
       headless: true,
       args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--disable-dev-shm-usage', 
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-extensions'
       ]
     }
   });
@@ -183,6 +187,8 @@ export async function initBot() {
     connectionStatus = "DISCONNECTED";
   }).finally(() => {
     isInitializing = false;
+    // If it failed due to profile lock, we might want to try one more time after a delay
+    // but be careful of infinite loops.
   });
 }
 
@@ -298,10 +304,14 @@ async function handleMessage(msg: Message) {
     const newXp = Math.max(0, user.xp + rate - diseaseDrain);
     const newMessages = (user.messages || 0) + 1;
 
-    await storage.updateUser(phoneId, { 
-      xp: newXp, 
-      messages: newMessages 
-    });
+    try {
+      await storage.updateUser(phoneId, { 
+        xp: newXp, 
+        messages: newMessages 
+      });
+    } catch (err) {
+      console.error("Failed to update user XP/messages:", err);
+    }
 
     // Random Outbreak Check
     if (Math.random() < 0.005) { // 0.5% chance per message to trigger outbreak check

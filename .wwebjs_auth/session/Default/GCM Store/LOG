@@ -1,3 +1,2 @@
-2026/02/23-03:07:27.579 16b3 Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/GCM Store/MANIFEST-000001
-2026/02/23-03:07:27.580 16b3 Recovering log #3
-2026/02/23-03:07:27.580 16b3 Reusing old log /home/runner/workspace/.wwebjs_auth/session/Default/GCM Store/000003.log 
+2026/02/23-03:14:59.246 674 Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/GCM Store since it was missing.
+2026/02/23-03:14:59.265 674 Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/GCM Store/MANIFEST-000001

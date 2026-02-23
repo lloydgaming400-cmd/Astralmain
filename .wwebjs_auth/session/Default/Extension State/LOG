@@ -1,3 +1,2 @@
-2026/02/23-03:07:15.589 16b1 Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/Extension State/MANIFEST-000001
-2026/02/23-03:07:15.589 16b1 Recovering log #3
-2026/02/23-03:07:15.589 16b1 Reusing old log /home/runner/workspace/.wwebjs_auth/session/Default/Extension State/000003.log 
+2026/02/23-03:14:48.618 67d Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/Extension State since it was missing.
+2026/02/23-03:14:48.651 67d Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/Extension State/MANIFEST-000001
