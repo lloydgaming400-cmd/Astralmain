@@ -87,13 +87,36 @@ export async function initBot() {
   isInitializing = true;
 
   const authPath = path.join(process.cwd(), '.wwebjs_auth');
-  if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
+  const cachePath = path.join(process.cwd(), '.wwebjs_cache');
+  
+  if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
+  if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
+  fs.mkdirSync(authPath, { recursive: true });
+  fs.mkdirSync(cachePath, { recursive: true });
 
   client = new Client({
     authStrategy: new LocalAuth({ dataPath: authPath }),
     puppeteer: {
       executablePath: execSync('which chromium').toString().trim(),
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-zygote',
+        '--single-process',
+        '--hide-scrollbars',
+        '--disable-notifications',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-extensions',
+        '--disable-sync',
+        '--disable-translate',
+        '--metrics-recording-only',
+        '--safebrowsing-disable-auto-update',
+        '--font-render-hinting=none'
+      ]
     }
   }) as any;
 
