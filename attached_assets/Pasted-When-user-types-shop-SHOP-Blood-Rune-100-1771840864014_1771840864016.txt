@@ -1,0 +1,116 @@
+When user types !shop
+╭══════════════════════╮
+  🏪 SHOP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🩸 Blood Rune ↳ 1000 XP
+  Steal XP from another user.
+
+  🌑 Eclipse Stone ↳ 1200 XP
+  Hide your race & XP for 24hrs.
+
+  👻 Phantom Seal ↳ 1100 XP
+  Vanish from the leaderboard for 24hrs.
+
+  🪙 Cursed Coin ↳ 200 XP
+  Unknown outcome. Flip and find out.
+
+  🔮 Mirror Shard ↳ 1300 XP
+  Copy another user's race for 30mins.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  💊 CURES
+  💉 Grey Rot Cure ↳ 500 XP
+  Cures the Grey Rot. (Human)
+
+  💉 Hellfire Suppressant ↳ 600 XP
+  Cures Hellfire Fever. (Demon)
+
+  💉 Feral Antidote ↳ 600 XP
+  Cures the Feral Plague. (Beast Clan)
+
+  💉 Grace Restoration Vial ↳ 700 XP
+  Cures Corruption Blight. (Fallen Angel)
+
+  💉 Scale Restoration Salve ↳ 800 XP
+  Cures Scale Sickness. (Dragon)
+
+  💉 Rootwither Remedy ↳ 700 XP
+  Cures Rootwither. (Elf)
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !buy [item name] to purchase
+╰══════════════════════╯
+
+When user types !buy [item name] and purchase is successful
+
+╭══════════════════════╮
+  ✅ PURCHASE SUCCESSFUL
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🛍️ Item: [ITEM NAME]
+  💰 Cost: [ITEM PRICE] XP
+  ✨ Remaining XP: [REMAINING XP]
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !inventory to see your items
+╰══════════════════════╯
+
+
+When user types !buy [item name] and they already own that item
+
+╭══════════════════════╮
+  ❌ ITEM ALREADY OWNED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🛍️ Item: [ITEM NAME]
+  ⚠️ Use it before buying another.
+╰══════════════════════╯
+
+
+When user types !buy [item name] and they don't have enough XP
+
+╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🛍️ Item: [ITEM NAME] ↳ [ITEM PRICE] XP
+  ✨ Your XP: [USER CURRENT XP] XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Keep chatting to earn more XP!
+╰══════════════════════╯
+
+
+When user types !buy [item name] and the item doesn't exist
+
+╭══════════════════════╮
+  ❌ ITEM NOT FOUND
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  That item does not exist in the shop.
+  Use !shop to see available items.
+╰══════════════════════╯
+
+When user types !buy with no item name
+╭══════════════════════╮
+  ⚠️ MISSING ITEM NAME
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Type !buy followed by an item name.
+  Example: !buy Cursed Coin
+╰══════════════════════╯
+
+When user types !inventory
+╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  🛍️ [ITEM NAME] x[QUANTITY]
+  🛍️ [ITEM NAME] x[QUANTITY]
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯
+
+When user types !inventory and it is empty
+╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: [USERNAME]
+  ❌ Your inventory is empty.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯

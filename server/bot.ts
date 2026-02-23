@@ -290,6 +290,10 @@ async function handleMessage(msg: Message) {
         rank: newRank.level
       });
 
+      if (user.species === "Undead") {
+        await client.sendMessage(msg.from, `You gained ${rate} XP as an Undead!`);
+      }
+
       if (newRank.level < oldRank.level) {
         const celebration = `╭══════════════════════╮
    🎊 RANK UP! 🎊
@@ -542,5 +546,141 @@ ${list}
     await storage.updateUser(phoneId, { sectId: null, sectTag: null });
     await storage.updateSect(sect!.id, { membersCount: sect!.membersCount - 1 });
     return msg.reply("🚶 LEFT SECT");
+  }
+
+  // Shop Commands
+  if (body === "!shop") {
+    const shopMenu = `╭══════════════════════╮
+  🏪 SHOP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🩸 Blood Rune ↳ 1000 XP
+  Steal XP from another user.
+
+  🌑 Eclipse Stone ↳ 1200 XP
+  Hide your race & XP for 24hrs.
+
+  👻 Phantom Seal ↳ 1100 XP
+  Vanish from the leaderboard for 24hrs.
+
+  🪙 Cursed Coin ↳ 200 XP
+  Unknown outcome. Flip and find out.
+
+  🔮 Mirror Shard ↳ 1300 XP
+  Copy another user's race for 30mins.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  💊 CURES
+  💉 Grey Rot Cure ↳ 500 XP
+  Cures the Grey Rot. (Human)
+
+  💉 Hellfire Suppressant ↳ 600 XP
+  Cures Hellfire Fever. (Demon)
+
+  💉 Feral Antidote ↳ 600 XP
+  Cures the Feral Plague. (Beast Clan)
+
+  💉 Grace Restoration Vial ↳ 700 XP
+  Cures Corruption Blight. (Fallen Angel)
+
+  💉 Scale Restoration Salve ↳ 800 XP
+  Cures Scale Sickness. (Dragon)
+
+  💉 Rootwither Remedy ↳ 700 XP
+  Cures Rootwither. (Elf)
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !buy [item name] to purchase
+╰══════════════════════╯`;
+    return msg.reply(shopMenu);
+  }
+
+  if (body.startsWith("!buy")) {
+    const itemName = body.replace("!buy", "").trim();
+    if (!itemName) {
+      return msg.reply(`╭══════════════════════╮
+  ⚠️ MISSING ITEM NAME
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Type !buy followed by an item name.
+  Example: !buy Cursed Coin
+╰══════════════════════╯`);
+    }
+
+    const item = SHOP_ITEMS[itemName];
+    if (!item) {
+      return msg.reply(`╭══════════════════════╮
+  ❌ ITEM NOT FOUND
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  That item does not exist in the shop.
+  Use !shop to see available items.
+╰══════════════════════╯`);
+    }
+
+    if (user.xp < item.price) {
+      return msg.reply(`╭══════════════════════╮
+  ⚠️ INSUFFICIENT XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🛍️ Item: ${itemName.toUpperCase()} ↳ ${item.price} XP
+  ✨ Your XP: ${user.xp} XP
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Keep chatting to earn more XP!
+╰══════════════════════╯`);
+    }
+
+    const inventory = user.inventory as string[] || [];
+    if (inventory.includes(itemName)) {
+      return msg.reply(`╭══════════════════════╮
+  ❌ ITEM ALREADY OWNED
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🛍️ Item: ${itemName.toUpperCase()}
+  ⚠️ Use it before buying another.
+╰══════════════════════╯`);
+    }
+
+    const newInventory = [...inventory, itemName];
+    const newXp = user.xp - item.price;
+    await storage.updateUser(phoneId, { xp: newXp, inventory: newInventory });
+
+    return msg.reply(`╭══════════════════════╮
+  ✅ PURCHASE SUCCESSFUL
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  🛍️ Item: ${itemName.toUpperCase()}
+  💰 Cost: ${item.price} XP
+  ✨ Remaining XP: ${newXp}
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !inventory to see your items
+╰══════════════════════╯`);
+  }
+
+  if (body === "!inventory") {
+    const inventory = user.inventory as string[] || [];
+    if (inventory.length === 0) {
+      return msg.reply(`╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  ❌ Your inventory is empty.
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯`);
+    }
+
+    const itemCounts: Record<string, number> = {};
+    inventory.forEach(item => {
+      itemCounts[item] = (itemCounts[item] || 0) + 1;
+    });
+
+    const itemList = Object.entries(itemCounts)
+      .map(([name, count]) => `  🛍️ ${name.toUpperCase()} x${count}`)
+      .join("\n");
+
+    return msg.reply(`╭══════════════════════╮
+  🎒 INVENTORY
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+${itemList}
+  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Use !shop to browse items
+╰══════════════════════╯`);
   }
 }
