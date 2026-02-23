@@ -269,7 +269,7 @@ async function handleMessage(msg: Message) {
     return;
   }
 
-  // XP Gain
+  // XP Gain & Random Events
   if (body.length >= 1 && !body.startsWith("!")) {
     const rate = SPECIES_XP_RATES[user.species] || 5;
     const newXp = (user.xp || 0) + rate;
@@ -278,13 +278,35 @@ async function handleMessage(msg: Message) {
     try {
       const oldRank = getRankForXp(user.xp);
       const newRank = getRankForXp(newXp);
-
-      await storage.updateUser(phoneId, { 
+      
+      const updates: any = { 
         xp: newXp, 
         messages: newMessages,
         rank: newRank.level
-      });
+      };
 
+      // Random Item Find
+      if (Math.random() < 0.05) { // 5% chance
+        const findableItems = ["Ancient Scrap", "Void Fragment", "Star Dust", "Rusty Key", "Mysterious Orb"];
+        const item = findableItems[Math.floor(Math.random() * findableItems.length)];
+        const inv = [...(user.inventory as string[]), item];
+        updates.inventory = inv;
+        await client.sendMessage(msg.from, `✨ *Loot Found!*\n\nWhile chatting, you discovered a [${item}]. It has been added to your inventory.`);
+      }
+
+      // Plague System
+      const stats = await storage.getGlobalStats();
+      if (stats?.activeDisease && user.condition === "Healthy") {
+        if (Math.random() < 0.02) { // 2% chance to get infected if disease active
+          updates.condition = "Infected";
+          updates.disease = stats.activeDisease;
+          updates.infectedAt = new Date();
+          await client.sendMessage(msg.from, `☣️ *PLAGUE SPREAD*\n\nYou have contracted the ${stats.activeDisease}! Your soul feels weakened. Buy a cure in the shop.`);
+        }
+      }
+
+      await storage.updateUser(phoneId, updates);
+`,old_string:
       if (newRank.level < oldRank.level) {
         const celebration = `╭══════════════════════╮
    🎊 RANK UP! 🎊
@@ -579,6 +601,12 @@ Use !cardcollection to see your deck!`;
 
   🔮 Mirror Shard ↳ 1300 XP
   Copy another user's race for 30mins.
+  
+  🦴 Cursed Bone ↳ 2000 XP
+  Attract shadows for permanent protection.
+
+  🦷 Vampire Tooth ↳ 1500 XP
+  Become a vampire for a week.
   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   💊 CURES
   💉 Grey Rot Cure ↳ 500 XP
@@ -600,10 +628,62 @@ Use !cardcollection to see your deck!`;
   Cures Rootwither. (Elf)
   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   Use !buy [item name] to purchase
+  Use !inventory to see items
+  Use !useitem [number] to use
 ╰══════════════════════╯`;
     return msg.reply(shopMenu);
   }
 
+  if (body === "!inventory") {
+    const inv = user.inventory as string[];
+    if (!inv || inv.length === 0) return msg.reply("🎒 Your inventory is empty.");
+    const list = inv.map((item, i) => `【${i + 1}】 ${item}`).join("\n");
+    return msg.reply(`🎒 *YOUR INVENTORY*\n\n${list}\n\nUse !useitem [number] to use.`);
+  }
+
+  if (body.startsWith("!useitem ")) {
+    try {
+      const num = parseInt(body.split(" ")[1]) - 1;
+      const inv = [...(user.inventory as string[])];
+      if (isNaN(num) || !inv[num]) return msg.reply("❌ Invalid item index.");
+
+      const item = inv[num].toLowerCase();
+      let response = `✨ You used ${inv[num]}!`;
+
+      if (item === "cursed coin") {
+        const win = Math.random() > 0.5;
+        const amount = Math.floor(Math.random() * 500) + 100;
+        if (win) {
+          await storage.updateUser(phoneId, { xp: user.xp + amount });
+          response = `🪙 *CURSED COIN*\n\nThe coin lands on HEADS! The void grants you ${amount} XP.`;
+        } else {
+          const loss = Math.min(user.xp, amount);
+          await storage.updateUser(phoneId, { xp: user.xp - loss });
+          response = `🪙 *CURSED COIN*\n\nThe coin lands on TAILS! Shifting shadows steal ${loss} XP from you.`;
+        }
+      } else if (item.includes("cure") || item.includes("suppressant") || item.includes("antidote") || item.includes("vial") || item.includes("salve") || item.includes("remedy")) {
+        await storage.updateUser(phoneId, { condition: "Healthy", disease: null, infectedAt: null });
+        response = `💉 *CURED*\n\nThe medicinal energies flow through you. Your condition is now Healthy.`;
+      } else if (item === "vampire tooth") {
+        const until = new Date();
+        until.setDate(until.getDate() + 7);
+        await storage.updateUser(phoneId, { isVampire: true, vampireUntil: until });
+        response = `🦷 *VAMPIRE TRANSFORMATION*\n\nYour fangs lengthen. You are now a vampire for 7 days.`;
+      } else if (item === "cursed bone") {
+        await storage.updateUser(phoneId, { hasShadowVeil: true });
+        response = `🦴 *SHADOW PROTECTION*\n\nThe cursed bone dissolves into your skin. You now have permanent shadow protection.`;
+      } else {
+        response = `✨ You used ${inv[num]}, but its power seems dormant for now.`;
+      }
+
+      inv.splice(num, 1);
+      await storage.updateUser(phoneId, { inventory: inv });
+      return msg.reply(response);
+    } catch (err) {
+      return msg.reply("❌ Failed to use item.");
+    }
+  }
+`,old_string:
   if (body.startsWith("!buy")) {
     const itemName = body.replace("!buy", "").trim();
     if (!itemName) {
