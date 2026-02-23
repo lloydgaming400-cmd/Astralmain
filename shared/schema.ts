@@ -6,49 +6,46 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   phoneId: text("phone_id").notNull().unique(), // WhatsApp ID
   name: text("name").notNull(),
-  race: text("race").notNull().default("Human"),
-  aspect: text("aspect"),
-  rank: text("rank"),
-  level: integer("level").notNull().default(1),
-  battleExp: integer("battle_exp").notNull().default(0),
-  chatXp: integer("chat_xp").notNull().default(0),
-  coins: integer("coins").notNull().default(0),
-  gems: integer("gems").notNull().default(0),
-  strength: integer("strength").notNull().default(10),
-  agility: integer("agility").notNull().default(12),
-  endurance: integer("endurance").notNull().default(11),
-  intelligence: integer("intelligence").notNull().default(14),
-  luck: integer("luck").notNull().default(9),
-  speed: integer("speed").notNull().default(10),
-  statPoints: integer("stat_points").notNull().default(0),
-  hp: integer("hp").notNull().default(220),
-  maxHp: integer("max_hp").notNull().default(220),
-  mp: integer("mp").notNull().default(280),
-  maxMp: integer("max_mp").notNull().default(280),
+  xp: integer("xp").notNull().default(0),
+  messages: integer("messages").notNull().default(0),
+  sectId: integer("sect_id"),
+  sectTag: text("sect_tag"),
+  species: text("species").notNull().default("Human"),
+  lastCardClaim: timestamp("last_card_claim"),
   inventory: jsonb("inventory").notNull().default([]),
-  wins: integer("wins").notNull().default(0),
-  losses: integer("losses").notNull().default(0),
-  draws: integer("draws").notNull().default(0),
-  disease: text("disease"),
-  diseaseImmunity: boolean("disease_immunity").notNull().default(false),
-  vampireUntil: timestamp("vampire_until"),
-  eclipseUntil: timestamp("eclipse_until"),
-  phantomUntil: timestamp("phantom_until"),
-  dustDomainUntil: timestamp("dust_domain_until"),
-  isConstellation: boolean("is_constellation").notNull().default(false),
-  lastMessageAt: timestamp("last_message_at"),
-  lastMessageContent: text("last_message_content"),
-  dailyMessageCount: integer("daily_message_count").notNull().default(0),
-  lastDailyReset: timestamp("last_daily_reset").notNull().defaultNow(),
-  dragonEggHatched: boolean("dragon_egg_hatched").notNull().default(false),
-  dragonEggProgress: integer("dragon_egg_progress").notNull().default(0),
-  activeEffects: jsonb("active_effects").notNull().default([]),
+  isBanned: boolean("is_banned").notNull().default(false),
   missAstralMemory: jsonb("miss_astral_memory").notNull().default([]),
   missAstralLastUsed: timestamp("miss_astral_last_used"),
   missAstralUsageCount: integer("miss_astral_usage_count").notNull().default(0),
-  isBanned: boolean("is_banned").notNull().default(false),
+});
+
+export const sects = pgTable("sects", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  tag: text("tag").notNull().unique(),
+  leaderPhoneId: text("leader_phone_id").notNull(),
+  treasuryXp: integer("treasury_xp").notNull().default(0),
+  membersCount: integer("members_count").notNull().default(1),
+  imageUrl: text("image_url"),
+});
+
+export const cards = pgTable("cards", {
+  id: serial("id").primaryKey(),
+  ownerPhoneId: text("owner_phone_id").notNull(),
+  characterId: integer("character_id").notNull(),
+  name: text("name").notNull(),
+  series: text("series").notNull(),
+  imageUrl: text("image_url").notNull(),
+  rarity: text("rarity").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertSectSchema = createInsertSchema(sects).omit({ id: true });
+export const insertCardSchema = createInsertSchema(cards).omit({ id: true });
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Sect = typeof sects.$inferSelect;
+export type InsertSect = z.infer<typeof insertSectSchema>;
+export type Card = typeof cards.$inferSelect;
+export type InsertCard = z.infer<typeof insertCardSchema>;
