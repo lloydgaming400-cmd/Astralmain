@@ -27,8 +27,7 @@ export async function registerRoutes(
 
   app.get(api.stats.leaderboard.path, async (req, res) => {
     const users = await storage.getUsers();
-    const sects = await storage.getSects();
-    res.status(200).json({ users, sects });
+    res.status(200).json({ users, sects: [] });
   });
 
   app.post("/api/reset", async (req, res) => {

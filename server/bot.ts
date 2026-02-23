@@ -1,10 +1,8 @@
-import pkg, { type Message, type Chat, type Contact } from 'whatsapp-web.js';
+import pkg, { type Message } from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode-terminal';
 import { storage } from './storage';
-import { eq } from 'drizzle-orm';
-import { db } from './db';
-import { users, sects, cards, type User } from '@shared/schema';
+import { type User } from '@shared/schema';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -12,22 +10,39 @@ import path from 'path';
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
-const RANKS = [
-  { xp: 50000, name: "【1】True Peak Dao of Astral Realm" },
-  { xp: 35000, name: "【2】Supreme Dao Ancestor" },
-  { xp: 20000, name: "【3】Dao of Heavenly Peak" },
-  { xp: 10000, name: "【4】Celestial Lord" },
-  { xp: 2000,  name: "【5】Core Disciple of Peak" },
-  { xp: 500,   name: "【6】Inner Disciple of Mid Peak" },
-  { xp: 100,   name: "【7】Outer Disciple of Low Peak" },
-  { xp: 0,     name: "【8】Core Disciple of Mid" }
+const RACES: Record<string, number> = {
+  "Human": 5,
+  "Demon": 10,
+  "Beast Clan": 15,
+  "Fallen Angel": 20,
+  "Dragon": 25,
+  "Elf": 30,
+  "Constellation": 1000
+};
+
+const ASPECT_RANKS: Record<string, string[]> = {
+  "Wielder": ["Novice", "Master", "Blade Master", "Logic Master", "Divine Master"],
+  "Seer": ["Novice", "Observer", "Oracle", "Prophet", "Eyes of God"],
+  "Caster": ["Novice", "Scholar", "Magus", "Grand Magus", "Divine Sage"],
+  "Phantom": ["Novice", "Lurker", "Shadow", "Revenant", "Night Demon"],
+  "Crafter": ["Novice", "Apprentice", "Maker", "Grand Maker", "Creator"],
+  "Nameless": ["Wanderer", "Vergent", "Faceless", "Born of Fate", "Null"]
+};
+
+const LEVEL_EXP = [
+  0, 100, 150, 200, 250, 300, 400, 500, 600, 750, 900, 1000, 1080, 1170, 1260, 1360, 1470, 1590, 1720, 1860, 2010,
+  2170, 2350, 2540, 2740, 2960, 3200, 3460, 3740, 4040, 4360, 4710, 5090, 5500, 5940, 6420, 6930, 7490, 8090, 8740, 9440,
+  10200, 11020, 11900, 12860, 13890, 15000, 16200, 17500, 18900, 20420, 22050, 23820, 25720, 27780, 30000, 32400, 35000, 37800, 40820,
+  44090, 47620, 51430, 55540, 59980, 64780, 69960, 75560, 81600, 88130, 95180, 102800, 111020, 119900, 129490, 139850, 151040, 163120, 176170, 190260, 205480,
+  221920, 239670, 258840, 279550, 301910, 326060, 352140, 380310, 410730, 443590, 479080, 517410, 558800, 603500, 651780, 703920, 760230, 821050, 886730, 1000000
 ];
 
-function getRank(xp: number) {
-  for (const rank of RANKS) {
-    if (xp >= rank.xp) return rank.name;
-  }
-  return RANKS[RANKS.length - 1].name;
+function getRank(aspect: string, level: number) {
+  if (!aspect) return "Unregistered";
+  const ranks = ASPECT_RANKS[aspect];
+  if (!ranks) return "Unknown";
+  const idx = Math.min(Math.floor((level - 1) / 20), ranks.length - 1);
+  return ranks[idx];
 }
 
 let client: Client;
@@ -37,107 +52,38 @@ export async function initBot() {
   if (isInitializing) return;
   isInitializing = true;
 
-  if (client) {
-    try {
-      await client.destroy();
-    } catch(e) {}
-  }
-
-  connectionStatus = "DISCONNECTED";
-  currentQrCode = undefined;
-  
-    const authPath = path.join(process.cwd(), '.wwebjs_auth');
-    if (fs.existsSync(authPath)) {
-      try {
-        fs.rmSync(authPath, { recursive: true, force: true });
-      } catch (e) {
-        console.error('Failed to clear auth path:', e);
-      }
-    }
-    fs.mkdirSync(authPath, { recursive: true });
+  const authPath = path.join(process.cwd(), '.wwebjs_auth');
+  if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
 
   client = new Client({
-    authStrategy: new LocalAuth({
-      dataPath: authPath
-    }),
+    authStrategy: new LocalAuth({ dataPath: authPath }),
     puppeteer: {
       executablePath: execSync('which chromium').toString().trim(),
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-zygote',
-        '--single-process'
-      ]
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
   }) as any;
 
   client.on('qr', (qr: string) => {
     currentQrCode = qr;
     connectionStatus = "WAITING_FOR_QR";
-    console.log('SCAN THIS QR CODE TO CONNECT:');
     qrcode.generate(qr, { small: true });
   });
 
   client.on('ready', () => {
-    console.log('Client is ready!');
-    currentQrCode = undefined;
     connectionStatus = "CONNECTED";
+    console.log('Bot is ready');
   });
-
-  client.on('authenticated', () => {
-    console.log('Authenticated!');
-  });
-
-  client.on('auth_failure', (msg: string) => {
-    console.error('Authentication failure', msg);
-    connectionStatus = "DISCONNECTED";
-    currentQrCode = undefined;
-    setTimeout(initBot, 5000);
-  });
-
-    client.on('disconnected', async (reason: string) => {
-      console.log('Client was disconnected', reason);
-      connectionStatus = "DISCONNECTED";
-      currentQrCode = undefined;
-      
-      try {
-        await client.destroy();
-      } catch (e) {}
-
-      console.log('Reinitializing client...');
-      setTimeout(initBot, 2000);
-    });
 
   client.on('message', async (msg: any) => {
-    try {
-      await handleMessage(msg);
-    } catch (err) {
-      console.error('Error in message handler:', err);
-    }
+    await handleMessage(msg);
   });
 
-  client.on('group_join', async (notification: any) => {
-    try {
-      const groupChat = await notification.getChat();
-      for (const participant of notification.recipientIds) {
-        await groupChat.sendMessage(`Welcome to the Sect, Cultivator! You start as a 【8】Core Disciple of Mid. Send messages to earn XP and ascend!`);
-      }
-    } catch(err) {
-      console.error(err);
-    }
+  client.initialize().catch(err => {
+    console.error('Init failed:', err);
+    connectionStatus = "DISCONNECTED";
+  }).finally(() => {
+    isInitializing = false;
   });
-
-  client.initialize()
-    .then(() => {
-      isInitializing = false;
-    })
-    .catch(err => {
-      console.error('Failed to initialize client:', err);
-      connectionStatus = "DISCONNECTED";
-      isInitializing = false;
-    });
 }
 
 export function refreshQr() {
@@ -152,530 +98,122 @@ export function refreshQr() {
   }
 }
 
-const punishments: Record<string, number> = {};
-
 async function handleMessage(msg: Message) {
-  try {
-    const chat = await msg.getChat();
-    if (!chat.isGroup) return;
+  const contact = await msg.getContact();
+  const phoneId = contact.id._serialized;
+  const name = contact.pushname || contact.number;
+  const body = msg.body.trim();
 
-    const contact = await msg.getContact();
-    const phoneId = contact.id._serialized;
-    const name = contact.pushname || contact.number;
+  let user = await storage.getUserByPhone(phoneId);
 
-    let user = await storage.getUserByPhone(phoneId);
-    const isNew = !user;
-    
+  if (body === "!register") {
+    if (user && user.aspect) return msg.reply("You have already chosen your path. Your aspect cannot be changed.");
+    const text = "Six cards materialize before you.\nChoose your path. Choose wisely.\nThis decision defines you forever.\n\n1. Wielder (22%)\n2. Seer (5%)\n3. Caster (15%)\n4. Phantom (30%)\n5. Crafter (27%)\n6. Nameless (1%)\n\nType the number to confirm.";
     if (!user) {
-      user = await storage.createUser({
-        phoneId,
-        name,
-        xp: 0,
-        messages: 0,
-        sectId: null,
-        sectTag: null,
-        species: "Human",
-        lastCardClaim: null
+      await storage.createUser({ phoneId, name });
+    }
+    return msg.reply(text);
+  }
+
+  if (user && !user.aspect && /^[1-6]$/.test(body)) {
+    const aspects = ["Wielder", "Seer", "Caster", "Phantom", "Crafter", "Nameless"];
+    const chosen = aspects[parseInt(body) - 1];
+    const rank = getRank(chosen, 1);
+    await storage.updateUser(phoneId, { aspect: chosen, rank });
+    return msg.reply(`Your path has been chosen.\nWelcome to the world of Ascendants.\n\nAspect: ${chosen}\nRank: ${rank}\nLevel: 1\n\nYour journey begins now.`);
+  }
+
+  if (!user || !user.aspect) {
+    if (body.startsWith("!")) return msg.reply("You are not registered. Type !register.");
+    return;
+  }
+
+  // XP Gains
+  if (body.length >= 3 && !body.startsWith("!")) {
+    const now = new Date();
+    const lastMsgAt = user.lastMessageAt ? new Date(user.lastMessageAt) : null;
+    const isRepeat = lastMsgAt && (now.getTime() - lastMsgAt.getTime() < 60000) && body === user.lastMessageContent;
+    
+    if (!isRepeat) {
+      const rate = RACES[user.race] || 5;
+      await storage.updateUser(phoneId, {
+        chatXp: user.chatXp + rate,
+        lastMessageAt: now,
+        lastMessageContent: body,
+        dailyMessageCount: user.dailyMessageCount + 1
       });
-    } else {
-      const update: Partial<User> = {};
-      if (user.name !== name) update.name = name;
-      update.messages = (user.messages || 0) + 1;
-      user = await storage.updateUser(phoneId, update);
-    }
-
-    const oldRank = getRank(user.xp);
-    
-    let newXp = user.xp;
-    const now = Date.now();
-    const isPunished = punishments[phoneId] && punishments[phoneId] > now;
-    
-    if (!isPunished && user.messages > 0) {
-      const xpGain = user.sectId ? 10 : 5;
-      newXp = user.xp + xpGain;
-      user = await storage.updateUser(phoneId, { xp: newXp });
-    }
-
-    const newRank = getRank(newXp);
-
-    if (oldRank !== newRank && !isNew && !isPunished) {
-      let nextReq = "MAX RANK";
-      for (let i = RANKS.length - 1; i >= 0; i--) {
-        if (RANKS[i].xp > newXp) {
-          nextReq = RANKS[i].xp.toString();
-          break;
-        }
-      }
-      
-      await chat.sendMessage(
-        `🎉 Congratulations @${contact.id.user}!\n\n` +
-        `You ascended from ${oldRank} to ${newRank}!\n` +
-        `Current XP: ${newXp}\n` +
-        `Next Rank at: ${nextReq} XP`,
-        { mentions: [contact as any] }
-      );
-    }
-
-    const body = msg.body.trim();
-    if (body.startsWith('!')) {
-      const args = body.split(' ');
-      const cmd = args[0].toLowerCase();
-      
-      if (cmd === '!start') {
-        const speciesOptions = [
-          { name: "Human", weight: 65, rarity: "Common" },
-          { name: "Demon", weight: 15, rarity: "Uncommon" },
-          { name: "Beast Clan", weight: 8, rarity: "Rare" },
-          { name: "Fallen Angel", weight: 6, rarity: "Epic" },
-          { name: "Dragon", weight: 3, rarity: "Legendary" },
-          { name: "Elf", weight: 3, rarity: "Legendary" }
-        ];
-
-        let random = Math.random() * 100;
-        let selectedSpecies = speciesOptions[0];
-        let sum = 0;
-        for (const s of speciesOptions) {
-          sum += s.weight;
-          if (random <= sum) {
-            selectedSpecies = s;
-            break;
-          }
-        }
-
-        if (!user || user.messages === 0) {
-          user = await storage.createUser({
-            phoneId,
-            name,
-            xp: 0,
-            messages: 2,
-            sectId: null,
-            sectTag: null,
-            species: selectedSpecies.name,
-            lastCardClaim: null
-          });
-        } else {
-          user = await storage.updateUser(phoneId, { 
-            species: selectedSpecies.name,
-            messages: user.messages + 1
-          });
-        }
-
-        const text = `╭══════════════════════╮\n` +
-                 `   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦\n` +
-                 `╰══════════════════════╯\n` +
-                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n\n` +
-                 `  Greetings, Cultivator!\n\n` +
-                 `  You have been summoned to the Astral Realm.\n` +
-                 `  I am Miss Astral, your guide to ascension.\n\n` +
-                 `  ✦ Species: ${user.species}\n` +
-                 `  ✦ Rarity: ${selectedSpecies.rarity}\n\n` +
-                 `  Your journey begins now.\n` +
-                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-                 `  Use !scroll to view all commands\n` +
-                 `╰══════════════════════╯`;
-        
-        try {
-          const media = await pkg.MessageMedia.fromFilePath('client/public/assets/start.jpg');
-          await client.sendMessage(msg.from, media, { caption: text });
-        } catch (e) {
-          console.error('Failed to send media:', e);
-          await msg.reply(text);
-        }
-        return;
-      }
-
-      if (!user || user.messages === 0) {
-        return msg.reply("You must use !start to awaken and register before using any other commands!");
-      }
-
-      await handleCommands(msg, body, user, chat, contact);
-    }
-  } catch (err) {
-    console.error('Error handling message:', err);
-  }
-}
-
-async function fetchRandomCharacter() {
-  const rarities = [
-    { tier: 'D', chance: 40 },
-    { tier: 'C', chance: 30 },
-    { tier: 'B', chance: 15 },
-    { tier: 'A', chance: 10 },
-    { tier: 'S', chance: 5 }
-  ];
-  
-  const random = Math.random() * 100;
-  let tier = 'D';
-  let sum = 0;
-  for (const r of rarities) {
-    sum += r.chance;
-    if (random <= sum) {
-      tier = r.tier;
-      break;
     }
   }
 
-  // Use Jikan API (MyAnimeList) for characters as it's free and reliable
-  // We'll pick a random ID range for variety
-  const randomPage = Math.floor(Math.random() * 50) + 1;
-  const response = await fetch(`https://api.jikan.moe/v4/top/characters?page=${randomPage}`);
-  const data = await response.json();
-  const characters = data.data;
-  const character = characters[Math.floor(Math.random() * characters.length)];
-  
-  return {
-    characterId: character.mal_id,
-    name: character.name,
-    series: character.about?.split('\n')[0] || "Unknown Anime",
-    imageUrl: character.images.jpg.image_url,
-    rarity: tier
-  };
-}
+  if (body === "!status") {
+    const nextExp = LEVEL_EXP[user.level] || 1000000;
+    const expBlocks = Math.floor((user.battleExp / nextExp) * 10);
+    const hpBlocks = Math.floor((user.hp / user.maxHp) * 10);
+    const mpBlocks = Math.floor((user.mp / user.maxMp) * 10);
 
-const SHOP_ITEMS = [
-  { name: "Blood Rune", price: 1000, description: "Steal XP from another user." },
-  { name: "Eclipse Stone", price: 1200, description: "Hide your race and XP from everyone for 24 hours." },
-  { name: "Phantom Seal", price: 1100, description: "Vanish from the leaderboard for 24 hours." },
-  { name: "Cursed Coin", price: 200, description: "Unknown outcome. Flip and find out." },
-  { name: "Mirror Shard", price: 1300, description: "Copy another user's race for 30 minutes." }
-];
+    const renderBar = (blocks: number) => "▓".repeat(Math.max(0, blocks)) + "░".repeat(Math.max(0, 10 - blocks));
 
-async function handleCommands(msg: Message, body: string, user: User, chat: Chat, contact: Contact) {
-  const args = body.split(' ');
-  const cmd = args[0].toLowerCase();
-  const phoneId = user.phoneId;
+    const statusText = `╭─────────────────────╮\n` +
+      `│      ⚔️ STATUS\n` +
+      `├─────────────────────┤\n` +
+      `│ Aspect: ${user.aspect}\n` +
+      `│ Rank: ${user.rank}\n` +
+      `│ Level: ${user.level}\n` +
+      `├─────────────────────┤\n` +
+      `│ EXP\n` +
+      `│ [${renderBar(expBlocks)}] ${user.battleExp}/${nextExp}\n` +
+      `├─────────────────────┤\n` +
+      `│ HP\n` +
+      `│ [${renderBar(hpBlocks)}] ${user.hp}/${user.maxHp}\n` +
+      `│ MP\n` +
+      `│ [${renderBar(mpBlocks)}] ${user.mp}/${user.maxMp}\n` +
+      `├─────────────────────┤\n` +
+      `│ CORE STATS\n` +
+      `│ Strength: ${user.strength}\n` +
+      `│ Agility: ${user.agility}\n` +
+      `│ Endurance: ${user.endurance}\n` +
+      `│ Intelligence: ${user.intelligence}\n` +
+      `│ Luck: ${user.luck}\n` +
+      `│ Speed: ${user.speed}\n` +
+      `│ Stat Points Available: ${user.statPoints}\n` +
+      `├─────────────────────┤\n` +
+      `│ ✨ ACTIVE EFFECTS\n` +
+      `│ None\n` +
+      `├─────────────────────┤\n` +
+      `│ 🦠 DISEASE STATUS\n` +
+      `│ ✅ Healthy\n` +
+      `╰─────────────────────╯`;
+    return msg.reply(statusText);
+  }
 
-  if (cmd === '!shop') {
-    let text = `🏪 *Shop*\n\n`;
-    SHOP_ITEMS.forEach(item => {
-      text += `*${item.name}* — ${item.price} XP\n${item.description}\n\n`;
-    });
-    text += `Type !buy [item name] to purchase.`;
-    await msg.reply(text);
-  }
-  else if (cmd === '!buy') {
-    const itemName = args.slice(1).join(' ').trim();
-    if (!itemName) return msg.reply("Type !buy followed by an item name. Example: !buy Cursed Coin");
+  if (body === "!profile") {
+    const winRate = user.wins + user.losses + user.draws > 0 
+      ? ((user.wins / (user.wins + user.losses + user.draws)) * 100).toFixed(1)
+      : "No battles yet";
 
-    if (itemName.toLowerCase() === "living core") {
-      return msg.reply("❌ The Living Core is not for sale. It cannot be bought.");
-    }
+    const profileText = `╭─────────────────────╮\n` +
+      `│      👤 PROFILE\n` +
+      `├─────────────────────┤\n` +
+      `│ Name: ${user.name}\n` +
+      `│ Race: ${user.race}\n` +
+      `│ Chat XP: ${user.chatXp}\n` +
+      `│ XP Rate: ${RACES[user.race] || 5} per message\n` +
+      `├─────────────────────┤\n` +
+      `│ 💰 WEALTH\n` +
+      `│ Coins: ${user.coins}\n` +
+      `│ Gems: ${user.gems}\n` +
+      `├─────────────────────┤\n` +
+      `│ ⚔️ BATTLE RECORD\n` +
+      `│ Wins: ${user.wins}\n` +
+      `│ Losses: ${user.losses}\n` +
+      `│ Draws: ${user.draws}\n` +
+      `│ Win Rate: ${winRate}${typeof winRate === 'string' ? '' : '%'}\n` +
+      `╰─────────────────────╯`;
+    return msg.reply(profileText);
+  }
 
-    const item = SHOP_ITEMS.find(i => i.name.toLowerCase() === itemName.toLowerCase());
-    if (!item) return msg.reply("❌ That item does not exist in the shop. Type !shop to see available items.");
-
-    const inventory = user.inventory || [];
-    if (inventory.some(i => i.toLowerCase() === itemName.toLowerCase())) {
-      return msg.reply(`❌ You already own a ${item.name}. Use it before buying another.`);
-    }
-
-    if (user.xp < item.price) {
-      return msg.reply(`⚠️ *Insufficient XP*\n\nYou do not have enough XP to purchase ${item.name}.\n\n${item.name} — ${item.price} XP\nYour XP — ${user.xp} XP\n\nEarn more XP by chatting and come back.`);
-    }
-
-    const updatedUser = await storage.updateUser(phoneId, {
-      xp: user.xp - item.price,
-      inventory: [...inventory, item.name]
-    });
-
-    await msg.reply(`✅ *Purchase Successful*\n\nYou bought a ${item.name}.\nIt has been added to your inventory.\n\nRemaining XP: ${updatedUser.xp}\n\nType !inventory to see your items.`);
-  }
-  else if (cmd === '!inventory') {
-    const inventory = user.inventory || [];
-    if (inventory.length === 0) return msg.reply("Your inventory is empty!");
-    
-    let text = `🎒 *Your Inventory*\n\n`;
-    inventory.forEach((item, i) => {
-      text += `${i + 1}. ${item}\n`;
-    });
-    await msg.reply(text);
-  }
-  else if (cmd === '!rank') {
-    const text = `【﻿Ｓｔａｔｕｓ】\n` +
-                 `-------------------------\n` +
-                 `▸ Rank: ${getRank(user.xp)}\n` +
-                 `▸ XP: ${user.xp}\n` +
-                 `▸ Messages: ${user.messages}`;
-    await msg.reply(text);
-  }
-  else if (cmd === '!getcard') {
-    const now = Date.now();
-    const oneDay = 24 * 60 * 60 * 1000;
-    if (user.lastCardClaim && (now - new Date(user.lastCardClaim).getTime() < oneDay)) {
-      const timeLeft = oneDay - (now - new Date(user.lastCardClaim).getTime());
-      const hours = Math.floor(timeLeft / (60 * 60 * 1000));
-      const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-      return msg.reply(`You must wait ${hours}h ${minutes}m before claiming another card!`);
-    }
-
-    try {
-      const char = await fetchRandomCharacter();
-      await storage.createCard({
-        ownerPhoneId: phoneId,
-        characterId: char.characterId,
-        name: char.name,
-        series: char.series,
-        imageUrl: char.imageUrl,
-        rarity: char.rarity
-      });
-      await storage.updateUser(phoneId, { lastCardClaim: new Date() });
-
-      const text = `╭══════════════════════╮\n` +
-                   `   ✦┊【Ｎｅｗ Ｃｈａｒａｃｔｅｒ】┊✦\n` +
-                   `╰══════════════════════╯\n` +
-                   `  ▸ Name: ${char.name}\n` +
-                   `  ▸ Series: ${char.series}\n` +
-                   `  ▸ Tier: ${char.rarity}\n` +
-                   `╰══════════════════════╯`;
-      
-      const media = await pkg.MessageMedia.fromUrl(char.imageUrl);
-      await client.sendMessage(msg.from, media, { caption: text });
-    } catch (e) {
-      console.error(e);
-      await msg.reply("Failed to summon a character. Try again later!");
-    }
-  }
-  else if (cmd === '!cardcollection') {
-    const userCards = await storage.getCardsByOwner(phoneId);
-    if (userCards.length === 0) return msg.reply("Your collection is empty! Use !getcard to start.");
-    
-    let text = `╭══════════════════════╮\n` +
-               `   ✦┊【Ｃｏｌｌｅｃｔｉｏｎ】┊✦\n` +
-               `╰══════════════════════╯\n`;
-    userCards.forEach((c, i) => {
-      text += `  ${i + 1}. [${c.rarity}] ${c.name}\n`;
-    });
-    text += `╰══════════════════════╯\n` +
-            `Use !card [number] to view a character!`;
-    await msg.reply(text);
-  }
-  else if (cmd === '!card') {
-    const index = parseInt(args[1]) - 1;
-    const userCards = await storage.getCardsByOwner(phoneId);
-    if (isNaN(index) || index < 0 || index >= userCards.length) {
-      return msg.reply("Invalid card number!");
-    }
-    
-    const card = userCards[index];
-    const text = `╭══════════════════════╮\n` +
-                 `   ✦┊【Ｃｈａｒａｃｔｅｒ】┊✦\n` +
-                 `╰══════════════════════╯\n` +
-                 `  ▸ Name: ${card.name}\n` +
-                 `  ▸ Series: ${card.series}\n` +
-                 `  ▸ Tier: ${card.rarity}\n` +
-                 `╰══════════════════════╯`;
-    
-    try {
-      const media = await pkg.MessageMedia.fromUrl(card.imageUrl);
-      await client.sendMessage(msg.from, media, { caption: text });
-    } catch (e) {
-      await msg.reply(text + `\n(Image failed to load: ${card.imageUrl})`);
-    }
-  }
-  else if (cmd === '!stats') {
-    let sectMemberCount = 0;
-    if (user.sectId) {
-      const sect = await storage.getSectById(user.sectId);
-      sectMemberCount = sect?.membersCount || 0;
-    }
-    const allUsers = await storage.getUsers();
-    const speciesMemberCount = allUsers.filter(u => u.species === user.species).length;
-
-    const text = `【Ｓｔａｔｕｓ】\n` +
-                 `-------------------------\n` +
-                 `▸ Rank: ${getRank(user.xp)}\n` +
-                 `▸ XP: ${user.xp}\n` +
-                 `▸ Messages: ${user.messages}\n` +
-                 `▸ Sect Members: ${sectMemberCount}\n` +
-                 `▸ Species Members: ${speciesMemberCount}`;
-    await msg.reply(text);
-  }
-  else if (cmd === '!profile') {
-    const sectName = user.sectId ? (await storage.getSectById(user.sectId))?.name || "None" : "None";
-    const text = `【Ｐｒｏｆｉｌｅ】\n` +
-                 `-------------------------\n` +
-                 `▸ Name: ${user.name}\n` +
-                 `▸ Sect: ${sectName}\n` +
-                 `▸ Rank: ${getRank(user.xp)}\n` +
-                 `▸ Species: ${user.species}`;
-    await msg.reply(text);
-  }
-  else if (cmd === '!leaderboard') {
-    const usersList = await storage.getUsers();
-    let text = "╭══════════════════════╮\n" +
-               "   ✦┊【Ｔｏｐ Ｃｕｌｔｉｖａｔｏｒｓ】┊✦\n" +
-               "╰══════════════════════╯\n" +
-               " ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n";
-    
-    const medals = ["🥇", "🥈", "🥉"];
-    for(let i=0; i < Math.min(10, usersList.length); i++) {
-      const prefix = i < 3 ? medals[i] : "✦ ";
-      text += `  ${prefix} ${i+1}. ${usersList[i].name} — ${usersList[i].xp} XP\n`;
-    }
-    
-    const userRank = usersList.findIndex(u => u.phoneId === phoneId) + 1;
-    text += " ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n" +
-            `  ❧ Your Rank: #${userRank}\n` +
-            `  ❧ Your XP: ${user.xp}\n` +
-            "╰══════════════════════╯";
-    await msg.reply(text);
-  }
-  else if (cmd === '!help') {
-    const text = `【Ａｓｔｒａｌ Ｂｏｔ】\n` +
-                 `-------------------------\n` +
-                 `Greetings, Cultivator! ✨\n\n` +
-                 `Astral Bot is your path to ascension —\n` +
-                 `climb the ranks and forge your legacy in the realm.\n\n` +
-                 `▸ 🏅 Rank up & gain glory\n` +
-                 `▸ ⚔️ Join a sect & conquer\n` +
-                 `▸ 📜 Respect the sacred laws\n\n` +
-                 `-------------------------\n` +
-                 `▸ !rules — view the sacred laws\n` +
-                 `▸ !scroll — view all commands`;
-    
-    try {
-      const media = await pkg.MessageMedia.fromFilePath('client/public/assets/help.jpg');
-      await client.sendMessage(msg.from, media, { caption: text });
-    } catch (e) {
-      await msg.reply(text);
-    }
-  }
-  else if (cmd === '!rules') {
-    const text = `【Ａｓｔｒａｌ Ｌａｗｓ】\n` +
-                 `-------------------------\n` +
-                 `Heed these laws, Cultivator.\n` +
-                 `Violations shall not go unpunished. ⚡\n\n` +
-                 `▸ 1️⃣ No Spamming Commands\n` +
-                 `▸ 2️⃣ No Disrespect\n` +
-                 `▸ 3️⃣ No Bug Exploitation\n` +
-                 `▸ 4️⃣ No Begging\n` +
-                 `▸ 5️⃣ Respect Sect Leaders\n` +
-                 `▸ 6️⃣ No Alternate Accounts\n` +
-                 `▸ 7️⃣ Respect All Decisions\n\n` +
-                 `Break the laws. Face the consequences. ⚔️`;
-    await msg.reply(text);
-  }
-  else if (cmd === '!scroll') {
-    const text = `╭══════════════════════╮\n` +
-                 `   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦\n` +
-                 `╰══════════════════════╯\n` +
-                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-                 `  📊 PROFILE & STATS\n` +
-                 `  🏅 !rank ↳ check your rank\n` +
-                 `  📈 !stats ↳ view your stats\n` +
-                 `  👤 !profile ↳ view your profile\n` +
-                 `  🏆 !leaderboard ↳ top cultivators\n` +
-                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-                 `  🛒 SHOP & ITEMS\n` +
-                 `  🏪 !shop ↳ view shop\n` +
-                 `  🛍️ !buy [item] ↳ purchase item\n` +
-                 `  🎒 !inventory ↳ view items\n` +
-                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-                 `  🎴 CARDS\n` +
-                 `  🎁 !getcard ↳ daily claim\n` +
-                 `  📚 !cardcollection ↳ view cards\n` +
-                 `  🔍 !card [num] ↳ view card info\n` +
-                 `  🤝 !givecard @user [num] ↳ trade card\n` +
-                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-                 `  🏯 SECT\n` +
-                 `  🚪 !joinsect [name] ↳ join a sect\n` +
-                 `  🏯 !mysect ↳ view sect details\n` +
-                 `  💰 !donate [amount] ↳ donate XP\n` +
-                 `  📊 !sectranking ↳ sect leaderboard\n` +
-                 `  🚶 !sectleave ↳ leave your sect\n` +
-                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-                 `  👑 LEADER ONLY\n` +
-                 `  🖼️ !setsectpfp ↳ set sect image\n` +
-                 `  🥾 !kickmember [username] ↳ kick member\n` +
-                 `  ⚡ !punish [username] ↳ punish member\n` +
-                 ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-                 `     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼\n` +
-                 `╰══════════════════════╯`;
-
-    try {
-      const media = await pkg.MessageMedia.fromFilePath('client/public/assets/scroll.jpg');
-      await client.sendMessage(msg.from, media, { caption: text });
-    } catch (e) {
-      console.error('Failed to send media:', e);
-      await msg.reply(text);
-    }
-  }
-  else if (cmd === '!givecard') {
-    if (args.length < 3) return msg.reply(`Usage: !givecard @user [card_number]`);
-    const targetMention = args[1];
-    const cardIndex = parseInt(args[2]) - 1;
-
-    const targetPhoneId = targetMention.replace('@', '').replace(/[^0-9]/g, '') + '@c.us';
-    const userCards = await storage.getCardsByOwner(phoneId);
-
-    if (isNaN(cardIndex) || cardIndex < 0 || cardIndex >= userCards.length) {
-      return msg.reply("Invalid card number!");
-    }
-
-    const card = userCards[cardIndex];
-    const targetUser = await storage.getUserByPhone(targetPhoneId);
-    
-    if (!targetUser) return msg.reply("Target user not found in the realm!");
-
-    await storage.updateCard(card.id, { ownerPhoneId: targetPhoneId });
-    await msg.reply(`Successfully transferred [${card.rarity}] ${card.name} to @${targetUser.phoneId.split('@')[0]}!`, {
-      mentions: [targetPhoneId] as any
-    });
-  }
-  else if (cmd === '!createsect') {
-    if (args.length < 3) return msg.reply(`Usage: !createsect [SectName] [SectTag]`);
-    const name = args.slice(1, -1).join(' ');
-    const tag = args[args.length - 1];
-    if (user.xp < 5000) return msg.reply(`You need 5,000 XP to found a sect.`);
-    if (user.sectId) return msg.reply(`You're already in a sect!`);
-    const allSects = await storage.getSects();
-    if (allSects.length >= 5) return msg.reply(`The realm is full of sects!`);
-    const existing = await storage.getSectByName(name);
-    if (existing) return msg.reply(`Name already taken!`);
-    await storage.updateUser(phoneId, { xp: user.xp - 5000 });
-    const sect = await storage.createSect({
-      name, tag, leaderPhoneId: phoneId, treasuryXp: 0, membersCount: 1, imageUrl: null
-    });
-    await storage.updateUser(phoneId, { sectId: sect.id, sectTag: sect.tag });
-    await msg.reply(`Sect [${tag}] ${name} has been founded!`);
-  }
-  else if (cmd === '!joinsect') {
-    if (args.length < 2) {
-      const allSects = await storage.getSects();
-      if (allSects.length === 0) return msg.reply(`No sects exist yet.`);
-      let sectList = "";
-      for (const s of allSects) {
-        sectList += `  ${s.name} ✦ ${s.tag}\n`;
-      }
-      return msg.reply(`Available Sects:\n${sectList}`);
-    }
-    if (user.sectId) return msg.reply(`Leave your sect first!`);
-    const name = args.slice(1).join(' ');
-    const sect = await storage.getSectByName(name);
-    if (!sect) return msg.reply(`Sect not found.`);
-    if (sect.membersCount >= 20) return msg.reply(`Sect full.`);
-    await storage.updateSect(sect.id, { membersCount: sect.membersCount + 1 });
-    await storage.updateUser(phoneId, { sectId: sect.id, sectTag: sect.tag });
-    await msg.reply(`Joined ${sect.name}!`);
-  }
-  else if (cmd === '!mysect') {
-    if (!user.sectId) return msg.reply(`Join a sect first!`);
-    const sect = await storage.getSectById(user.sectId);
-    if (!sect) return;
-    const allUsers = await storage.getUsers();
-    const sectMembers = allUsers.filter(u => u.sectId === sect.id);
-    let roster = sectMembers.map((m, i) => `${i+1}. ${m.name}`).join('\n  ');
-    const text = `Sect: ${sect.name} [${sect.tag}]\nMembers: ${sect.membersCount}/20\n\nRoster:\n${roster}`;
-    await msg.reply(text);
-  }
-  else if (cmd === '!donate') {
-    const amount = parseInt(args[1]);
-    if (isNaN(amount) || amount <= 0) return msg.reply(`Invalid amount.`);
-    if (user.xp < amount) return msg.reply(`Not enough XP.`);
-    const sect = await storage.getSectById(user.sectId!);
-    if (!sect) return;
-    await storage.updateUser(phoneId, { xp: user.xp - amount });
-    await storage.updateSect(sect.id, { treasuryXp: sect.treasuryXp + amount });
-    await msg.reply(`Donated ${amount} XP!`);
+  if (body === "!shop") {
+    const text = `🏪 Shop\n\nBlood Rune — 1000 XP\nEclipse Stone — 1200 XP\nPhantom Seal — 1100 XP\nCursed Coin — 200 XP\nMirror Shard — 1300 XP\n\n💊 Cures\nGrey Rot Cure — 500 XP\nHellfire Suppressant — 600 XP\nFeral Antidote — 600 XP\nGrace Restoration Vial — 700 XP\nScale Restoration Salve — 800 XP\nRootwither Remedy — 700 XP\n\nType !buy [item name] to purchase.`;
+    return msg.reply(text);
   }
 }

@@ -1,2 +1,2 @@
-2026/02/23-00:03:02.512 30a Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/Sync Data/LevelDB since it was missing.
-2026/02/23-00:03:02.671 30a Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/Sync Data/LevelDB/MANIFEST-000001
+2026/02/23-00:06:01.872 496 Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/Sync Data/LevelDB since it was missing.
+2026/02/23-00:06:01.900 496 Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/Sync Data/LevelDB/MANIFEST-000001
