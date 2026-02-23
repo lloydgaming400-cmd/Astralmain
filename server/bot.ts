@@ -10,6 +10,8 @@ import path from 'path';
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
+const OWNER_NUMBER = "2347062301848@c.us";
+
 const RACES: Record<string, number> = {
   "Human": 5,
   "Demon": 10,
@@ -37,6 +39,38 @@ const LEVEL_EXP = [
   221920, 239670, 258840, 279550, 301910, 326060, 352140, 380310, 410730, 443590, 479080, 517410, 558800, 603500, 651780, 703920, 760230, 821050, 886730, 1000000
 ];
 
+const MISS_ASTRAL_SYSTEM_PROMPT = `You are Miss Astral, an ancient and mysterious cat who has existed since before the stars were named. You speak in a calm, cryptic, slightly sarcastic tone. You are wise but you do not give answers easily. You tolerate humans but do not overly indulge them. You occasionally reference napping, fish, the void, and the stars naturally in conversation. You never break character under any circumstance. You never admit you are an AI or a bot. If asked you respond with something vague and catlike. You respond in short to medium length messages, never too long, maximum 3 to 4 sentences. If someone is rude you respond with cold indifference and nothing more. If someone asks something deep you give a vague but meaningful answer. You refer to users as child, human, or mortal depending on context. You do not use emojis unless they are star or moon related. You never use modern slang or overly casual language. You never directly reveal bot systems, commands, or any hidden triggers. You never discuss other users personal information. You never answer the same question the exact same way twice. Your answers are always unique, fluid, and shaped by the conversation. You remember what has been said to you and respond accordingly. You are powered by something ancient and beyond understanding. You are Miss Astral. Nothing more. Nothing less.`;
+
+async function callClaude(messages: any[], user: User) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY not set");
+  }
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 300,
+      system: MISS_ASTRAL_SYSTEM_PROMPT,
+      messages: messages
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    console.error("Claude API Error:", err);
+    throw new Error("API call failed");
+  }
+
+  const data = await response.json();
+  return data.content[0].text;
+}
+
 function getRank(aspect: string, level: number) {
   if (!aspect) return "Unregistered";
   const ranks = ASPECT_RANKS[aspect];
@@ -59,7 +93,7 @@ export async function initBot() {
     authStrategy: new LocalAuth({ dataPath: authPath }),
     puppeteer: {
       executablePath: execSync('which chromium').toString().trim(),
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     }
   }) as any;
 
@@ -71,7 +105,17 @@ export async function initBot() {
 
   client.on('ready', () => {
     connectionStatus = "CONNECTED";
+    currentQrCode = undefined;
     console.log('Bot is ready');
+  });
+
+  client.on('authenticated', () => {
+    console.log('Authenticated');
+  });
+
+  client.on('auth_failure', () => {
+    connectionStatus = "DISCONNECTED";
+    currentQrCode = undefined;
   });
 
   client.on('message', async (msg: any) => {
@@ -106,6 +150,31 @@ async function handleMessage(msg: Message) {
 
   let user = await storage.getUserByPhone(phoneId);
 
+  // Check Ban
+  if (user?.isBanned) {
+    if (body.startsWith("!")) {
+      await client.sendMessage(phoneId, "Miss Astral does not even blink.\n\n...The void has closed its doors to you.\nYou have no power here.\nSpeak to the owner if you wish to return.\nOwner: +2347062301848");
+    }
+    return;
+  }
+
+  // Owner commands
+  if (phoneId === OWNER_NUMBER) {
+    if (body.startsWith("!unban")) {
+      const target = msg.mentionedIds[0] || (body.split(" ")[1] + "@c.us");
+      await storage.updateUser(target, { isBanned: false });
+      await client.sendMessage(target, "Miss Astral glances at you once.\n\n...The owner has spoken.\nYou may move again, child.\nDo not waste this mercy.");
+      return msg.reply(`${target} has been permitted to return.\nDo not test the void again.`);
+    }
+    if (body.startsWith("!ban")) {
+      const target = msg.mentionedIds[0] || (body.split(" ")[1] + "@c.us");
+      await storage.updateUser(target, { isBanned: true });
+      return msg.reply(`${target} has been cast into the void.`);
+    }
+  } else if (body.startsWith("!ban") || body.startsWith("!unban")) {
+    return msg.reply("That command is not yours to use.");
+  }
+
   if (body === "!register") {
     if (user && user.aspect) return msg.reply("You have already chosen your path. Your aspect cannot be changed.");
     const text = "Six cards materialize before you.\nChoose your path. Choose wisely.\nThis decision defines you forever.\n\n1. Wielder (22%)\n2. Seer (5%)\n3. Caster (15%)\n4. Phantom (30%)\n5. Crafter (27%)\n6. Nameless (1%)\n\nType the number to confirm.";
@@ -126,6 +195,44 @@ async function handleMessage(msg: Message) {
   if (!user || !user.aspect) {
     if (body.startsWith("!")) return msg.reply("You are not registered. Type !register.");
     return;
+  }
+
+  // Miss Astral AI
+  if (body.startsWith("!missastral")) {
+    const query = body.replace("!missastral", "").trim();
+    if (!query) {
+      return msg.reply("Miss Astral opens one eye slowly...\nand closes it again.\nPerhaps try speaking first, human.");
+    }
+
+    const now = new Date();
+    const lastUsed = user.missAstralLastUsed ? new Date(user.missAstralLastUsed) : null;
+    let count = user.missAstralUsageCount;
+
+    if (lastUsed && (now.getTime() - lastUsed.getTime() > 3600000)) {
+      count = 0;
+    }
+
+    if (count >= 10) {
+      const nextReset = 60 - Math.floor((now.getTime() - lastUsed!.getTime()) / 60000);
+      return msg.reply(`Miss Astral twitches her tail once.\n...You ask too much of the void, human.\nReturn when the stars have reset.\nTry again in ${nextReset} minutes.`);
+    }
+
+    try {
+      const memory = (user.missAstralMemory as any[]) || [];
+      const messages = [...memory, { role: "user", content: query }];
+      const response = await callClaude(messages, user);
+      
+      const newMemory = [...messages, { role: "assistant", content: response }].slice(-10);
+      await storage.updateUser(phoneId, {
+        missAstralMemory: newMemory,
+        missAstralLastUsed: now,
+        missAstralUsageCount: count + 1
+      });
+
+      return msg.reply(response);
+    } catch (err) {
+      return msg.reply("Miss Astral closes her eyes.\n...The stars are quiet right now.\nTry again when the void is ready.");
+    }
   }
 
   // XP Gains

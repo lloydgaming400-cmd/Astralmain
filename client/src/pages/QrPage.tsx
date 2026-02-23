@@ -34,7 +34,7 @@ export default function QrPage() {
           <p className="text-muted-foreground font-display tracking-[0.2em] text-sm uppercase">
             {data?.status === 'CONNECTED' ? 'CONNECTED - SCAN TO RECONNECT' : 'Scan to bind your soul'}
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-4">
             <Button 
               onClick={() => refreshQr()} 
               disabled={isRefreshing}
@@ -44,6 +44,15 @@ export default function QrPage() {
             >
               <RefreshCw className={`w-5 h-5 mr-3 ${isRefreshing ? 'animate-spin' : ''}`} />
               {isRefreshing ? 'REFRESHING...' : 'DISCONNECT & REFRESH'}
+            </Button>
+            <Button 
+              onClick={() => refreshQr()} 
+              disabled={isRefreshing}
+              variant="default"
+              size="lg"
+              className="min-w-[200px] h-14 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl transition-all font-display tracking-widest shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+            >
+              CREATE QR CODE
             </Button>
           </div>
         </div>

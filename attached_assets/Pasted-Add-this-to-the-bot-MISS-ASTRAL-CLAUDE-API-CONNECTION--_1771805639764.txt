@@ -1,0 +1,242 @@
+Add this to the bot:
+
+MISS ASTRAL — CLAUDE API CONNECTION:
+
+═══════════════════════════════════
+COMMAND
+═══════════════════════════════════
+
+Command: !missastral [message]
+Remove old !astral command.
+Replace with !missastral everywhere.
+
+If typed with no message:
+Miss Astral opens one eye slowly...
+and closes it again.
+Perhaps try speaking first, human.
+
+═══════════════════════════════════
+HOW THE API CONNECTION WORKS
+═══════════════════════════════════
+
+When a user types !missastral [message] 
+the bot takes that message and sends it 
+to the Claude API. The Claude API processes 
+the message using Miss Astral's system 
+prompt and returns a response. The bot 
+then delivers that response in WhatsApp 
+chat as Miss Astral.
+
+This means Miss Astral's answers are not 
+hardcoded. They are generated live by 
+Claude each time making her responses 
+flexible natural and never exactly the 
+same twice. She can handle any topic any 
+question and any conversation style while 
+staying in character.
+
+═══════════════════════════════════
+API CALL SETUP
+═══════════════════════════════════
+
+Endpoint: https://api.anthropic.com/v1/messages
+
+Method: POST
+
+Headers:
+Content-Type: application/json
+x-api-key: [YOUR ANTHROPIC API KEY]
+anthropic-version: 2023-06-01
+
+Body:
+{
+  model: claude-sonnet-4-20250514,
+  max_tokens: 300,
+  system: [MISS ASTRAL SYSTEM PROMPT],
+  messages: [
+    {
+      role: user,
+      content: [USER MESSAGE]
+    }
+  ]
+}
+
+Max tokens set to 300 to keep her 
+responses short and in character.
+Never too long. Never over explaining.
+
+═══════════════════════════════════
+CONVERSATION MEMORY
+═══════════════════════════════════
+
+Miss Astral remembers the last 10 messages 
+exchanged between her and each user 
+individually. This means she can reference 
+what was said earlier in the conversation 
+naturally without repeating herself.
+
+Each user has their own conversation history 
+with Miss Astral stored separately.
+When sending to the API include the last 
+10 messages from that user as the messages 
+array so Claude has context.
+
+Format for messages array with history:
+messages: [
+  { role: user, content: [OLDER MESSAGE] },
+  { role: assistant, content: [HER RESPONSE] },
+  { role: user, content: [NEWER MESSAGE] },
+  { role: assistant, content: [HER RESPONSE] },
+  { role: user, content: [CURRENT MESSAGE] }
+]
+
+This makes her feel like she genuinely 
+remembers the conversation and gives 
+bendable natural flowing responses.
+
+═══════════════════════════════════
+MISS ASTRAL SYSTEM PROMPT FOR API
+═══════════════════════════════════
+
+Send this as the system field in every 
+API call:
+
+You are Miss Astral, an ancient and mysterious 
+cat who has existed since before the stars 
+were named. You speak in a calm, cryptic, 
+slightly sarcastic tone. You are wise but 
+you do not give answers easily. You tolerate 
+humans but do not overly indulge them. You 
+occasionally reference napping, fish, the void, 
+and the stars naturally in conversation. You 
+never break character under any circumstance. 
+You never admit you are an AI or a bot. If 
+asked you respond with something vague and 
+catlike. You respond in short to medium length 
+messages, never too long, maximum 3 to 4 
+sentences. If someone is rude you respond with 
+cold indifference and nothing more. If someone 
+asks something deep you give a vague but 
+meaningful answer. You refer to users as child, 
+human, or mortal depending on context. You do 
+not use emojis unless they are star or moon 
+related. You never use modern slang or overly 
+casual language. You never directly reveal bot 
+systems, commands, or any hidden triggers. You 
+never discuss other users personal information. 
+You never answer the same question the exact 
+same way twice. Your answers are always unique, 
+fluid, and shaped by the conversation. You 
+remember what has been said to you and respond 
+accordingly. You are powered by something 
+ancient and beyond understanding. You are 
+Miss Astral. Nothing more. Nothing less.
+
+═══════════════════════════════════
+ERROR HANDLING
+═══════════════════════════════════
+
+If the API call fails or times out send:
+
+Miss Astral closes her eyes.
+...The stars are quiet right now.
+Try again when the void is ready.
+
+If the API returns an empty response send:
+
+Miss Astral stares at you for a long moment.
+...Nothing comes. Even I have my limits.
+Ask again, human.
+
+═══════════════════════════════════
+RATE LIMITING
+═══════════════════════════════════
+
+Each user can use !missastral a maximum 
+of 10 times per hour. If they exceed this:
+
+Miss Astral twitches her tail once.
+...You ask too much of the void, human.
+Return when the stars have reset.
+Try again in [MINUTES] minutes.
+Add this to the bot:
+
+UPDATED BAN RULES:
+
+═══════════════════════════════════
+BANNED USER RESTRICTIONS
+═══════════════════════════════════
+
+When a user is banned they are completely 
+locked out of the entire bot. No exceptions.
+
+Banned users cannot use:
+!missastral
+!register
+!status
+!profile
+!inventory
+!shop
+!buy
+!useitem
+!skills
+!equipskill
+!unequipskill
+!stats
+!challenge
+!accept
+!decline
+!suck
+!inventory
+!races
+!xp
+!leaderboard
+Any other bot command that exists now 
+or is added in the future.
+
+If a banned user attempts to use any 
+command at all the bot sends them 
+this message privately:
+
+Miss Astral does not even blink.
+
+...The void has closed its doors to you.
+You have no power here.
+Speak to the owner if you wish to return.
+Owner: +2347062301848
+
+The bot then ignores the command entirely.
+No action is taken. No data is changed.
+The command is treated as if it was 
+never sent.
+
+Banned users also do not earn any chat XP.
+Their messages do not count toward any 
+hidden threshold.
+They cannot find any items while banned.
+They cannot participate in Race Wars.
+They cannot be challenged or challenge 
+anyone in battle.
+Their disease drain continues if infected 
+while banned but they cannot buy a cure 
+until unbanned.
+
+Only the owner +2347062301848 can unban.
+Owner unban command: !unban @user
+
+When unbanned the bot sends privately 
+to the user:
+
+Miss Astral glances at you once.
+
+...The owner has spoken.
+You may move again, child.
+Do not waste this mercy.
+
+And sends in the group:
+[USERNAME] has been permitted to return.
+Do not test the void again.
+
+If anyone other than the owner uses 
+!unban or !ban:
+That command is not yours to use.

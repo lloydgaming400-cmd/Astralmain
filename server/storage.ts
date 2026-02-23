@@ -7,6 +7,7 @@ export interface IStorage {
   getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(phoneId: string, updates: Partial<InsertUser>): Promise<User>;
+  getBannedUsers(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -16,7 +17,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(desc(users.chatXp));
+    return await db.select().from(users).where(eq(users.isBanned, false)).orderBy(desc(users.chatXp));
+  }
+
+  async getBannedUsers(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.isBanned, true)).orderBy(desc(users.chatXp));
   }
 
   async createUser(user: InsertUser): Promise<User> {

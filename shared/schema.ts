@@ -43,6 +43,10 @@ export const users = pgTable("users", {
   dragonEggHatched: boolean("dragon_egg_hatched").notNull().default(false),
   dragonEggProgress: integer("dragon_egg_progress").notNull().default(0),
   activeEffects: jsonb("active_effects").notNull().default([]),
+  missAstralMemory: jsonb("miss_astral_memory").notNull().default([]),
+  missAstralLastUsed: timestamp("miss_astral_last_used"),
+  missAstralUsageCount: integer("miss_astral_usage_count").notNull().default(0),
+  isBanned: boolean("is_banned").notNull().default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
