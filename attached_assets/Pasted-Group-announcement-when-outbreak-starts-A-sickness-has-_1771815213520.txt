@@ -1,0 +1,90 @@
+Group announcement when outbreak starts:
+A sickness has infected the Dragon race.
+Scale Sickness is cracking through their legendary hides.
+Dragons are advised to avoid !leaderboard and !profile 
+for the time being.
+Even the mightiest can be brought low.
+
+Group announcement when outbreak ends:
+Scale Sickness has passed.
+The Dragon race stands unbroken.
+
+Cure name in shop: Scale Restoration Salve
+Cure price: 800 XP
+
+---
+
+Elf — Rootwither:
+An ancient curse disguised as a sickness. It severs 
+the deep connection Elves share with nature and the 
+arcane. Without that bond their power withers like 
+a dying tree starved of water and light.
+
+Group announcement when outbreak starts:
+A withering has begun among the Elf race.
+Rootwither is severing their bond with the ancient world.
+Elves are advised to avoid !leaderboard and !profile 
+for the time being.
+The forest does not mourn quietly.
+
+Group announcement when outbreak ends:
+Rootwither has retreated into the earth.
+The Elf race is restored.
+
+Cure name in shop: Rootwither Remedy
+Cure price: 700 XP
+
+---
+
+CURE SYSTEM:
+
+All cures are available in the shop at all times 
+regardless of whether an outbreak is active. A user 
+can only use a cure that matches their current race 
+disease. If they try to use a cure for a different 
+race the bot sends: This cure was not made for you.
+
+Add all cures to the !shop display under a separate 
+section labeled:
+
+💊 Cures
+Grey Rot Cure — 500 XP
+Hellfire Suppressant — 600 XP
+Feral Antidote — 600 XP
+Grace Restoration Vial — 700 XP
+Scale Restoration Salve — 800 XP
+Rootwither Remedy — 700 XP
+
+When a user buys and uses a cure matching their 
+active disease they are instantly cured. The 100 XP 
+drain stops immediately. The cure is consumed after use.
+
+Bot message when cured:
+The sickness retreats. Your strength returns.
+
+💊 You have been cured of [DISEASE NAME].
+Your XP drain has stopped.
+Current XP: [CURRENT XP]
+
+Bot message if they try to use a cure with no disease:
+You are not infected. Save it for when you need it.
+
+Bot message if they use the wrong race cure:
+This cure was not made for you.
+It has no effect.
+
+---
+
+GENERAL DISEASE RULES:
+
+The bot triggers outbreaks randomly on its own with 
+no pattern the users can predict.
+Only one race can have an active outbreak at a time.
+A new outbreak cannot start until the current one ends.
+Constellation race is fully immune to all diseases.
+Shadow Veil users are fully immune to all diseases.
+Users cannot go below 0 XP from disease drain.
+Cures are race specific and only work on your own disease.
+A user can hold one cure at a time.
+If a user changes race while infected their infection 
+is cleared automatically and the drain stops.

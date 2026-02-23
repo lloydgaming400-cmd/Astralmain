@@ -40,6 +40,9 @@ export const globalStats = pgTable("global_stats", {
   totalMessages: integer("total_messages").notNull().default(0),
   voidFragmentThreshold: integer("void_fragment_threshold").notNull().default(300000),
   starDustThreshold: integer("star_dust_threshold").notNull().default(10000),
+  activeDisease: text("active_disease"),
+  diseaseRace: text("disease_race"),
+  lastOutbreakAt: timestamp("last_outbreak_at"),
 });
 
 export const sects = pgTable("sects", {

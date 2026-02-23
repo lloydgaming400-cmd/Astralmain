@@ -130,7 +130,15 @@ export async function initBot() {
     puppeteer: {
       executablePath: execSync('which chromium').toString().trim(),
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--single-process']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage', 
+        '--disable-gpu', 
+        '--no-zygote', 
+        '--single-process',
+        '--disable-extensions'
+      ]
     }
   });
 
@@ -237,6 +245,11 @@ async function handleMessage(msg: Message) {
   Use !scroll to view all commands
   Use !rules to see bot rules
 ╰══════════════════════╯`;
+      const imgPath = path.join(process.cwd(), 'attached_assets', 'download_(17)_(1)_1771815300401.jpg');
+      if (fs.existsSync(imgPath)) {
+        const media = MessageMedia.fromFilePath(imgPath);
+        return client.sendMessage(msg.from, media, { caption: welcome });
+      }
       return msg.reply(welcome);
     } else if (body.startsWith("!")) {
       return msg.reply("You must use !start first before starting your journey.");
@@ -269,8 +282,49 @@ async function handleMessage(msg: Message) {
       }
     }
 
+    // Disease Drain
+    let diseaseDrain = 0;
+    if (user.disease && !user.isConstellation && !user.hasShadowVeil) {
+      diseaseDrain = 100;
+    }
+
     const rate = user.isConstellation ? 1000 : (user.dustDomainUntil && new Date() < new Date(user.dustDomainUntil) ? 500 : 5);
-    await storage.updateUser(phoneId, { xp: user.xp + rate, messages: user.messages + 1 });
+    await storage.updateUser(phoneId, { xp: Math.max(0, user.xp + rate - diseaseDrain), messages: user.messages + 1 });
+
+    // Random Outbreak Check
+    if (Math.random() < 0.005) { // 0.5% chance per message to trigger outbreak check
+      const stats = await storage.getGlobalStats();
+      if (!stats.activeDisease) {
+        const races = ["Human", "Demon", "Beast Clan", "Fallen Angel", "Dragon", "Elf"];
+        const targetRace = races[Math.floor(Math.random() * races.length)];
+        const diseaseNames: Record<string, string> = {
+          "Human": "Grey Rot",
+          "Demon": "Hellfire Fever",
+          "Beast Clan": "Feral Plague",
+          "Fallen Angel": "Corruption Blight",
+          "Dragon": "Scale Sickness",
+          "Elf": "Rootwither"
+        };
+        const diseaseName = diseaseNames[targetRace];
+        
+        await storage.updateGlobalStats({ 
+          activeDisease: diseaseName, 
+          diseaseRace: targetRace,
+          lastOutbreakAt: new Date()
+        });
+
+        const announcement = `A sickness has infected the ${targetRace} race.\n${diseaseName} is spreading through their ranks.\n${targetRace}s are advised to avoid !leaderboard and !profile for the time being.\nEven the mightiest can be brought low.`;
+        await client.sendMessage(msg.from, announcement);
+
+        // Infect users of that race
+        const allUsers = await storage.getUsers();
+        for (const u of allUsers) {
+          if (u.species === targetRace && !u.isConstellation && !u.hasShadowVeil) {
+            await storage.updateUser(u.phoneId, { disease: diseaseName, infectedAt: new Date() });
+          }
+        }
+      }
+    }
   }
 
   if (body === "!scroll" || body === "!help" || body === "!menu") {
@@ -312,6 +366,16 @@ async function handleMessage(msg: Message) {
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
      𝕭𝖞 𝕬𝖘𝖙𝖗𝖆𝖑 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
 ╰══════════════════════╯`;
+    const imgPath = path.join(process.cwd(), 'attached_assets', 'ִֶָ_𓂃⊹_ִֶָ_vera_1771815300400.jpg');
+    if (fs.existsSync(imgPath)) {
+      const media = MessageMedia.fromFilePath(imgPath);
+      try {
+        await client.sendMessage(msg.from, media, { caption: scroll });
+        return;
+      } catch (err) {
+        console.error("Failed to send media scroll:", err);
+      }
+    }
     return msg.reply(scroll);
   }
 
@@ -524,6 +588,24 @@ ${list}
     } else if (itemName.toLowerCase() === "cursed bone") {
       await storage.updateUser(phoneId, { hasShadowVeil: true });
       useMessage = `\n\n🦴 Shadow Veil active.\nYou are now protected from all races diseases and plagues.\nThe shadows walk with you.`;
+    } else if (itemName.toLowerCase().includes("cure") || itemName.toLowerCase().includes("suppressant") || itemName.toLowerCase().includes("antidote") || itemName.toLowerCase().includes("vial") || itemName.toLowerCase().includes("salve") || itemName.toLowerCase().includes("remedy")) {
+      const cures: Record<string, string> = {
+        "grey rot cure": "Grey Rot",
+        "hellfire suppressant": "Hellfire Fever",
+        "feral antidote": "Feral Plague",
+        "grace restoration vial": "Corruption Blight",
+        "scale restoration salve": "Scale Sickness",
+        "rootwither remedy": "Rootwither"
+      };
+      const diseaseForCure = cures[itemName.toLowerCase()];
+      if (user.disease === diseaseForCure) {
+        await storage.updateUser(phoneId, { disease: null, condition: "Healthy" });
+        useMessage = `\n\nThe sickness retreats. Your strength returns.\n\n💊 You have been cured of ${diseaseForCure}.\nYour XP drain has stopped.\nCurrent XP: ${remainingXp}`;
+      } else if (!user.disease) {
+        useMessage = `\n\nYou are not infected. Save it for when you need it.`;
+      } else {
+        useMessage = `\n\nThis cure was not made for you.\nIt has no effect.`;
+      }
     }
 
     return msg.reply(`╭══════════════════════╮
