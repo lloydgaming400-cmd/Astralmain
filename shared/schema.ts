@@ -61,7 +61,7 @@ export const cards = pgTable("cards", {
   characterId: integer("character_id").notNull(),
   name: text("name").notNull(),
   series: text("series").notNull(),
-  imageUrl: text("image_url").notNull(),
+  imageUrl: text("image_url"),
   rarity: text("rarity").notNull(),
 });
 

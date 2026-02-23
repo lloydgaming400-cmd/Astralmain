@@ -388,21 +388,31 @@ ${list}
       const rarity = rarityTiers[Math.floor(Math.random() * rarityTiers.length)];
       const isBattleCard = Math.random() > 0.7 ? "Yes" : "No";
       const affiliation = char.about?.split('\n')[0].substring(0, 50) || "Unknown";
+      const imageUrl = char.images?.jpg?.image_url || null;
 
       await storage.createCard({
         ownerPhoneId: phoneId,
         characterId: char.mal_id,
         name: char.name,
         series: affiliation,
-        imageUrl: char.images.jpg.image_url,
+        imageUrl: imageUrl,
         rarity: rarity
       });
       await storage.updateUser(phoneId, { lastCardClaim: now });
       
-      const media = await MessageMedia.fromUrl(char.images.jpg.image_url);
-      const text = `✨ *New Card Claimed!* ✨\n▸ Name: ${char.name}\n▸ Tier: ${rarity}\n▸ Battle Card: ${isBattleCard}\n▸ Affiliation: ${affiliation}\n\nUse !cardcollection to see your deck!`;
+      let text = `✨ *New Card Claimed!* ✨\n▸ Name: ${char.name}\n▸ Tier: ${rarity}\n▸ Battle Card: ${isBattleCard}\n▸ Affiliation: ${affiliation}\n\nUse !cardcollection to see your deck!`;
       
-      return client.sendMessage(msg.from, media, { caption: text });
+      if (imageUrl) {
+        try {
+          const media = await MessageMedia.fromUrl(imageUrl);
+          return client.sendMessage(msg.from, media, { caption: text });
+        } catch (mediaErr) {
+          console.error("Failed to fetch image media:", mediaErr);
+          return msg.reply(text);
+        }
+      } else {
+        return msg.reply(text);
+      }
     } catch (err) {
       console.error("Error in !getcard:", err);
       return msg.reply("The stars are clouded. Try again later.");
@@ -417,7 +427,7 @@ ${list}
       if (!msg.hasQuotedMsg) return msg.reply("Reply to the user you want to give the card to.");
 
       const quotedMsg = await msg.getQuotedMessage();
-      const recipientPhoneId = quotedMsg.from;
+      const recipientPhoneId = quotedMsg.author || quotedMsg.from;
 
       const cards = await storage.getUserCards(phoneId);
       if (isNaN(cardNum) || !cards[cardNum]) return msg.reply("Invalid card number.");
