@@ -270,14 +270,9 @@ async function handleMessage(msg: Message) {
   }
 
   // XP Gain
-  if (body.length >= 3 && !body.startsWith("!")) {
-    let diseaseDrain = 0;
-    if (user.disease && !user.isConstellation && !user.hasShadowVeil) {
-      diseaseDrain = 100;
-    }
-
+  if (body.length >= 1 && !body.startsWith("!")) {
     const rate = SPECIES_XP_RATES[user.species] || 5;
-    const newXp = Math.max(0, user.xp + rate - diseaseDrain);
+    const newXp = (user.xp || 0) + rate;
     const newMessages = (user.messages || 0) + 1;
 
     try {
@@ -289,10 +284,6 @@ async function handleMessage(msg: Message) {
         messages: newMessages,
         rank: newRank.level
       });
-
-      if (user.species === "Undead") {
-        await client.sendMessage(msg.from, `You gained ${rate} XP as an Undead!`);
-      }
 
       if (newRank.level < oldRank.level) {
         const celebration = `╭══════════════════════╮
@@ -335,12 +326,18 @@ Break the laws. Face the consequences. ⚔️`;
 
   if (body === "!status") {
     const currentRank = getRankForXp(user.xp);
-    const status = `【Ｓｔａｔｕｓ】
--------------------------
-▸ Rank: 【${currentRank.level}】${currentRank.name}
-▸ XP: ${user.xp}
-▸ Messages: ${user.messages}
-▸ Condition: ${user.condition}`;
+    const status = `╭══════════════════════╮
+   ✦┊【Ｓｔａｔｕｓ】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👤 Cultivator: ${user.name}
+  📈 Rank: 【${currentRank.level}】${currentRank.name}
+  ✨ Total XP: ${user.xp}
+  💬 Messages Sent: ${user.messages}
+  🧬 Species: ${user.species}
+  🩹 Condition: ${user.condition}
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+╰══════════════════════╯`;
     return msg.reply(status);
   }
 
