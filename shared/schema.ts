@@ -29,7 +29,7 @@ export const users = pgTable("users", {
   vampireUntil: timestamp("vampire_until"),
   isConstellation: boolean("is_constellation").notNull().default(false),
   dustDomainUntil: timestamp("dust_domain_until"),
-  dustDomainMessages: integer("dust_domain_messages").notNull().default(0), // ← NEW
+  dustDomainMessages: integer("dust_domain_messages").notNull().default(0),
   hasShadowVeil: boolean("has_shadow_veil").notNull().default(false),
   lastSuckAt: timestamp("last_suck_at"),
   lastMessageReset: timestamp("last_message_reset").notNull().defaultNow(),
@@ -38,10 +38,17 @@ export const users = pgTable("users", {
   isDead: boolean("is_dead").notNull().default(false),
 
   // ── Guide System ────────────────────────────────────────────────────────────
-  guideName: text("guide_name"),                                              // ← NEW
-  guideSmashAt: timestamp("guide_smash_at"),                                  // ← NEW
-  guidePregnant: boolean("guide_pregnant").notNull().default(false),          // ← NEW
-  guideChildName: text("guide_child_name"),                                   // ← NEW
+  guideName: text("guide_name"),
+  guideSmashAt: timestamp("guide_smash_at"),
+  guidePregnant: boolean("guide_pregnant").notNull().default(false),
+  guideChildName: text("guide_child_name"),
+
+  // ── Item Effects ─────────────────────────────────────────────────────────────
+  eclipseUntil: timestamp("eclipse_until"),           // Eclipse Stone — hides race & XP
+  phantomUntil: timestamp("phantom_until"),           // Phantom Seal — hides from leaderboard
+  mirrorRace: text("mirror_race"),                    // Mirror Shard — copied race
+  mirrorOriginalRace: text("mirror_original_race"),   // Mirror Shard — original race to restore
+  mirrorUntil: timestamp("mirror_until"),             // Mirror Shard — expiry
 });
 
 export const globalStats = pgTable("global_stats", {
