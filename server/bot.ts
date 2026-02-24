@@ -1,4 +1,5 @@
 import pkg from 'whatsapp-web.js';
+import fetch from 'node-fetch';
 const { Client, LocalAuth, MessageMedia } = pkg;
 type Message = pkg.Message;
 import { storage } from './storage';
@@ -12,13 +13,38 @@ export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "
 
 const OWNER_NUMBER = "2347062301848@c.us";
 
-const HELP_MENU = `╭══════════════════════╮
+const HELP_MENU = `╭══════════════════════════╮
+   ✦┊　🌌  ASTRAL BOT  🌌　┊✦
+╰══════════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Greetings, Cultivator! ✨
+  Astral Bot is your path to
+  ascension — collect spirit
+  cards, climb the ranks, and
+  forge your legacy in the realm.
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🃏 Collect rare anime cards
+  🏅 Rank up & gain glory
+  ⚔️  Join a sect & conquer
+  📜 Respect the sacred laws
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Before you begin:
+  📜 !rules  ↳ view the sacred laws
+  📖 !scroll ↳ view all commands
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Your ascension begins with
+  one step, Cultivator.
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
+╰══════════════════════════╯`;
+
+const SCROLL_MENU = `╭══════════════════════╮
    ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
 ╰══════════════════════╯
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   📊 PROFILE & STATS
-  📈 !status ↳ view your status
-  👤 !profile ↳ view your profile
+  📈 !status  ↳ quick status
+  👤 !profile ↳ full profile
   🏆 !leaderboard ↳ top cultivators
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   🛒 SHOP & ITEMS
@@ -43,16 +69,22 @@ const HELP_MENU = `╭═══════════════════�
   🚶 !sectleave ↳ leave your sect
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   👼 SURVIVAL
-  🕊️ !revive ↳ revive a fallen ally (reply)
+  🕊️ !revive ↳ revive fallen ally (reply)
+  🦷 !suck ↳ drain XP (vampire, reply)
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  💞 GUIDES
+  🙋 !getguide ↳ claim your guide
+  💬 !talkguide ↳ talk to your guide
+  💋 !smashmyguide ↳ ...you know
+  👶 !namechild [name] ↳ name your child
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👼 SURVIVAL
+  🕊️ !revive ↳ revive fallen ally (reply)
+  🦷 !suck ↳ drain XP (vampire, reply)
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   👑 SECT LEADER ONLY
-  🥾 !kickmember [username] ↳ kick member
-  ⚡ !punish [username] ↳ punish member
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  🔱 OWNER ONLY
-  🔨 !ban [username] ↳ ban a user
-  🔓 !unban [username] ↳ unban a user
-  🤖 !missastral ↳ manage Miss Astral
+  🥾 !kickmember [name] ↳ kick member
+  ⚡ !punish [name] ↳ punish member
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
      𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
 ╰══════════════════════╯`;
@@ -117,24 +149,106 @@ const DISEASES: Record<string, { name: string; race: string; startMsg: string; e
   "Elf": { name: "Rootwither", race: "Elf", startMsg: "A withering has begun among the Elf race. Rootwither is severing their bond with the ancient world.", endMsg: "Rootwither has retreated into the earth. The Elf race is restored.", cure: "rootwither remedy" }
 };
 
-// Card pool for !getcard
-const CARD_POOL = [
-  { characterId: 1, name: "Sun Wukong", series: "Journey to the West", rarity: "Legendary" },
-  { characterId: 2, name: "Nezha", series: "Investiture of the Gods", rarity: "Rare" },
-  { characterId: 3, name: "Goku", series: "Dragon Ball", rarity: "Epic" },
-  { characterId: 4, name: "Naruto", series: "Naruto", rarity: "Rare" },
-  { characterId: 5, name: "Ichigo", series: "Bleach", rarity: "Rare" },
-  { characterId: 6, name: "Luffy", series: "One Piece", rarity: "Epic" },
-  { characterId: 7, name: "Zoro", series: "One Piece", rarity: "Uncommon" },
-  { characterId: 8, name: "Tanjiro", series: "Demon Slayer", rarity: "Uncommon" },
-  { characterId: 9, name: "Rimuru", series: "Tensura", rarity: "Legendary" },
-  { characterId: 10, name: "Ainz", series: "Overlord", rarity: "Epic" },
-  { characterId: 11, name: "Saitama", series: "One Punch Man", rarity: "Legendary" },
-  { characterId: 12, name: "Shadow", series: "The Eminence in Shadow", rarity: "Epic" },
-  { characterId: 13, name: "Frieren", series: "Frieren", rarity: "Rare" },
-  { characterId: 14, name: "Sung Jinwoo", series: "Solo Leveling", rarity: "Legendary" },
-  { characterId: 15, name: "Anos", series: "Misfit of Demon King Academy", rarity: "Legendary" },
-];
+// Jikan API card fetch
+async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: string; series: string; rarity: string; imageUrl: string | null }> {
+  try {
+    const rarityRoll = Math.random();
+    const rarity = rarityRoll < 0.05 ? "Legendary" : rarityRoll < 0.15 ? "Epic" : rarityRoll < 0.35 ? "Rare" : rarityRoll < 0.65 ? "Uncommon" : "Common";
+    const page = Math.floor(Math.random() * 20) + 1;
+    const res = await fetch(`https://api.jikan.moe/v4/characters?page=${page}&limit=25`);
+    const data = await res.json() as any;
+    if (!data?.data?.length) throw new Error("No data");
+    const chars = data.data.filter((c: any) => c.images?.jpg?.image_url);
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    const series = char.anime?.[0]?.anime?.title || char.manga?.[0]?.manga?.title || "Unknown Series";
+    return { characterId: char.mal_id, name: char.name, series, rarity, imageUrl: char.images?.jpg?.image_url || null };
+  } catch {
+    // fallback if API fails
+    const fallback = [
+      { characterId: 1, name: "Naruto Uzumaki", series: "Naruto", rarity: "Rare", imageUrl: null },
+      { characterId: 2, name: "Luffy", series: "One Piece", rarity: "Epic", imageUrl: null },
+      { characterId: 3, name: "Goku", series: "Dragon Ball", rarity: "Legendary", imageUrl: null },
+      { characterId: 4, name: "Ichigo", series: "Bleach", rarity: "Rare", imageUrl: null },
+      { characterId: 5, name: "Saitama", series: "One Punch Man", rarity: "Legendary", imageUrl: null },
+    ];
+    return fallback[Math.floor(Math.random() * fallback.length)];
+  }
+}
+
+
+// ── GUIDE SYSTEM ─────────────────────────────────────────────────────────────
+
+const ANNA = {
+  name: "Anna",
+  emoji: "🔴",
+  image: "attached_assets/anna.jpg",
+  imageWithChild: "attached_assets/annawithchild.jpg",
+  greeting: `*A red-haired girl bursts in, nearly knocking over everything in sight~*
+
+🔴 *Anna:* "OH— you actually called for me?! Heheheh~ I'm Anna! Your guide, your partner, your absolute chaos companion! Let's make history together darling~! 🔥"
+
+Type *!getguide* to claim Anna as your permanent guide!`,
+  claimMsg: `*Anna beams at you like you just made the best decision of your life.*
+
+🔴 *Anna:* "You chose ME?! Darling~ I KNEW you had good taste!! Don't worry, I'll take GREAT care of you!! This is forever okay?! No take-backs~! 🔥"`,
+  talkResponses: [
+    `🔴 *Anna:* "Darling~! I was JUST thinking about you! Are you eating? Training? Smiling?! 😤"`,
+    `🔴 *Anna:* "You know, I sorted your inventory in my head while you were gone. Don't ask how. I just did~ 💫"`,
+    `🔴 *Anna:* "Ohhh you came to talk to me! Best decision of your LIFE darling, truly~! 🥰"`,
+    `🔴 *Anna:* "I found THREE rare herbs today! ...I ate one. It was delicious. The other two are yours~ 🌿"`,
+    `🔴 *Anna:* "You better be ranking up out there! I didn't sign up to guide someone mediocre~ Just kidding. Maybe. 😏"`,
+    `🔴 *Anna:* "Sometimes I watch you from a distance and think... yeah. I made a good choice too~ 🌸"`,
+    `🔴 *Anna:* "Don't get cocky out there okay?! I can't revive you from here darling~! 😤"`,
+  ],
+  pregnantMsg: `🔴 *Anna:* "Darling... I have something to tell you. I've been feeling different lately. Something is... different inside me. I think— I think I'm pregnant. 🌸
+...Don't look at me like that! This is YOUR fault~!"`,
+  birthMsg: `🔴 *Anna:* "DARLING~!! It's time!! She's HERE! Our baby is HERE! 😭🌸
+She's so tiny and perfect and— she has your eyes I think?!
+
+Name her! Use *!namechild [name]* RIGHT NOW!!"`,
+  namedMsg: (childName: string) => `🔴 *Anna:* "~${childName}~!! Oh that name is PERFECT darling!!
+She's already kicking like she approves!! 😭🌸
+Welcome to the world, little ${childName}~
+Your daddy is... well. He's trying his best. 💕"`,
+  smashScene: [
+    `*Anna sets her satchel down slowly. Her eyes glint in the torchlight.*`,
+    `🔴 *Anna:* "...Oh? So it's THAT kind of night, darling~"`,
+    `*She steps closer. The candle flickers.*`,
+    `*You reach out. She doesn't step back.*`,
+    `*A long silence falls over the room.*`,
+    `*Outside, stars wheel overhead.*`,
+    `*Inside... the world goes very quiet.*`,
+    `*......*`,
+    `*Some things are better left unwritten~ 🔥*`,
+  ],
+  alreadySmashed: `🔴 *Anna:* "...Again?! Give me a moment to breathe, darling~! 😳"`,
+  leaveMsg: `🔴 *Anna:* "...Oh. You're leaving? ...Fine! Go!! I'm not crying, YOU'RE crying!! 😤
+Come back when you're ready, darling~"`,
+};
+
+// Track if Anna is currently spawned in group
+let annaSpawned = false;
+let annaSpawnedAt: Date | null = null;
+
+// Check guide pregnancy/birth events
+async function checkGuideEvents(user: any, phoneId: string) {
+  if (!user.guideName || !user.guideSmashAt) return;
+  const now = Date.now();
+  const smashTime = new Date(user.guideSmashAt).getTime();
+
+  if (!user.guidePregnant && now - smashTime >= 86400000) {
+    await storage.updateUser(phoneId, { guidePregnant: true } as any);
+    await client.sendMessage(phoneId, ANNA.pregnantMsg);
+  }
+
+  if (user.guidePregnant && !user.guideChildName && now - smashTime >= 259200000) {
+    try {
+      const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.imageWithChild));
+      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "annawithchild.jpg");
+      await client.sendMessage(phoneId, media, { caption: ANNA.birthMsg });
+    } catch { await client.sendMessage(phoneId, ANNA.birthMsg); }
+  }
+}
 
 function getRandomSpecies() {
   const races = Object.keys(SPECIES_XP_RATES).filter(r => r !== "Constellation");
@@ -220,6 +334,26 @@ setInterval(async () => {
   } catch (err) { console.error("Interval error:", err); }
 }, 300000);
 
+
+// ── Weekly XP for guides ──────────────────────────────────────────────────────
+setInterval(async () => {
+  if (!client) return;
+  try {
+    const users = await storage.getUsers();
+    for (const user of users) {
+      const hasGuide = !!(user as any).guideName;
+      const hasChild = !!(user as any).guideChildName;
+      if (!hasGuide) continue;
+      const weeklyXp = hasChild ? 5000 : 1000;
+      await storage.updateUser(user.phoneId, { xp: user.xp + weeklyXp });
+      await client.sendMessage(user.phoneId, `✨ Weekly guide bonus received!
++${weeklyXp} XP from your companion${hasChild ? " and child" : ""}~`);
+      // Check pregnancy/birth events
+      await checkGuideEvents(user, user.phoneId);
+    }
+  } catch (err) { console.error("Weekly interval error:", err); }
+}, 604800000); // 7 days
+
 export async function initBot() {
   if (isInitializing) return;
   isInitializing = true;
@@ -287,11 +421,26 @@ async function handleMessage(msg: Message) {
   }
 
   // XP gain on normal messages
-  if (body.length >= 1 && !body.startsWith("!")) {
-    const rate = user.species === "Constellation" ? 300 : (SPECIES_XP_RATES[user.species] || 5);
+  if (body.length >= 3 && !body.startsWith("!")) {
+    // Check Dust Domain
+    let rate = user.species === "Constellation" ? 300 : (SPECIES_XP_RATES[user.species] || 5);
+    let dustBonus = 0;
+    if (user.dustDomainUntil && new Date() < new Date(user.dustDomainUntil)) {
+      const newDustMsgs = ((user as any).dustDomainMessages || 0) + 1;
+      if (newDustMsgs % 10 === 0) {
+        dustBonus = 5000;
+        await client.sendMessage(phoneId, `✨ Dust Domain: +5000 XP earned! (${newDustMsgs} domain messages)`);
+      }
+      await storage.updateUser(phoneId, { dustDomainMessages: newDustMsgs } as any);
+    } else if (user.dustDomainUntil && new Date() >= new Date(user.dustDomainUntil) && (user as any).dustDomainMessages > 0) {
+      // Domain just expired
+      await storage.updateUser(phoneId, { dustDomainUntil: null, dustDomainMessages: 0 } as any);
+      await client.sendMessage(phoneId, `*The light fades. The domain closes. You have returned.*\n✨ Dust Domain has ended.`);
+    }
+
     try {
       const oldRank = getRankForXp(user.xp);
-      const newXp = user.xp + rate;
+      const newXp = user.xp + rate + dustBonus;
       const newRank = getRankForXp(newXp);
       const updates: any = { xp: newXp, messages: user.messages + 1, rank: newRank.level };
 
@@ -299,12 +448,20 @@ async function handleMessage(msg: Message) {
         await client.sendMessage(msg.from, `╭══════════════════════╮\n   🎊 RANK UP! 🎊\n   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n   👤 Cultivator: ${user.name}\n   📈 New Rank: 【${newRank.level}】${newRank.name}\n   ✨ Total XP: ${newXp}\n   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n   Your soul ascends further!\n╰══════════════════════╯`);
       }
 
-      if (Math.random() < 0.05) {
-        const items = ["Dragon Egg", "Void Fragment", "Star Dust", "Vampire Tooth", "Cursed Bone", "Living Core"];
-        const item = items[Math.floor(Math.random() * items.length)];
+      if (Math.random() < 0.01) {
+        const itemPool: Record<string, string> = {
+          "Dragon Egg": "*Something warm and heavy settles into your possession.*\n🥚 A Dragon Egg has appeared in your inventory.",
+          "Void Fragment": "*A crack in reality slips into your possession.*\n🌑 A Void Fragment has appeared in your inventory.",
+          "Star Dust": "*Something shimmering and weightless drifts into your possession.*\n✨ Star Dust has appeared in your inventory.",
+          "Vampire Tooth": "*Something sharp and ancient pierces into your possession.*\n🦷 A Vampire Tooth has appeared in your inventory.",
+          "Cursed Bone": "*Something cold and wrong materializes near you.*\n🦴 A Cursed Bone has appeared in your inventory.",
+          "Living Core": "*Something ancient and alive pulses into your possession.*\n🌿 A Living Core has appeared in your inventory.",
+        };
+        const itemNames = Object.keys(itemPool);
+        const item = itemNames[Math.floor(Math.random() * itemNames.length)];
         if (!(user.inventory as string[]).includes(item)) {
           updates.inventory = [...(user.inventory as string[]), item];
-          await client.sendMessage(msg.from, `✨ You found a [${item}]! Check !inventory.`);
+          await client.sendMessage(phoneId, `${itemPool[item]}\nType !inventory to see your items.`);
         }
       }
       await storage.updateUser(phoneId, updates);
@@ -314,7 +471,8 @@ async function handleMessage(msg: Message) {
 
   // ── Commands ────────────────────────────────────────────────────────────────
 
-  if (body === "!scroll" || body === "!help") return msg.reply(HELP_MENU);
+  if (body === "!help") return msg.reply(HELP_MENU);
+  if (body === "!scroll") return msg.reply(SCROLL_MENU);
 
   if (body === "!status" || body === "!profile") {
     const currentRank = getRankForXp(user.xp);
@@ -335,8 +493,28 @@ async function handleMessage(msg: Message) {
 
   if (body === "!inventory") {
     const inv = user.inventory as string[];
-    const list = inv.length ? inv.map((item, i) => `  【${i + 1}】 ${item}`).join("\n") : "  Empty.";
-    return msg.reply(`╭══════════════════════╮\n  🎒 INVENTORY\n╰══════════════════════╯\n${list}\n\n  Use !useitem [num]\n╰══════════════════════╯`);
+    const itemEmojis: Record<string, string> = {
+      "Dragon Egg": "🥚", "Void Fragment": "🌑", "Star Dust": "✨",
+      "Vampire Tooth": "🦷", "Cursed Bone": "🦴", "Living Core": "🌿",
+      "blood rune": "🩸", "eclipse stone": "🌒", "phantom seal": "👻",
+      "cursed coin": "🪙", "mirror shard": "🪞", "vampire tooth": "🦷",
+      "cursed bone": "🦴", "grey rot cure": "💊", "hellfire suppressant": "💊",
+      "feral antidote": "💊", "grace restoration vial": "💊",
+      "scale restoration salve": "💊", "rootwither remedy": "💊",
+      "living core": "🌿", "dragon egg": "🥚", "void fragment": "🌑",
+      "star dust": "✨",
+    };
+    const itemRarity: Record<string, string> = {
+      "Dragon Egg": "Legendary", "Void Fragment": "Rare", "Star Dust": "Uncommon",
+      "Vampire Tooth": "Epic", "Cursed Bone": "Uncommon", "Living Core": "Rare",
+    };
+    if (!inv.length) return msg.reply(`╭══════════════════════╮\n   ✦┊【Ｉｎｖｅｎｔｏｒｙ】┊✦\n╰══════════════════════╯\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Your satchel is empty.\n  Chat to find hidden items.\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Use !useitem [num]\n╰══════════════════════╯`);
+    const list = inv.map((item, i) => {
+      const emoji = itemEmojis[item] || itemEmojis[item.toLowerCase()] || "📦";
+      const rarity = itemRarity[item] || "";
+      return `  【${i + 1}】 ${emoji} ${item}${rarity ? ` ┊ ${rarity}` : ""}`;
+    }).join("\n");
+    return msg.reply(`╭══════════════════════╮\n   ✦┊【Ｉｎｖｅｎｔｏｒｙ】┊✦\n╰══════════════════════╯\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n${list}\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  ${inv.length} item(s) — !useitem [num]\n╰══════════════════════╯`);
   }
 
   if (body === "!shop") {
@@ -370,8 +548,11 @@ async function handleMessage(msg: Message) {
     const updates: any = {};
 
     if (itemLower === "star dust") {
-      updates.dustDomainUntil = new Date(Date.now() + 300000);
-      reply = `✨ Dust Domain active for 5 minutes! Make it count.`;
+      const expiresAt = new Date(Date.now() + 1800000); // 30 minutes
+      updates.dustDomainUntil = expiresAt;
+      updates.dustDomainMessages = 0; // reset message counter
+      const expireStr = expiresAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      reply = `*The dust scatters and the world around you shifts. A domain of light opens before you.*\n✨ Dust Domain active. You earn 5000 XP per 10 messages for the next 30 minutes. Make it count.\nExpires: ${expireStr}`;
     } else if (itemLower === "void fragment") {
       if (Math.random() > 0.03) {
         inv.splice(num, 1);
@@ -385,7 +566,10 @@ async function handleMessage(msg: Message) {
       const sp = getRandomSpecies();
       updates.species = sp.name;
       updates.isConstellation = false;
-      reply = `🌿 The Living Core pulses with life! You have been reborn as a *${sp.name}*.`;
+      updates.hasShadowVeil = false; // clear shadow veil on race change
+      updates.condition = "Healthy"; // clear infection on race change
+      updates.disease = null;
+      reply = `*The Living Core pulses with ancient life. Your form dissolves and reshapes.*\n🌿 Race Transformed.\nNew Race: ${sp.name} (${sp.rarity})\nXP Rate: ${SPECIES_XP_RATES[sp.name]} XP per message\n*You are reborn.*`;
     } else if (itemLower === "cursed bone") {
       updates.hasShadowVeil = true;
       reply = `🦴 Shadow Veil active! You are now immune to plagues.`;
@@ -490,10 +674,20 @@ async function handleMessage(msg: Message) {
         return msg.reply(`🎴 You already claimed your card today! Come back in ${hoursLeft} hour(s).`);
       }
     }
-    const card = CARD_POOL[Math.floor(Math.random() * CARD_POOL.length)];
-    await storage.createCard({ ownerPhoneId: phoneId, characterId: card.characterId, name: card.name, series: card.series, imageUrl: null, rarity: card.rarity });
+    await msg.reply("🎴 Drawing your card from the archives...");
+    const card = await fetchRandomAnimeCard();
+    await storage.createCard({ ownerPhoneId: phoneId, characterId: card.characterId, name: card.name, series: card.series, imageUrl: card.imageUrl, rarity: card.rarity });
     await storage.updateUser(phoneId, { lastCardClaim: now });
-    return msg.reply(`╭══════════════════════╮\n  🎴 CARD OBTAINED!\n╰══════════════════════╯\n  📛 Name: ${card.name}\n  📺 Series: ${card.series}\n  ✨ Rarity: ${card.rarity}\n\n  Use !cardcollection to view all.\n╰══════════════════════╯`);
+    const rarityEmoji = card.rarity === "Legendary" ? "🌟" : card.rarity === "Epic" ? "💜" : card.rarity === "Rare" ? "💙" : card.rarity === "Uncommon" ? "💚" : "⬜";
+    const cardMsg = `╭══════════════════════╮\n  🎴 CARD OBTAINED!\n╰══════════════════════╯\n  📛 Name: ${card.name}\n  📺 Series: ${card.series}\n  ${rarityEmoji} Rarity: ${card.rarity}\n\n  Use !cardcollection to view all.\n╰══════════════════════╯`;
+    if (card.imageUrl) {
+      try {
+        const imgRes = await fetch(card.imageUrl);
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        const media = new MessageMedia("image/jpeg", buffer.toString("base64"), `${card.name}.jpg`);
+        await msg.reply(media, undefined, { caption: cardMsg });
+      } catch { await msg.reply(cardMsg); }
+    } else { await msg.reply(cardMsg); }
   }
 
   if (body === "!cardcollection") {
@@ -525,6 +719,54 @@ async function handleMessage(msg: Message) {
     await storage.updateCard(card.id, { ownerPhoneId: targetId });
     await client.sendMessage(targetId, `🎴 ${user.name} gave you the card *${card.name}* [${card.rarity}]!`);
     return msg.reply(`🎴 You gave *${card.name}* to ${target.name}.`);
+  }
+
+
+  // ── GUIDE COMMANDS ───────────────────────────────────────────────────────────
+
+
+
+  if (body === "!smashmyguide") {
+    const guideName = (user as any).guideName?.toLowerCase();
+    if (!guideName) return msg.reply("❌ You don't have a guide. Use !guide to choose one.");
+    const guide = GUIDES[guideName];
+    if (!guide) return msg.reply("❌ Guide not found.");
+    if ((user as any).guideSmashAt) return msg.reply(`${guide.emoji} *${guide.name}:* "...Again? Give me a moment to breathe, will you?"`);
+    await storage.updateUser(phoneId, { guideSmashAt: new Date(), guidePregnant: false } as any);
+    let scene = "";
+    for (const line of guide.smashScene) { scene += line + "\n"; }
+    return msg.reply(scene.trim());
+  }
+
+  if (body.startsWith("!namechild ")) {
+    const guideName = (user as any).guideName?.toLowerCase();
+    if (!guideName) return msg.reply("❌ You don't have a guide.");
+    const guide = GUIDES[guideName];
+    if (!(user as any).guidePregnant) return msg.reply("❌ No child to name yet.");
+    if ((user as any).guideChildName) return msg.reply(`❌ Your child is already named *${(user as any).guideChildName}*.`);
+    const childName = body.replace("!namechild ", "").trim();
+    if (!childName || childName.length > 20) return msg.reply("❌ Invalid name. Keep it under 20 characters.");
+    await storage.updateUser(phoneId, { guideChildName: childName } as any);
+    const nameMsg = guide.name === "Anna"
+      ? `🔴 *Anna:* "~${childName}~!! Oh that's PERFECT darling!! She's already kicking like she approves!! 😭🌸 Welcome to the world, little ${childName}~ Your daddy is... well. He's trying his best."`
+      : `⚒️ *Maya:* "...${childName}. ...Yeah. That fits her. Good choice, kid." *She doesn't smile. But her eyes do.*`;
+    await msg.reply(nameMsg);
+    await msg.reply(`✨ Your family is complete!
+👨 You + ${guide.emoji} ${guide.name} + 👶 ${childName}
+
++5000 XP per week permanently added!`);
+    return;
+  }
+
+  if (body === "!leaveguide") {
+    if (!(user as any).guideName) return msg.reply("❌ You don't have a guide.");
+    const guideName = (user as any).guideName?.toLowerCase();
+    const guide = GUIDES[guideName];
+    const leaveMsg = guide?.name === "Anna"
+      ? `🔴 *Anna:* "...Oh. You're leaving? ...Fine. Fine! Go! I'm not crying, YOU'RE crying!! 😤 Come back when you're ready, darling~"`
+      : `⚒️ *Maya:* "...Understood. Take care of yourself out there. Don't do anything stupid." *She turns back to the forge.*`;
+    await storage.updateUser(phoneId, { guideName: null, guideSmashAt: null, guidePregnant: false, guideChildName: null } as any);
+    return msg.reply(leaveMsg);
   }
 
   // ── SECTS ────────────────────────────────────────────────────────────────────
@@ -614,6 +856,31 @@ async function handleMessage(msg: Message) {
 
   if (phoneId !== OWNER_NUMBER) return; // everything below is owner-only
 
+  if (body === "!guidespawn") {
+    annaSpawned = true;
+    annaSpawnedAt = new Date();
+    const announcement = `╭══════════════════════╮
+   ✦┊【 A G U I D E 】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  A guide has appeared!
+  She wanders into the realm,
+  searching for a worthy
+  cultivator to walk beside.
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Type *!getguide* to claim her.
+  She stays forever.
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
+╰══════════════════════╯`;
+    try {
+      const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.image));
+      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "anna.jpg");
+      await client.sendMessage(msg.from, media, { caption: announcement });
+    } catch { await msg.reply(announcement); }
+    return;
+  }
+
   if (body.startsWith("!ban ")) {
     const targetName = body.replace("!ban ", "").trim();
     const allUsers = await storage.getUsers();
@@ -632,7 +899,7 @@ async function handleMessage(msg: Message) {
     return msg.reply(`🔓 *${target.name}* has been unbanned.`);
   }
 
-  if (body === "!missastral") {
-    return msg.reply(`🤖 *Miss Astral* is online and running.\n\nStats panel coming soon.`);
+  if (body.startsWith("!missastral")) {
+    return msg.reply(`*Miss Astral opens one eye slowly...*\n\n🐱 I am alive, yare yare.\nI may sleep soon tho.`);
   }
 }
