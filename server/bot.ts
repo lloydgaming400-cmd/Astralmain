@@ -249,8 +249,9 @@ async function checkGuideEvents(user: any, phoneId: string) {
   }
 }
 
-function resolvePhoneId(quotedMsg: Message): string {
-  return (quotedMsg as any).author || quotedMsg.from;
+function resolvePhoneId(msg: any): string {
+  // In groups, msg.author is the sender. In DMs, msg.from is the sender.
+  return msg.author || msg.from;
 }
 
 function getRandomSpecies() {
@@ -860,8 +861,8 @@ async function endBattle(
 // ══════════════════════════════════════════════════════════════════
 
 async function handleMessage(msg: Message) {
+  const phoneId = msg.author || msg.from;
   const contact = await msg.getContact();
-  const phoneId = contact.id._serialized;
   const name = contact.pushname || contact.number;
   const body = msg.body.trim().toLowerCase();
   let user = await storage.getUserByPhone(phoneId);
