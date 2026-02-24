@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   isRegistered: boolean("is_registered").notNull().default(false),
   rank: integer("rank").notNull().default(1),
   condition: text("condition").notNull().default("Healthy"),
+  hp: integer("hp").notNull().default(100),
   lastDailyReset: timestamp("last_daily_reset").notNull().defaultNow(),
   dailyMessageCount: integer("daily_message_count").notNull().default(0),
   dragonEggHatched: boolean("dragon_egg_hatched").notNull().default(false),
@@ -33,6 +34,7 @@ export const users = pgTable("users", {
   lastMessageReset: timestamp("last_message_reset").notNull().defaultNow(),
   disease: text("disease"),
   infectedAt: timestamp("infected_at"),
+  isDead: boolean("is_dead").notNull().default(false),
 });
 
 export const globalStats = pgTable("global_stats", {
@@ -43,6 +45,7 @@ export const globalStats = pgTable("global_stats", {
   activeDisease: text("active_disease"),
   diseaseRace: text("disease_race"),
   lastOutbreakAt: timestamp("last_outbreak_at"),
+  outbreakEndsAt: timestamp("outbreak_ends_at"),
 });
 
 export const sects = pgTable("sects", {

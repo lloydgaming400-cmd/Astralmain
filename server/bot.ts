@@ -26,6 +26,8 @@ const HELP_MENU = `╭═══════════════════�
   🛍️ !buy [item] ↳ purchase item
   🎒 !inventory ↳ view items
   🎒 !useitem [num] ↳ use item
+  🤝 !giveitem [num] ↳ give item (reply)
+  💰 !givexp [amt] ↳ give XP (reply)
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   🎴 CARDS
   🎁 !getcard ↳ daily claim
@@ -39,6 +41,9 @@ const HELP_MENU = `╭═══════════════════�
   💰 !donate [amount] ↳ donate XP
   📊 !sectranking ↳ sect leaderboard
   🚶 !sectleave ↳ leave your sect
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  👼 SURVIVAL
+  🕊️ !revive @user ↳ revive a fallen ally
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   👑 SECT LEADER ONLY
     🥾 !kickmember [username] ↳ kick member
@@ -62,6 +67,7 @@ const SPECIES_XP_RATES: Record<string, number> = {
   "Elf": 35,
   "Dragon": 40,
   "Celestial": 50,
+  "Constellation": 1000,
 };
 
 const RANKS = [
@@ -77,9 +83,7 @@ const RANKS = [
 
 function getRankForXp(xp: number) {
   for (let i = RANKS.length - 1; i >= 0; i--) {
-    if (xp >= RANKS[i].threshold) {
-      return RANKS[i];
-    }
+    if (xp >= RANKS[i].threshold) return RANKS[i];
   }
   return RANKS[0];
 }
@@ -100,668 +104,277 @@ const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
   "rootwither remedy": { price: 700, description: "Cures Rootwither. (Elf)" },
 };
 
+const DISEASES: Record<string, { name: string; race: string; startMsg: string; endMsg: string; cure: string }> = {
+  "Human": { name: "The Grey Rot", race: "Human", startMsg: "A deadly disease has spread throughout the Human race. The Grey Rot is consuming them from within. Humans are advised to avoid !leaderboard and !profile for the time being.", endMsg: "The Grey Rot has run its course. The Human race can breathe again.", cure: "grey rot cure" },
+  "Demon": { name: "Hellfire Fever", race: "Demon", startMsg: "A plague has ignited within the Demon race. Hellfire Fever is burning through their ranks. Demons are advised to avoid !leaderboard and !profile for the time being.", endMsg: "The flames have died down. Hellfire Fever has left the Demon race.", cure: "hellfire suppressant" },
+  "Beast Clan": { name: "Feral Plague", race: "Beast Clan", startMsg: "A plague has broken loose within the Beast Clan. The Feral Plague is tearing through their kind. Beast Clan members are advised to avoid !leaderboard and !profile for the time being.", endMsg: "The Feral Plague has been contained. The Beast Clan rises again.", cure: "feral antidote" },
+  "Fallen Angel": { name: "Corruption Blight", race: "Fallen Angel", startMsg: "A blight has swept through the Fallen Angel race. Corruption Blight is consuming what little grace they have left. Fallen Angels are advised to avoid !leaderboard and !profile for the time being.", endMsg: "The Corruption Blight has faded. The Fallen Angels endure once more.", cure: "grace restoration vial" },
+  "Dragon": { name: "Scale Sickness", race: "Dragon", startMsg: "A sickness has infected the Dragon race. Scale Sickness is cracking through their legendary hides. Dragons are advised to avoid !leaderboard and !profile for the time being.", endMsg: "Scale Sickness has passed. The Dragon race stands unbroken.", cure: "scale restoration salve" },
+  "Elf": { name: "Rootwither", race: "Elf", startMsg: "A withering has begun among the Elf race. Rootwither is severing their bond with the ancient world. Elves are advised to avoid !leaderboard and !profile for the time being.", endMsg: "Rootwither has retreated into the earth. The Elf race is restored.", cure: "rootwither remedy" }
+};
+
 function getRandomSpecies() {
-  const races = Object.keys(SPECIES_XP_RATES);
+  const races = Object.keys(SPECIES_XP_RATES).filter(r => r !== "Constellation");
   const name = races[Math.floor(Math.random() * races.length)];
   const rarity = name === "Celestial" ? "Legendary" : (name === "Dragon" || name === "Elf" ? "Very Rare" : "Common");
   return { name, rarity };
 }
 
+function getHpStatus(hp: number) {
+  if (hp >= 100) return "Perfectly Healthy";
+  if (hp >= 90) return "Feeling Fine";
+  if (hp >= 80) return "Slightly Off";
+  if (hp >= 70) return "Under the Weather";
+  if (hp >= 60) return "Noticeably Sick";
+  if (hp >= 50) return "Unwell";
+  if (hp >= 40) return "Feverish";
+  if (hp >= 30) return "Seriously Ill";
+  if (hp >= 20) return "Deteriorating";
+  if (hp >= 10) return "Critical Condition";
+  return "Perished";
+}
+
+function generateHpBar(hp: number) {
+  const total = 10;
+  const filled = Math.ceil(hp / 10);
+  const empty = total - filled;
+  return "█".repeat(Math.max(0, filled)) + "░".repeat(Math.max(0, empty)) + ` ${hp}/100`;
+}
+
 let client: Client;
 let isInitializing = false;
+
+// Interval logic for HP drain, Plagues, and Egg Hatching
+setInterval(async () => {
+  try {
+    const users = await storage.getUsers();
+    for (const user of users) {
+      let hpDrain = 0;
+      if (user.condition === "Infected") hpDrain += 5;
+      
+      if (hpDrain > 0 && !user.isDead) {
+        const newHp = Math.max(0, user.hp - hpDrain);
+        const isDead = newHp <= 0;
+        await storage.updateUser(user.phoneId, { hp: newHp, isDead });
+        if (isDead) {
+          await client.sendMessage(user.phoneId, "💀 Your life force has faded. You have perished. You cannot use commands until revived.");
+        }
+      }
+
+      // Dragon Egg Progress
+      if (user.dragonEggProgress > 0 && !user.dragonEggHatched) {
+        const others = users.filter(u => u.phoneId !== user.phoneId && u.xp >= 30);
+        if (others.length > 0) {
+          const victim = others[Math.floor(Math.random() * others.length)];
+          await storage.updateUser(victim.phoneId, { xp: victim.xp - 30 });
+          await storage.updateUser(user.phoneId, { dragonEggProgress: user.dragonEggProgress + 30 });
+          await client.sendMessage(victim.phoneId, "A strange fatigue washes over you. Something is feeding nearby.\nYou lost 30 XP.");
+          
+          if (user.dragonEggProgress + 30 >= 1500) {
+            await storage.updateUser(user.phoneId, { dragonEggHatched: true });
+            await client.sendMessage(user.phoneId, "The shell shatters. Something ancient rises.\nYour Dragon Egg has fully hatched. +500 XP per day added permanently.");
+          }
+        }
+      }
+    }
+
+    const stats = await storage.getGlobalStats();
+    const now = new Date();
+    if (!stats.activeDisease && (!stats.lastOutbreakAt || now.getTime() - new Date(stats.lastOutbreakAt).getTime() > 604800000)) {
+      const races = Object.keys(DISEASES);
+      const randomRace = races[Math.floor(Math.random() * races.length)];
+      const disease = DISEASES[randomRace];
+      const endsAt = new Date(now.getTime() + (Math.floor(Math.random() * 7) + 1) * 86400000);
+      await storage.updateGlobalStats({ activeDisease: disease.name, diseaseRace: disease.race, lastOutbreakAt: now, outbreakEndsAt: endsAt });
+      await client.sendMessage(OWNER_NUMBER, `⚠️ *DISEASE OUTBREAK*\n\n${disease.startMsg}`);
+    } else if (stats.activeDisease && stats.outbreakEndsAt && now > new Date(stats.outbreakEndsAt)) {
+      const disease = Object.values(DISEASES).find(d => d.name === stats.activeDisease);
+      await storage.updateGlobalStats({ activeDisease: null, diseaseRace: null, outbreakEndsAt: null });
+      await client.sendMessage(OWNER_NUMBER, `✨ *DISEASE CLEARED*\n\n${disease?.endMsg}`);
+    }
+  } catch (err) { console.error("Interval error:", err); }
+}, 300000);
 
 export async function initBot() {
   if (isInitializing) return;
   isInitializing = true;
   const authPath = path.join(process.cwd(), '.wwebjs_auth');
   const cachePath = path.join(process.cwd(), '.wwebjs_cache');
-  
   if (connectionStatus === "DISCONNECTED") {
     if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
     if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
   }
-
   if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
   if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
-
-  client = new Client({
-    authStrategy: new LocalAuth({ dataPath: authPath }),
-    restartOnAuthFail: true,
-    puppeteer: {
-      executablePath: execSync('which chromium').toString().trim(),
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-extensions'
-      ]
-    }
-  });
-
-  client.on('qr', (qr) => {
-    currentQrCode = qr;
-    connectionStatus = "WAITING_FOR_QR";
-    console.log('New QR code received:', qr.substring(0, 20) + "...");
-  });
-
-  client.on('ready', () => {
-    connectionStatus = "CONNECTED";
-    currentQrCode = undefined;
-    console.log('Bot is ready');
-  });
-
-  client.on('authenticated', () => {
-    connectionStatus = "CONNECTED";
-    currentQrCode = undefined;
-    console.log('Authenticated');
-  });
-
-  client.on('auth_failure', (msg) => {
-    console.error('Auth failure:', msg);
-    connectionStatus = "DISCONNECTED";
-    currentQrCode = undefined;
-  });
-
-  client.on('disconnected', (reason) => {
-    console.error('Client was logged out', reason);
-    connectionStatus = "DISCONNECTED";
-    currentQrCode = undefined;
-  });
-
-  client.on('message', async (msg) => {
-    try {
-      await handleMessage(msg);
-    } catch (err) {
-      console.error('Error handling message:', err);
-    }
-  });
-
-  client.initialize().catch(err => {
-    console.error('Init failed:', err);
-    connectionStatus = "DISCONNECTED";
-  }).finally(() => {
-    isInitializing = false;
-  });
+  client = new Client({ authStrategy: new LocalAuth({ dataPath: authPath }), restartOnAuthFail: true, puppeteer: { executablePath: execSync('which chromium').toString().trim(), headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-accelerated-2d-canvas', '--no-first-run', '--no-zygote', '--disable-gpu', '--disable-software-rasterizer', '--disable-extensions'] } });
+  client.on('qr', (qr) => { currentQrCode = qr; connectionStatus = "WAITING_FOR_QR"; });
+  client.on('ready', () => { connectionStatus = "CONNECTED"; currentQrCode = undefined; console.log('Bot is ready'); });
+  client.on('authenticated', () => { connectionStatus = "CONNECTED"; currentQrCode = undefined; });
+  client.on('auth_failure', () => { connectionStatus = "DISCONNECTED"; });
+  client.on('disconnected', () => { connectionStatus = "DISCONNECTED"; });
+  client.on('message', async (msg) => { try { await handleMessage(msg); } catch (err) { console.error('Error handling message:', err); } });
+  client.initialize().catch(() => { connectionStatus = "DISCONNECTED"; }).finally(() => { isInitializing = false; });
 }
 
-export function refreshQr() {
-  if (client) {
-    client.destroy().then(() => initBot()).catch(() => initBot());
-  } else {
-    initBot();
-  }
-}
+export function refreshQr() { if (client) { client.destroy().then(() => initBot()).catch(() => initBot()); } else { initBot(); } }
 
 async function handleMessage(msg: Message) {
   const contact = await msg.getContact();
   const phoneId = contact.id._serialized;
   const name = contact.pushname || contact.number;
   const body = msg.body.trim().toLowerCase();
-
   let user = await storage.getUserByPhone(phoneId);
-
-  if (user?.isBanned) {
-    if (body.startsWith("!")) {
-      await client.sendMessage(msg.from, "Miss Astral does not even blink.\n\n...The void has closed its doors to you.");
-    }
+  if (user?.isBanned) return;
+  if (user?.isDead && !body.startsWith("!revive")) {
+    if (body.startsWith("!")) return msg.reply("💀 You are dead. Use !revive @user to return.");
     return;
   }
-
-  if (body === "!start" && user?.isRegistered) {
-    return msg.reply("Your journey has already begun. You cannot start again.");
-  }
-
   if (!user || !user.isRegistered) {
     if (body === "!start") {
       const sp = getRandomSpecies();
-      const userData = {
-        phoneId,
-        name,
-        species: sp.name,
-        isRegistered: true,
-        xp: 0,
-        messages: 0,
-        condition: "Healthy",
-        rank: 8,
-        inventory: []
-      };
-      if (!user) {
-        user = await storage.createUser(userData);
-      } else {
-        user = await storage.updateUser(phoneId, userData);
-      }
-      
-      if (!user) return msg.reply("An error occurred while starting your journey.");
-
-      const welcome = `╭═══════════════════╮
-   ✦┊【Ａｗａｋｅｎｉｎｇ】┊✦
-╰═══════════════════╯
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Greetings, Cultivator!
-  You have been summoned to the Astral Realm.
-  I am Miss Astral, your guide to ascension.
-  ✦ Species: ${sp.name}
-  ✦ Rarity: ${sp.rarity}
-  Your journey begins now.
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !scroll to view all commands
-  Use !rules to see bot rules
-╰══════════════════════╯`;
-      const imgPath = path.join(process.cwd(), 'attached_assets', 'download_(17)_(1)_1771815300401.jpg');
-      if (fs.existsSync(imgPath)) {
-        try {
-          const media = MessageMedia.fromFilePath(imgPath);
-          await client.sendMessage(msg.from, media, { caption: welcome });
-          return;
-        } catch (err) {
-          console.error("Failed to send welcome media:", err);
-        }
-      }
-      return msg.reply(welcome);
-    } else if (body.startsWith("!")) {
-      return msg.reply("You must use !start first before starting your journey.");
+      user = await storage.createUser({ phoneId, name, species: sp.name, isRegistered: true, xp: 0, messages: 0, condition: "Healthy", rank: 8, inventory: [], hp: 100 });
+      return msg.reply(`Welcome Cultivator! You are a ${sp.name} (${sp.rarity}). Use !scroll to begin.`);
     }
     return;
   }
 
-  // XP Gain & Random Events
-  if (body.length >= 1 && !body.startsWith("!")) {
-    const rate = SPECIES_XP_RATES[user.species] || 5;
-    const newXp = (user.xp || 0) + rate;
-    const newMessages = (user.messages || 0) + 1;
-
-    try {
-      const oldRank = getRankForXp(user.xp);
-      const newRank = getRankForXp(newXp);
-      
-      const updates: any = { 
-        xp: newXp, 
-        messages: newMessages,
-        rank: newRank.level
-      };
-
-      // Random Item Find
-      if (Math.random() < 0.05) { // 5% chance
-        const findableItems = ["Ancient Scrap", "Void Fragment", "Star Dust", "Rusty Key", "Mysterious Orb"];
-        const item = findableItems[Math.floor(Math.random() * findableItems.length)];
-        const inv = [...(user.inventory as string[]), item];
-        updates.inventory = inv;
-        await client.sendMessage(msg.from, `✨ *Loot Found!*\n\nWhile chatting, you discovered a [${item}]. It has been added to your inventory.`);
-      }
-
-      // Plague System
-      const stats = await storage.getGlobalStats();
-      if (stats?.activeDisease && user.condition === "Healthy") {
-        if (Math.random() < 0.02) { // 2% chance to get infected if disease active
-          updates.condition = "Infected";
-          updates.disease = stats.activeDisease;
-          updates.infectedAt = new Date();
-          await client.sendMessage(msg.from, `☣️ *PLAGUE SPREAD*\n\nYou have contracted the ${stats.activeDisease}! Your soul feels weakened. Buy a cure in the shop.`);
-        }
-      }
-
-      await storage.updateUser(phoneId, updates);
-
-      if (newRank.level < oldRank.level) {
-        const celebration = `╭══════════════════════╮
-   🎊 RANK UP! 🎊
-   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-   👤 Cultivator: ${user.name}
-   📈 New Rank: 【${newRank.level}】${newRank.name}
-   ✨ Total XP: ${newXp}
-   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-   Your soul ascends further!
-╰══════════════════════╯`;
-        await client.sendMessage(msg.from, celebration);
-      }
-    } catch (err) {
-      console.error("Failed to update user XP/messages:", err);
+  // Infection trigger for leaderboard/profile/status
+  if (["!leaderboard", "!profile", "!status"].includes(body)) {
+    const stats = await storage.getGlobalStats();
+    if (stats?.diseaseRace === user.species && !user.hasShadowVeil && user.species !== "Constellation" && user.condition === "Healthy") {
+      await storage.updateUser(phoneId, { condition: "Infected", disease: stats.activeDisease, infectedAt: new Date() });
+      await client.sendMessage(phoneId, `☣️ You have been infected with ${stats.activeDisease}! You are losing 5 HP every 5 minutes.`);
     }
   }
 
-  if (body === "!scroll" || body === "!help" || body === "!menu") {
-    return msg.reply(HELP_MENU);
+  // XP & Findables
+  if (body.length >= 1 && !body.startsWith("!")) {
+    const rate = user.species === "Constellation" ? 1000 : (SPECIES_XP_RATES[user.species] || 5);
+    const updates: any = { xp: user.xp + rate, messages: user.messages + 1 };
+    if (Math.random() < 0.05) {
+      const items = ["Dragon Egg", "Void Fragment", "Star Dust", "Vampire Tooth", "Cursed Bone"];
+      const item = items[Math.floor(Math.random() * items.length)];
+      if (!(user.inventory as string[]).includes(item)) {
+        updates.inventory = [...(user.inventory as string[]), item];
+        await client.sendMessage(msg.from, `✨ You found a [${item}]!`);
+      }
+    }
+    await storage.updateUser(phoneId, updates);
   }
 
-  if (body === "!rules") {
-    const rules = `【Ａｓｔｒａｌ Ｌａｗｓ】
--------------------------
-Heed these laws, Cultivator.
-Violations shall not go unpunished. ⚡
-
-▸ 1️⃣ No Spamming Commands
-▸ 2️⃣ No Disrespect
-▸ 3️⃣ No Bug Exploitation
-▸ 4️⃣ No Begging
-▸ 5️⃣ Respect Sect Leaders
-▸ 6️⃣ No Alternate Accounts
-▸ 7️⃣ Respect All Decisions
-
-Break the laws. Face the consequences. ⚔️`;
-    return msg.reply(rules);
-  }
-
-  if (body === "!status") {
+  if (body === "!scroll" || body === "!help") return msg.reply(HELP_MENU);
+  if (body === "!status" || body === "!profile") {
     const currentRank = getRankForXp(user.xp);
-    const status = `╭══════════════════════╮
+    return msg.reply(`╭══════════════════════╮
    ✦┊【Ｓｔａｔｕｓ】┊✦
 ╰══════════════════════╯
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   👤 Cultivator: ${user.name}
-  📈 Rank: 【${currentRank.level}】${currentRank.name}
-  ✨ Total XP: ${user.xp}
-  💬 Messages Sent: ${user.messages}
+  📈 Rank: ${currentRank.name}
+  ✨ XP: ${user.xp}
+  💬 Msg: ${user.messages}
   🧬 Species: ${user.species}
   🩹 Condition: ${user.condition}
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-╰══════════════════════╯`;
-    return msg.reply(status);
-  }
-
-  if (body === "!profile") {
-    const currentRank = getRankForXp(user.xp);
-    const profile = `【Ｐｒｏｆｉｌｅ】
--------------------------
-▸ Name: ${user.name}
-▸ Sect: ${user.sectTag || "None"}
-▸ Rank: 【${currentRank.level}】${currentRank.name}
-▸ Species: ${user.species}`;
-    return msg.reply(profile);
+  ❤️ HP: ${generateHpBar(user.hp)}
+  🩺 State: ${getHpStatus(user.hp)}
+╰══════════════════════╯`);
   }
 
   if (body === "!leaderboard") {
     const top = await storage.getUsers();
     const rank = top.findIndex(u => u.phoneId === phoneId) + 1;
-    const list = top.slice(0, 10).map((u, i) => {
-      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "✦";
-      return `  ${medal} ${i + 1}. ${u.name} — ${u.xp} XP`;
-    }).join("\n");
-    const lb = `╭══════════════════════╮
-   ✦┊【Ｔｏｐ Ｃｕｌｔｉｖａｔｏｒｓ】┊✦
-╰══════════════════════╯
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-${list}
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  ❧ Your Rank: #${rank}
-  ❧ Your XP: ${user.xp}
-╰══════════════════════╯`;
-    return msg.reply(lb);
-  }
-
-  if (body === "!getcard") {
-    const now = new Date();
-    if (user.lastCardClaim && (now.getTime() - new Date(user.lastCardClaim).getTime() < 86400000)) {
-       return msg.reply("⏳ The stars are still aligning for your next vision. Come back in " + Math.ceil((86400000 - (now.getTime() - new Date(user.lastCardClaim).getTime())) / 3600000) + " hours.");
-    }
-    
-    try {
-      const page = Math.floor(Math.random() * 50) + 1;
-      const response = await fetch(`https://api.jikan.moe/v4/top/characters?page=${page}`);
-      const data = await response.json();
-      
-      if (!data.data || data.data.length === 0) throw new Error("API error");
-
-      const char = data.data[Math.floor(Math.random() * data.data.length)];
-      const rarityTiers = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
-      const rarity = rarityTiers[Math.floor(Math.random() * rarityTiers.length)];
-      const isBattleCard = Math.random() > 0.7 ? "Yes" : "No";
-      const affiliation = char.about?.split('\n')[0].substring(0, 50) || "Unknown Realm";
-      const imageUrl = char.images?.jpg?.image_url || null;
-
-      await storage.createCard({
-        ownerPhoneId: phoneId,
-        characterId: char.mal_id,
-        name: char.name,
-        series: affiliation,
-        imageUrl: imageUrl,
-        rarity: rarity
-      });
-      await storage.updateUser(phoneId, { lastCardClaim: now });
-      
-      const template = `✨ *New Card Claimed!* ✨
-▸ Name: ${char.name}
-▸ Tier: ${rarity}
-▸ Battle Card: ${isBattleCard}
-▸ Affiliation: ${affiliation}
-
-Use !cardcollection to see your deck!`;
-      
-      if (imageUrl) {
-        try {
-          const media = await MessageMedia.fromUrl(imageUrl);
-          return client.sendMessage(msg.from, media, { caption: template });
-        } catch (mediaErr) {
-          return msg.reply(template);
-        }
-      } else {
-        return msg.reply(template);
-      }
-    } catch (err) {
-      return msg.reply("🌑 The void remains silent. The Jikan spirits are unreachable at this moment.");
-    }
-  }
-
-  if (body.startsWith("!givecard ")) {
-    try {
-      if (!msg.hasQuotedMsg) return msg.reply("⚠️ To bestow a card, you must reply to the recipient's message.");
-
-      const parts = body.split(" ");
-      const cardNum = parseInt(parts[parts.length - 1]) - 1;
-      
-      const quotedMsg = await msg.getQuotedMessage();
-      const recipientPhoneId = quotedMsg.author || quotedMsg.from;
-      const recipient = await storage.getUserByPhone(recipientPhoneId);
-
-      if (!recipient) return msg.reply("❌ That individual is not recognized by the Astral Realm.");
-
-      const cards = await storage.getUserCards(phoneId);
-      if (isNaN(cardNum) || !cards[cardNum]) return msg.reply("❌ That card does not exist in your collection.");
-
-      const cardToGive = cards[cardNum];
-      await storage.updateCard(cardToGive.id, { ownerPhoneId: recipientPhoneId });
-
-      return msg.reply(`🤝 *BOND FORGED*\n\nYou have transferred [${cardToGive.name}] to ${recipient.name}. Their power grows.`);
-    } catch (err) {
-      return msg.reply("❌ The trade was interrupted by shifting shadows.");
-    }
-  }
-
-  if (body === "!cardcollection") {
-    try {
-      const cards = await storage.getUserCards(phoneId);
-      if (cards.length === 0) return msg.reply("📭 Your deck is empty. Use !getcard to begin your collection.");
-      
-      const list = cards.map((c, i) => `【${i + 1}】 ${c.name} — *${c.rarity}*`).join("\n");
-      return msg.reply(`🎴 *YOUR ASTRAL DECK*\n\n${list}\n\nUse !card [number] for details.`);
-    } catch (err) {
-      return msg.reply("❌ Failed to manifest your collection.");
-    }
-  }
-
-  if (body.startsWith("!card ")) {
-    try {
-      const num = parseInt(body.split(" ")[1]) - 1;
-      const cards = await storage.getUserCards(phoneId);
-      if (cards[num]) {
-        const c = cards[num];
-        const info = `🎴 *CARD INSPECTION*\n\n▸ Name: ${c.name}\n▸ Series: ${c.series}\n▸ Rarity: ${c.rarity}`;
-        if (c.imageUrl) {
-          try {
-            const media = await MessageMedia.fromUrl(c.imageUrl);
-            return client.sendMessage(msg.from, media, { caption: info });
-          } catch (e) {
-            return msg.reply(info);
-          }
-        }
-        return msg.reply(info);
-      }
-      return msg.reply("❌ Invalid index. Check !cardcollection.");
-    } catch (err) {
-      return msg.reply("❌ Failed to inspect the card.");
-    }
-  }
-
-  if (body.startsWith("!createsect ")) {
-    try {
-      const sectName = body.replace("!createsect ", "").trim();
-      if (!sectName) return msg.reply("Provide a sect name.");
-      if (user.xp < 5000) return msg.reply(`⚠️ INSUFFICIENT XP (Need 5000, You have ${user.xp})`);
-      if (user.sectId) return msg.reply("Leave your current sect first.");
-
-      const sectsList = await storage.getSects();
-      if (sectsList.length >= 3) return msg.reply("❌ SECT LIMIT REACHED (Max 3)");
-
-      const tag = sectName.substring(0, 3).toUpperCase();
-      const newSect = await storage.createSect({
-        name: sectName,
-        tag: tag,
-        leaderPhoneId: phoneId,
-        treasuryXp: 0,
-        membersCount: 1,
-        imageUrl: null
-      });
-
-      await storage.updateUser(phoneId, { xp: user.xp - 5000, sectId: newSect.id, sectTag: tag });
-      return msg.reply(`🏯 SECT CREATED: ${sectName}\nFounder: ${user.name}\nRemaining XP: ${user.xp - 5000}`);
-    } catch (err) {
-      return msg.reply("Failed to create sect.");
-    }
-  }
-
-  if (body.startsWith("!joinsect ")) {
-    try {
-      const sectName = body.replace("!joinsect ", "").trim();
-      const sect = await storage.getSectByName(sectName);
-      if (!sect) return msg.reply("❌ SECT NOT FOUND");
-      if (user.sectId) return msg.reply("Leave your current sect first.");
-
-      await storage.updateUser(phoneId, { sectId: sect.id, sectTag: sect.tag });
-      await storage.updateSect(sect.id, { membersCount: sect.membersCount + 1 });
-      return msg.reply(`🚪 JOINED SECT: ${sect.name}`);
-    } catch (err) {
-      return msg.reply("Failed to join sect.");
-    }
-  }
-
-  if (body === "!mysect") {
-    if (!user.sectId) return msg.reply("❌ NO SECT");
-    const sect = await storage.getSect(user.sectId);
-    if (!sect) return;
-    const leader = await storage.getUserByPhone(sect.leaderPhoneId);
-    return msg.reply(`🏯 MY SECT\nName: ${sect.name}\nLeader: ${leader?.name || "Unknown"}\nMembers: ${sect.membersCount}\nXP: ${sect.treasuryXp}`);
-  }
-
-  if (body.startsWith("!donate ")) {
-    if (!user.sectId) return msg.reply("❌ NO SECT");
-    const amount = parseInt(body.replace("!donate ", "").trim());
-    if (isNaN(amount) || amount <= 0 || user.xp < amount) return msg.reply("Invalid amount or insufficient XP.");
-    
-    await storage.updateUser(phoneId, { xp: user.xp - amount });
-    await storage.updateSect(user.sectId, { treasuryXp: (await storage.getSect(user.sectId))!.treasuryXp + amount });
-    return msg.reply(`💰 DONATED: ${amount} XP`);
-  }
-
-  if (body === "!sectranking") {
-    const sectsList = await storage.getSects();
-    const list = sectsList.map((s, i) => `${i + 1}. ${s.name} - ${s.treasuryXp} XP`).join("\n");
-    return msg.reply(`📊 SECT LEADERBOARD\n\n${list || "No sects yet."}`);
-  }
-
-  if (body === "!sectleave") {
-    if (!user.sectId) return msg.reply("❌ NO SECT");
-    const sect = await storage.getSect(user.sectId);
-    if (sect?.leaderPhoneId === phoneId) return msg.reply("❌ LEADERS CANNOT LEAVE");
-    
-    await storage.updateUser(phoneId, { sectId: null, sectTag: null });
-    await storage.updateSect(sect!.id, { membersCount: sect!.membersCount - 1 });
-    return msg.reply("🚶 LEFT SECT");
-  }
-
-  // Shop Commands
-  if (body === "!shop") {
-    const shopMenu = `╭══════════════════════╮
-  🏪 SHOP
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  🩸 Blood Rune ↳ 1000 XP
-  Steal XP from another user.
-
-  🌑 Eclipse Stone ↳ 1200 XP
-  Hide your race & XP for 24hrs.
-
-  👻 Phantom Seal ↳ 1100 XP
-  Vanish from the leaderboard for 24hrs.
-
-  🪙 Cursed Coin ↳ 200 XP
-  Unknown outcome. Flip and find out.
-
-  🔮 Mirror Shard ↳ 1300 XP
-  Copy another user's race for 30mins.
-  
-  🦴 Cursed Bone ↳ 2000 XP
-  Attract shadows for permanent protection.
-
-  🦷 Vampire Tooth ↳ 1500 XP
-  Become a vampire for a week.
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  💊 CURES
-  💉 Grey Rot Cure ↳ 500 XP
-  Cures the Grey Rot. (Human)
-
-  💉 Hellfire Suppressant ↳ 600 XP
-  Cures Hellfire Fever. (Demon)
-
-  💉 Feral Antidote ↳ 600 XP
-  Cures the Feral Plague. (Beast Clan)
-
-  💉 Grace Restoration Vial ↳ 700 XP
-  Cures Corruption Blight. (Fallen Angel)
-
-  💉 Scale Restoration Salve ↳ 800 XP
-  Cures Scale Sickness. (Dragon)
-
-  💉 Rootwither Remedy ↳ 700 XP
-  Cures Rootwither. (Elf)
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !buy [item name] to purchase
-  Use !inventory to see items
-  Use !useitem [number] to use
-╰══════════════════════╯`;
-    return msg.reply(shopMenu);
+    const list = top.slice(0, 10).map((u, i) => `  ${i + 1}. ${u.name} — ${u.xp} XP`).join("\n");
+    return msg.reply(`🏆 *TOP CULTIVATORS*\n\n${list}\n\nYour Rank: #${rank}`);
   }
 
   if (body === "!inventory") {
-    const inventory = user.inventory as string[] || [];
-    if (inventory.length === 0) {
-      return msg.reply(`╭══════════════════════╮
-  🎒 INVENTORY
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  ❌ Your inventory is empty.
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !shop to browse items
-╰══════════════════════╯`);
-    }
-
-    const itemList = inventory
-      .map((name, index) => `  【${index + 1}】 ${name.toUpperCase()}`)
-      .join("\n");
-
-    return msg.reply(`╭══════════════════════╮
-  🎒 INVENTORY
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-${itemList}
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !useitem [number] to use
-╰══════════════════════╯`);
+    const inv = user.inventory as string[];
+    const list = inv.map((item, i) => `【${i + 1}】 ${item}`).join("\n");
+    return msg.reply(`🎒 *INVENTORY*\n\n${list || "Empty."}\n\nUse !useitem [num]`);
   }
 
   if (body.startsWith("!useitem ")) {
-    try {
-      const num = parseInt(body.split(" ")[1]) - 1;
-      const inventory = user.inventory as string[] || [];
-      if (isNaN(num) || !inventory[num]) return msg.reply("❌ Invalid item index.");
-
-      const itemName = inventory[num].toLowerCase();
-      let response = `✨ You used ${inventory[num]}!`;
-
-      if (itemName === "cursed coin") {
-        const win = Math.random() > 0.5;
-        const amount = Math.floor(Math.random() * 500) + 100;
-        if (win) {
-          await storage.updateUser(phoneId, { xp: user.xp + amount });
-          response = `🪙 *CURSED COIN*\n\nThe coin lands on HEADS! The void grants you ${amount} XP.`;
-        } else {
-          const loss = Math.min(user.xp, amount);
-          await storage.updateUser(phoneId, { xp: user.xp - loss });
-          response = `🪙 *CURSED COIN*\n\nThe coin lands on TAILS! Shifting shadows steal ${loss} XP from you.`;
-        }
-      } else if (itemName.includes("cure") || itemName.includes("suppressant") || itemName.includes("antidote") || itemName.includes("vial") || itemName.includes("salve") || itemName.includes("remedy")) {
-        await storage.updateUser(phoneId, { condition: "Healthy", disease: null, infectedAt: null });
-        response = `💉 *CURED*\n\nThe medicinal energies flow through you. Your condition is now Healthy.`;
-      } else if (itemName === "vampire tooth") {
-        const until = new Date();
-        until.setDate(until.getDate() + 7);
-        await storage.updateUser(phoneId, { isVampire: true, vampireUntil: until });
-        response = `🦷 *VAMPIRE TRANSFORMATION*\n\nYour fangs lengthen. You are now a vampire for 7 days.`;
-      } else if (itemName === "cursed bone") {
-        await storage.updateUser(phoneId, { hasShadowVeil: true });
-        response = `🦴 *SHADOW PROTECTION*\n\nThe cursed bone dissolves into your skin. You now have permanent shadow protection.`;
-      } else {
-        response = `✨ You used ${inventory[num]}, but its power seems dormant for now.`;
-      }
-
-      const newInventory = [...inventory];
-      newInventory.splice(num, 1);
-      await storage.updateUser(phoneId, { inventory: newInventory });
-      return msg.reply(response);
-    } catch (err) {
-      console.error("Use item error:", err);
-      return msg.reply("❌ Failed to use item.");
+    const num = parseInt(body.split(" ")[1]) - 1;
+    const inv = [...(user.inventory as string[])];
+    if (!inv[num]) return msg.reply("❌ Invalid index.");
+    const itemName = inv[num];
+    const itemLower = itemName.toLowerCase();
+    const isFindable = ["dragon egg", "void fragment", "star dust", "vampire tooth", "cursed bone"].includes(itemLower);
+    if (isFindable && Math.random() > 0.11) {
+      inv.splice(num, 1);
+      await storage.updateUser(phoneId, { inventory: inv });
+      return msg.reply(`✨ You used ${itemName}, but its power remains dormant.`);
     }
+    let reply = `✨ You used ${itemName}!`;
+    const updates: any = {};
+    if (itemLower === "void fragment") { updates.species = "Constellation"; updates.isConstellation = true; reply = `🌑 Race Transformed to ✨ Constellation!`; }
+    else if (itemLower === "star dust") { updates.dustDomainUntil = new Date(Date.now() + 3600000); reply = `✨ Dust Domain active for 1 hour!`; }
+    else if (itemLower === "cursed bone") { updates.hasShadowVeil = true; reply = `🦴 Shadow Veil active! You are immune to plagues.`; }
+    else if (itemLower === "dragon egg") { updates.dragonEggProgress = 1; reply = `🥚 The egg begins to pulse. It has begun feeding.`; }
+    else if (itemLower === "vampire tooth") { updates.isVampire = true; updates.vampireUntil = new Date(Date.now() + 604800000); reply = `🦷 You are now a Vampire for 1 week! Use !suck @user to feed.`; }
+    else if (itemLower.includes("cure") || itemLower.includes("remedy") || itemLower.includes("antidote") || itemLower.includes("vial") || itemLower.includes("salve") || itemLower.includes("suppressant")) {
+      const disease = Object.values(DISEASES).find(d => d.cure === itemLower);
+      if (disease && user.species === disease.race) { updates.condition = "Healthy"; updates.disease = null; updates.hp = 100; reply = `💉 Cured of ${disease.name}!`; }
+      else return msg.reply("❌ This cure was not made for you.");
+    }
+    inv.splice(num, 1);
+    updates.inventory = inv;
+    await storage.updateUser(phoneId, updates);
+    return msg.reply(reply);
   }
 
-  if (body.startsWith("!buy")) {
-    const itemName = body.replace("!buy", "").trim();
-    if (!itemName) {
-      return msg.reply(`╭══════════════════════╮
-  ⚠️ MISSING ITEM NAME
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Type !buy followed by an item name.
-  Example: !buy Cursed Coin
-╰══════════════════════╯`);
-    }
+  if (body.startsWith("!suck ") && user.isVampire) {
+    const quoted = await msg.getQuotedMessage();
+    const targetId = quoted.author || quoted.from;
+    const target = await storage.getUserByPhone(targetId);
+    if (!target) return msg.reply("❌ Target not found.");
+    if (target.xp > user.xp * 2) return msg.reply("🦷 @target resisted. They are too powerful.");
+    const amt = Math.floor(Math.random() * 251) + 50;
+    await storage.updateUser(phoneId, { xp: user.xp + amt });
+    await storage.updateUser(targetId, { xp: Math.max(0, target.xp - amt) });
+    await client.sendMessage(targetId, `Something cold grips you in the dark. You lost ${amt} XP.`);
+    return msg.reply(`🦷 You drained ${amt} XP from ${target.name}.`);
+  }
 
+  if (body.startsWith("!givexp ") && msg.hasQuotedMsg) {
+    const amt = parseInt(body.split(" ")[1]);
+    const quoted = await msg.getQuotedMessage();
+    const targetId = quoted.author || quoted.from;
+    const target = await storage.getUserByPhone(targetId);
+    if (isNaN(amt) || amt <= 0 || user.xp < amt || !target) return msg.reply("❌ Error.");
+    await storage.updateUser(phoneId, { xp: user.xp - amt });
+    await storage.updateUser(targetId, { xp: target.xp + amt });
+    return msg.reply(`💰 You gave ${amt} XP to ${target.name}.`);
+  }
+
+  if (body.startsWith("!giveitem ") && msg.hasQuotedMsg) {
+    const num = parseInt(body.split(" ")[1]) - 1;
+    const inv = [...(user.inventory as string[])];
+    const quoted = await msg.getQuotedMessage();
+    const targetId = quoted.author || quoted.from;
+    const target = await storage.getUserByPhone(targetId);
+    if (!inv[num] || !target) return msg.reply("❌ Error.");
+    const item = inv.splice(num, 1)[0];
+    await storage.updateUser(phoneId, { inventory: inv });
+    await storage.updateUser(targetId, { inventory: [...(target.inventory as string[]), item] });
+    return msg.reply(`🎁 You gave [${item}] to ${target.name}.`);
+  }
+
+  if (body.startsWith("!revive")) {
+    const quoted = await msg.getQuotedMessage();
+    const targetId = quoted.author || quoted.from;
+    const target = await storage.getUserByPhone(targetId);
+    if (!target || !target.isDead) return msg.reply("❌ Target is not dead.");
+    if (target.species !== user.species) return msg.reply("❌ species mismatch.");
+    await storage.updateUser(targetId, { isDead: false, hp: 10 });
+    return msg.reply(`🕊️ You revived ${target.name}!`);
+  }
+
+  if (body === "!shop") return msg.reply(`🏪 *SHOP*\n\n💊 *Cures*\nGrey Rot Cure - 500 XP\nHellfire Suppressant - 600 XP\nFeral Antidote - 600 XP\nGrace Restoration Vial - 700 XP\nScale Restoration Salve - 800 XP\nRootwither Remedy - 700 XP\n\nUse !buy [name]`);
+  if (body.startsWith("!buy ")) {
+    const itemName = body.replace("!buy ", "").trim();
     const item = SHOP_ITEMS[itemName];
-    if (!item) {
-      return msg.reply(`╭══════════════════════╮
-  ❌ ITEM NOT FOUND
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  That item does not exist in the shop.
-  Use !shop to see available items.
-╰══════════════════════╯`);
-    }
-
-    if (user.xp < item.price) {
-      return msg.reply(`╭══════════════════════╮
-  ⚠️ INSUFFICIENT XP
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  💰 Price: ${item.price} XP
-  ✨ Your XP: ${user.xp}
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  You need ${item.price - user.xp} more XP.
-╰══════════════════════╯`);
-    }
-
-    const inventory = user.inventory as string[] || [];
-    if (inventory.length >= 20) {
-      return msg.reply(`╭══════════════════════╮
-  🎒 INVENTORY FULL
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Your bag cannot hold more items.
-╰══════════════════════╯`);
-    }
-
-    const newInventory = [...inventory, itemName];
-    const newXp = user.xp - item.price;
-    await storage.updateUser(phoneId, { xp: newXp, inventory: newInventory });
-
-    return msg.reply(`╭══════════════════════╮
-  ✅ PURCHASE SUCCESSFUL
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👤 Cultivator: ${user.name}
-  🛍️ Item: ${itemName.toUpperCase()}
-  💰 Cost: ${item.price} XP
-  ✨ Remaining XP: ${newXp}
-  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  Use !inventory to see your items
-╰══════════════════════╯`);
+    if (!item || user.xp < item.price) return msg.reply("❌ Error.");
+    await storage.updateUser(phoneId, { xp: user.xp - item.price, inventory: [...(user.inventory as string[]), itemName] });
+    return msg.reply(`✅ Purchased ${itemName}!`);
   }
 }
