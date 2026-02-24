@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  phoneId: text("phone_id").notNull().unique(), // WhatsApp ID
+  phoneId: text("phone_id").notNull().unique(),
   name: text("name").notNull(),
   xp: integer("xp").notNull().default(0),
   messages: integer("messages").notNull().default(0),
@@ -29,12 +29,19 @@ export const users = pgTable("users", {
   vampireUntil: timestamp("vampire_until"),
   isConstellation: boolean("is_constellation").notNull().default(false),
   dustDomainUntil: timestamp("dust_domain_until"),
+  dustDomainMessages: integer("dust_domain_messages").notNull().default(0), // ← NEW
   hasShadowVeil: boolean("has_shadow_veil").notNull().default(false),
   lastSuckAt: timestamp("last_suck_at"),
   lastMessageReset: timestamp("last_message_reset").notNull().defaultNow(),
   disease: text("disease"),
   infectedAt: timestamp("infected_at"),
   isDead: boolean("is_dead").notNull().default(false),
+
+  // ── Guide System ────────────────────────────────────────────────────────────
+  guideName: text("guide_name"),                                              // ← NEW
+  guideSmashAt: timestamp("guide_smash_at"),                                  // ← NEW
+  guidePregnant: boolean("guide_pregnant").notNull().default(false),          // ← NEW
+  guideChildName: text("guide_child_name"),                                   // ← NEW
 });
 
 export const globalStats = pgTable("global_stats", {
