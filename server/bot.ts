@@ -181,8 +181,8 @@ async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: stri
 const ANNA = {
   name: "Anna",
   emoji: "🔴",
-  image: "attached_assets/anna.jpg",
-  imageWithChild: "attached_assets/annawithchild.jpg",
+  image: "attached_assets/Anna.jpg",
+  imageWithChild: "attached_assets/Annawithchild.jpg",
   greeting: `*A red-haired girl bursts in, nearly knocking over everything in sight~*
 
 🔴 *Anna:* "OH— you actually called for me?! Heheheh~ I'm Anna! Your guide, your partner, your absolute chaos companion! Let's make history together darling~! 🔥"
@@ -406,7 +406,13 @@ async function handleMessage(msg: Message) {
     if (body === "!start") {
       const sp = getRandomSpecies();
       user = await storage.createUser({ phoneId, name, species: sp.name, isRegistered: true, xp: 0, messages: 0, condition: "Healthy", rank: 8, inventory: [], hp: 100 });
-      return msg.reply(`╭══════════════════════╮\n   ✦┊【Welcome】┊✦\n╰══════════════════════╯\n  👤 Cultivator: ${name}\n  🧬 Species: ${sp.name} (${sp.rarity})\n\n  Your journey begins.\n  Use !scroll or !help to see commands.\n╰══════════════════════╯`);
+      const startMsg = `╭══════════════════════╮\n   ✦┊【Welcome】┊✦\n╰══════════════════════╯\n  👤 Cultivator: ${name}\n  🧬 Species: ${sp.name} (${sp.rarity})\n\n  Your journey begins.\n  Use !scroll or !help to see commands.\n╰══════════════════════╯`;
+      try {
+        const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Start.jpg"));
+        const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "start.jpg");
+        await msg.reply(media, undefined, { caption: startMsg });
+      } catch { await msg.reply(startMsg); }
+      return;
     }
     return;
   }
@@ -471,8 +477,22 @@ async function handleMessage(msg: Message) {
 
   // ── Commands ────────────────────────────────────────────────────────────────
 
-  if (body === "!help") return msg.reply(HELP_MENU);
-  if (body === "!scroll") return msg.reply(SCROLL_MENU);
+  if (body === "!help") {
+    try {
+      const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Start.jpg"));
+      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "start.jpg");
+      await msg.reply(media, undefined, { caption: HELP_MENU });
+    } catch { await msg.reply(HELP_MENU); }
+    return;
+  }
+  if (body === "!scroll") {
+    try {
+      const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Scroll.jpg"));
+      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "scroll.jpg");
+      await msg.reply(media, undefined, { caption: SCROLL_MENU });
+    } catch { await msg.reply(SCROLL_MENU); }
+    return;
+  }
 
   if (body === "!status" || body === "!profile") {
     const currentRank = getRankForXp(user.xp);
@@ -900,6 +920,12 @@ async function handleMessage(msg: Message) {
   }
 
   if (body.startsWith("!missastral")) {
-    return msg.reply(`*Miss Astral opens one eye slowly...*\n\n🐱 I am alive, yare yare.\nI may sleep soon tho.`);
+    const missMsg = `*Miss Astral opens one eye slowly...*\n\n🐱 I am alive, yare yare.\nI may sleep soon tho.`;
+    try {
+      const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Missastral.jpg"));
+      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "missastral.jpg");
+      await msg.reply(media, undefined, { caption: missMsg });
+    } catch { await msg.reply(missMsg); }
+    return;
   }
 }
