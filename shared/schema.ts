@@ -44,11 +44,19 @@ export const users = pgTable("users", {
   guideChildName: text("guide_child_name"),
 
   // ── Item Effects ─────────────────────────────────────────────────────────────
-  eclipseUntil: timestamp("eclipse_until"),           // Eclipse Stone — hides race & XP
-  phantomUntil: timestamp("phantom_until"),           // Phantom Seal — hides from leaderboard
-  mirrorRace: text("mirror_race"),                    // Mirror Shard — copied race
-  mirrorOriginalRace: text("mirror_original_race"),   // Mirror Shard — original race to restore
-  mirrorUntil: timestamp("mirror_until"),             // Mirror Shard — expiry
+  eclipseUntil: timestamp("eclipse_until"),
+  phantomUntil: timestamp("phantom_until"),
+  mirrorRace: text("mirror_race"),
+  mirrorOriginalRace: text("mirror_original_race"),
+  mirrorUntil: timestamp("mirror_until"),
+
+  // ── Battle System ─────────────────────────────────────────────────────────────
+  battleExp: integer("battle_exp").notNull().default(0),
+  battleWins: integer("battle_wins").notNull().default(0),
+  battleLosses: integer("battle_losses").notNull().default(0),
+  equippedActives: jsonb("equipped_actives").notNull().default([]),  // string[] skill IDs
+  equippedPassive: text("equipped_passive"),                          // skill ID or null
+  inBattle: boolean("in_battle").notNull().default(false),
 });
 
 export const globalStats = pgTable("global_stats", {
@@ -82,9 +90,20 @@ export const cards = pgTable("cards", {
   rarity: text("rarity").notNull(),
 });
 
+// ── Challenges (pending, expires 5 min) ───────────────────────────────────────
+export const challenges = pgTable("challenges", {
+  id: serial("id").primaryKey(),
+  challengerPhoneId: text("challenger_phone_id").notNull(),
+  targetPhoneId: text("target_phone_id").notNull(),
+  chatId: text("chat_id").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  status: text("status").notNull().default("pending"), // pending | accepted | declined | expired
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertSectSchema = createInsertSchema(sects).omit({ id: true });
 export const insertCardSchema = createInsertSchema(cards).omit({ id: true });
+export const insertChallengeSchema = createInsertSchema(challenges).omit({ id: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -92,3 +111,5 @@ export type Sect = typeof sects.$inferSelect;
 export type InsertSect = z.infer<typeof insertSectSchema>;
 export type Card = typeof cards.$inferSelect;
 export type InsertCard = z.infer<typeof insertCardSchema>;
+export type Challenge = typeof challenges.$inferSelect;
+export type InsertChallenge = z.infer<typeof insertChallengeSchema>;
