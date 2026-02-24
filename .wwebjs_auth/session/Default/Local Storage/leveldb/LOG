@@ -1,2 +1,2 @@
-2026/02/24-16:52:21.727 123 Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/Local Storage/leveldb since it was missing.
-2026/02/24-16:52:21.773 123 Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/Local Storage/leveldb/MANIFEST-000001
+2026/02/24-21:04:28.080 2fa Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/Local Storage/leveldb since it was missing.
+2026/02/24-21:04:28.130 2fa Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/Local Storage/leveldb/MANIFEST-000001

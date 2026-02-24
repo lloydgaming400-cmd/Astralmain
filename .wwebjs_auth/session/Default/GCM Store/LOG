@@ -1,2 +1,2 @@
-2026/02/24-16:52:33.905 fe Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/GCM Store since it was missing.
-2026/02/24-16:52:33.921 fe Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/GCM Store/MANIFEST-000001
+2026/02/24-21:04:39.593 2d3 Creating DB /home/runner/workspace/.wwebjs_auth/session/Default/GCM Store since it was missing.
+2026/02/24-21:04:39.598 2d3 Reusing MANIFEST /home/runner/workspace/.wwebjs_auth/session/Default/GCM Store/MANIFEST-000001
