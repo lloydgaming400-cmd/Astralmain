@@ -129,7 +129,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateGlobalStats(updates: any): Promise<void> {
-    await db.update(globalStats).set(updates).where(eq(globalStats.id, 1));
+    const [stats] = await db.select().from(globalStats).where(eq(globalStats.id, 1));
+    if (!stats) {
+      await db.insert(globalStats).values({ id: 1, ...updates });
+    } else {
+      await db.update(globalStats).set(updates).where(eq(globalStats.id, 1));
+    }
   }
 
   // ── Challenges ────────────────────────────────────────────────────────────────

@@ -315,7 +315,11 @@ setInterval(async () => {
         }
       }
     }
-    const stats = await storage.getGlobalStats();
+    let stats = await storage.getGlobalStats();
+    if (!stats) {
+      await storage.updateGlobalStats({ totalMessages: 0, activeDisease: null });
+      stats = await storage.getGlobalStats() || { activeDisease: null, lastOutbreakAt: null };
+    }
     const now = new Date();
     if (!stats.activeDisease && (!stats.lastOutbreakAt || now.getTime() - new Date(stats.lastOutbreakAt).getTime() > 604800000)) {
       const races = Object.keys(DISEASES);
