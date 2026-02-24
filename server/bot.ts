@@ -253,17 +253,44 @@ async function handleMessage(msg: Message) {
 
   // XP & Findables
   if (body.length >= 1 && !body.startsWith("!")) {
-    const rate = user.species === "Constellation" ? 1000 : (SPECIES_XP_RATES[user.species] || 5);
-    const updates: any = { xp: user.xp + rate, messages: user.messages + 1 };
-    if (Math.random() < 0.05) {
-      const items = ["Dragon Egg", "Void Fragment", "Star Dust", "Vampire Tooth", "Cursed Bone"];
-      const item = items[Math.floor(Math.random() * items.length)];
-      if (!(user.inventory as string[]).includes(item)) {
-        updates.inventory = [...(user.inventory as string[]), item];
-        await client.sendMessage(msg.from, `✨ You found a [${item}]!`);
+    const rate = user.species === "Constellation" ? 300 : (SPECIES_XP_RATES[user.species] || 5);
+    
+    try {
+      const oldRank = getRankForXp(user.xp);
+      const newXp = user.xp + rate;
+      const newRank = getRankForXp(newXp);
+      
+      const updates: any = { 
+        xp: newXp, 
+        messages: user.messages + 1,
+        rank: newRank.level
+      };
+
+      if (newRank.level < oldRank.level) {
+        const celebration = `╭══════════════════════╮
+   🎊 RANK UP! 🎊
+   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+   👤 Cultivator: ${user.name}
+   📈 New Rank: 【${newRank.level}】${newRank.name}
+   ✨ Total XP: ${newXp}
+   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+   Your soul ascends further!
+╰══════════════════════╯`;
+        await client.sendMessage(msg.from, celebration);
       }
+
+      if (Math.random() < 0.05) {
+        const items = ["Dragon Egg", "Void Fragment", "Star Dust", "Vampire Tooth", "Cursed Bone", "Living Core"];
+        const item = items[Math.floor(Math.random() * items.length)];
+        if (!(user.inventory as string[]).includes(item)) {
+          updates.inventory = [...(user.inventory as string[]), item];
+          await client.sendMessage(msg.from, `✨ You found a [${item}]!`);
+        }
+      }
+      await storage.updateUser(phoneId, updates);
+    } catch (err) {
+      console.error("XP/Rank update error:", err);
     }
-    await storage.updateUser(phoneId, updates);
   }
 
   if (body === "!scroll" || body === "!help") return msg.reply(HELP_MENU);
