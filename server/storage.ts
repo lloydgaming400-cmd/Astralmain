@@ -1,6 +1,12 @@
 import { db } from "./db";
-import { users, sects, cards, globalStats, type User, type InsertUser, type Sect, type InsertSect, type Card, type InsertCard } from "@shared/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import {
+  users, sects, cards, globalStats, challenges,
+  type User, type InsertUser,
+  type Sect, type InsertSect,
+  type Card, type InsertCard,
+  type Challenge, type InsertChallenge,
+} from "@shared/schema";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   getUserByPhone(phoneId: string): Promise<User | undefined>;
@@ -8,14 +14,14 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(phoneId: string, updates: Partial<InsertUser>): Promise<User>;
   getBannedUsers(): Promise<User[]>;
-  
+
   // Sects
   getSect(id: number): Promise<Sect | undefined>;
   getSectByName(name: string): Promise<Sect | undefined>;
   getSects(): Promise<Sect[]>;
   createSect(sect: InsertSect): Promise<Sect>;
   updateSect(id: number, updates: Partial<InsertSect>): Promise<Sect>;
-  
+
   // Cards
   getUserCards(phoneId: string): Promise<Card[]>;
   createCard(card: InsertCard): Promise<Card>;
@@ -27,6 +33,13 @@ export interface IStorage {
   getGlobalStats(): Promise<any>;
   updateGlobalStats(updates: any): Promise<void>;
   resetDatabase(): Promise<void>;
+
+  // Challenges
+  createChallenge(c: InsertChallenge): Promise<Challenge>;
+  getPendingChallenge(challengerPhoneId: string): Promise<Challenge | undefined>;
+  getPendingChallengeForTarget(targetPhoneId: string): Promise<Challenge | undefined>;
+  updateChallenge(id: number, updates: Partial<InsertChallenge>): Promise<Challenge>;
+  expireOldChallenges(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -55,7 +68,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(phoneId: string, updates: Partial<InsertUser>): Promise<User> {
-    const [updated] = await db.update(users)
+    const [updated] = await db
+      .update(users)
       .set(updates)
       .where(eq(users.phoneId, phoneId))
       .returning();
@@ -116,6 +130,52 @@ export class DatabaseStorage implements IStorage {
 
   async updateGlobalStats(updates: any): Promise<void> {
     await db.update(globalStats).set(updates).where(eq(globalStats.id, 1));
+  }
+
+  // ── Challenges ────────────────────────────────────────────────────────────────
+
+  async createChallenge(c: InsertChallenge): Promise<Challenge> {
+    const [created] = await db.insert(challenges).values(c).returning();
+    return created;
+  }
+
+  async getPendingChallenge(challengerPhoneId: string): Promise<Challenge | undefined> {
+    const [c] = await db
+      .select()
+      .from(challenges)
+      .where(and(eq(challenges.challengerPhoneId, challengerPhoneId), eq(challenges.status, "pending")));
+    return c;
+  }
+
+  async getPendingChallengeForTarget(targetPhoneId: string): Promise<Challenge | undefined> {
+    const [c] = await db
+      .select()
+      .from(challenges)
+      .where(and(eq(challenges.targetPhoneId, targetPhoneId), eq(challenges.status, "pending")));
+    return c;
+  }
+
+  async updateChallenge(id: number, updates: Partial<InsertChallenge>): Promise<Challenge> {
+    const [updated] = await db
+      .update(challenges)
+      .set(updates)
+      .where(eq(challenges.id, id))
+      .returning();
+    return updated;
+  }
+
+  async expireOldChallenges(): Promise<void> {
+    // Mark all pending challenges past their expiry as expired
+    const now = new Date();
+    const pending = await db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.status, "pending"));
+    for (const ch of pending) {
+      if (new Date(ch.expiresAt) < now) {
+        await db.update(challenges).set({ status: "expired" }).where(eq(challenges.id, ch.id));
+      }
+    }
   }
 }
 
