@@ -67,7 +67,7 @@ const SPECIES_XP_RATES: Record<string, number> = {
   "Elf": 35,
   "Dragon": 40,
   "Celestial": 50,
-  "Constellation": 1000,
+  "Constellation": 300,
 };
 
 const RANKS = [
@@ -102,6 +102,10 @@ const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
   "grace restoration vial": { price: 700, description: "Cures Corruption Blight. (Fallen Angel)" },
   "scale restoration salve": { price: 800, description: "Cures Scale Sickness. (Dragon)" },
   "rootwither remedy": { price: 700, description: "Cures Rootwither. (Elf)" },
+  "living core": { price: 2500, description: "Rebirth into a new random species." },
+  "dragon egg": { price: 5000, description: "A mysterious egg that feeds on XP." },
+  "void fragment": { price: 8000, description: "A fragment of the void. Extremely unstable." },
+  "star dust": { price: 3000, description: "Dust from the stars. Grants a temporary domain." },
 };
 
 const DISEASES: Record<string, { name: string; race: string; startMsg: string; endMsg: string; cure: string }> = {
@@ -298,7 +302,7 @@ async function handleMessage(msg: Message) {
     if (!inv[num]) return msg.reply("❌ Invalid index.");
     const itemName = inv[num];
     const itemLower = itemName.toLowerCase();
-    const isFindable = ["dragon egg", "void fragment", "star dust", "vampire tooth", "cursed bone"].includes(itemLower);
+    const isFindable = ["dragon egg", "void fragment", "star dust", "vampire tooth", "cursed bone", "living core"].includes(itemLower);
     if (isFindable && Math.random() > 0.11) {
       inv.splice(num, 1);
       await storage.updateUser(phoneId, { inventory: inv });
@@ -306,8 +310,26 @@ async function handleMessage(msg: Message) {
     }
     let reply = `✨ You used ${itemName}!`;
     const updates: any = {};
-    if (itemLower === "void fragment") { updates.species = "Constellation"; updates.isConstellation = true; reply = `🌑 Race Transformed to ✨ Constellation!`; }
-    else if (itemLower === "star dust") { updates.dustDomainUntil = new Date(Date.now() + 3600000); reply = `✨ Dust Domain active for 1 hour!`; }
+    if (itemLower === "star dust") { 
+      updates.dustDomainUntil = new Date(Date.now() + 300000); 
+      reply = `✨ Dust Domain active for 5 minutes! Make it count.`; 
+    }
+    else if (itemLower === "void fragment") { 
+      if (Math.random() > 0.03) {
+        inv.splice(num, 1);
+        await storage.updateUser(phoneId, { inventory: inv });
+        return msg.reply(`🌑 You used the Void Fragment, but the stars refused your call. It dissolved into shadow.`);
+      }
+      updates.species = "Constellation"; 
+      updates.isConstellation = true; 
+      reply = `🌑 Race Transformed to ✨ Constellation! Your power is now 300 XP per message.`; 
+    }
+    else if (itemLower === "living core") {
+      const sp = getRandomSpecies();
+      updates.species = sp.name;
+      updates.isConstellation = false;
+      reply = `🌿 The Living Core pulses with life! You have been reborn as a ${sp.name}.`;
+    }
     else if (itemLower === "cursed bone") { updates.hasShadowVeil = true; reply = `🦴 Shadow Veil active! You are immune to plagues.`; }
     else if (itemLower === "dragon egg") { updates.dragonEggProgress = 1; reply = `🥚 The egg begins to pulse. It has begun feeding.`; }
     else if (itemLower === "vampire tooth") { updates.isVampire = true; updates.vampireUntil = new Date(Date.now() + 604800000); reply = `🦷 You are now a Vampire for 1 week! Use !suck @user to feed.`; }
