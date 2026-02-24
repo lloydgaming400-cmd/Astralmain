@@ -7,11 +7,51 @@ import { type User, type Card, type Sect } from '@shared/schema';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import {
+  ALL_SKILLS,
+  BATTLE_LOCATIONS,
+  type BattleState,
+  type Combatant,
+  type Skill,
+  computeStats,
+  determineFirstMover,
+  formatTurnBlock,
+  formatSkillList,
+  calculateDamage,
+  applySkillEffect,
+  applyPassive,
+  applyTurnEffects,
+  tickCooldowns,
+  tickEffects,
+  canUseSkill,
+  getDefaultSkill,
+  getUnlockedSkills,
+  makeBar,
+  randomLocation,
+  RANK_MP_COST,
+} from './battle';
 
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
 const OWNER_NUMBER = "2347062301848@c.us";
+
+// ══════════════════════════════════════════════════════════════════
+//  IN-MEMORY BATTLE STATE
+// ══════════════════════════════════════════════════════════════════
+
+// Active battles: key = challengerPhoneId
+const activeBattles = new Map<string, BattleState>();
+
+// Pending challenges: key = challengerPhoneId, value = timeout handle
+const challengeTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+// Turn timers: key = battleId
+const turnTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+// ══════════════════════════════════════════════════════════════════
+//  HELP / SCROLL MENUS
+// ══════════════════════════════════════════════════════════════════
 
 const HELP_MENU = `╭══════════════════════════╮
    ✦┊　🌌  ASTRAL BOT  🌌　┊✦
@@ -25,7 +65,7 @@ const HELP_MENU = `╭═══════════════════�
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   🃏 Collect rare anime cards
   🏅 Rank up & gain glory
-  ⚔️  Join a sect & conquer
+  ⚔️  Battle & conquer
   📜 Respect the sacred laws
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   Before you begin:
@@ -60,6 +100,17 @@ const SCROLL_MENU = `╭══════════════════�
   📚 !cardcollection ↳ view cards
   🔍 !card [num] ↳ view card info
   🤝 !givecard [num] ↳ trade card (reply)
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  ⚔️ BATTLE
+  ⚔️ !challenge ↳ challenge user (reply)
+  ✅ !accept ↳ accept challenge
+  ❌ !decline ↳ decline challenge
+  🔢 1 / 2 / 3 ↳ pick skill in battle
+  📖 !skills ↳ view unlocked skills
+  🎯 !equipskill [id] ↳ equip active skill
+  🛡️ !equippassive [id] ↳ equip passive
+  📊 !battlestats ↳ your battle stats
+  🏆 !battleboard ↳ battle leaderboard
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   🏯 SECT
   🚪 !joinsect [name] ↳ join a sect
@@ -145,21 +196,13 @@ const DISEASES: Record<string, { name: string; race: string; startMsg: string; e
   "Elf": { name: "Rootwither", race: "Elf", startMsg: "A withering has begun among the Elf race. Rootwither is severing their bond with the ancient world.", endMsg: "Rootwither has retreated into the earth. The Elf race is restored.", cure: "rootwither remedy" }
 };
 
-// ── GUIDE SYSTEM ─────────────────────────────────────────────────────────────
-
 const ANNA = {
   name: "Anna",
   emoji: "🔴",
   image: "attached_assets/Anna.jpg",
   imageWithChild: "attached_assets/Annawithchild.jpg",
-  greeting: `*A red-haired girl bursts in, nearly knocking over everything in sight~*
-
-🔴 *Anna:* "OH— you actually called for me?! Heheheh~ I'm Anna! Your guide, your partner, your absolute chaos companion! Let's make history together darling~! 🔥"
-
-Type *!getguide* to claim Anna as your permanent guide!`,
-  claimMsg: `*Anna beams at you like you just made the best decision of your life.*
-
-🔴 *Anna:* "You chose ME?! Darling~ I KNEW you had good taste!! Don't worry, I'll take GREAT care of you!! This is forever okay?! No take-backs~! 🔥"`,
+  greeting: `*A red-haired girl bursts in, nearly knocking over everything in sight~*\n\n🔴 *Anna:* "OH— you actually called for me?! Heheheh~ I'm Anna! Your guide, your partner, your absolute chaos companion! Let's make history together darling~! 🔥"\n\nType *!getguide* to claim Anna as your permanent guide!`,
+  claimMsg: `*Anna beams at you like you just made the best decision of your life.*\n\n🔴 *Anna:* "You chose ME?! Darling~ I KNEW you had good taste!! Don't worry, I'll take GREAT care of you!! This is forever okay?! No take-backs~! 🔥"`,
   talkResponses: [
     `🔴 *Anna:* "Darling~! I was JUST thinking about you! Are you eating? Training? Smiling?! 😤"`,
     `🔴 *Anna:* "You know, I sorted your inventory in my head while you were gone. Don't ask how. I just did~ 💫"`,
@@ -169,16 +212,8 @@ Type *!getguide* to claim Anna as your permanent guide!`,
     `🔴 *Anna:* "Sometimes I watch you from a distance and think... yeah. I made a good choice too~ 🌸"`,
     `🔴 *Anna:* "Don't get cocky out there okay?! I can't revive you from here darling~! 😤"`,
   ],
-  pregnantMsg: `🔴 *Anna:* "Darling... I have something to tell you. I've been feeling different lately. Something is... different inside me. I think— I think I'm pregnant. 🌸
-...Don't look at me like that! This is YOUR fault~!"`,
-  birthMsg: `🔴 *Anna:* "DARLING~!! It's time!! She's HERE! Our baby is HERE! 😭🌸
-She's so tiny and perfect and— she has your eyes I think?!
-
-Name her! Use *!namechild [name]* RIGHT NOW!!"`,
-  namedMsg: (childName: string) => `🔴 *Anna:* "~${childName}~!! Oh that name is PERFECT darling!!
-She's already kicking like she approves!! 😭🌸
-Welcome to the world, little ${childName}~
-Your daddy is... well. He's trying his best. 💕"`,
+  pregnantMsg: `🔴 *Anna:* "Darling... I have something to tell you. I've been feeling different lately. Something is... different inside me. I think— I think I'm pregnant. 🌸\n...Don't look at me like that! This is YOUR fault~!"`,
+  birthMsg: `🔴 *Anna:* "DARLING~!! It's time!! She's HERE! Our baby is HERE! 😭🌸\nShe's so tiny and perfect and— she has your eyes I think?!\n\nName her! Use *!namechild [name]* RIGHT NOW!!"`,
   smashScene: [
     `*Anna sets her satchel down slowly. Her eyes glint in the torchlight.*`,
     `🔴 *Anna:* "...Oh? So it's THAT kind of night, darling~"`,
@@ -190,31 +225,21 @@ Your daddy is... well. He's trying his best. 💕"`,
     `*......*`,
     `*Some things are better left unwritten~ 🔥*`,
   ],
-  alreadySmashed: `🔴 *Anna:* "...Again?! Give me a moment to breathe, darling~! 😳"`,
-  leaveMsg: `🔴 *Anna:* "...Oh. You're leaving? ...Fine! Go!! I'm not crying, YOU'RE crying!! 😤
-Come back when you're ready, darling~"`,
 };
 
-// ── GUIDES map — used by !getguide, !talkguide, !smashmyguide, !leaveguide ──
-const GUIDES: Record<string, typeof ANNA> = {
-  anna: ANNA,
-};
+const GUIDES: Record<string, typeof ANNA> = { anna: ANNA };
 
-// Track if Anna is currently spawned in group
 let annaSpawned = false;
 let annaSpawnedAt: Date | null = null;
 
-// Check guide pregnancy/birth events
 async function checkGuideEvents(user: any, phoneId: string) {
   if (!user.guideName || !user.guideSmashAt) return;
   const now = Date.now();
   const smashTime = new Date(user.guideSmashAt).getTime();
-
   if (!user.guidePregnant && now - smashTime >= 86400000) {
     await storage.updateUser(phoneId, { guidePregnant: true } as any);
     await client.sendMessage(phoneId, ANNA.pregnantMsg);
   }
-
   if (user.guidePregnant && !user.guideChildName && now - smashTime >= 259200000) {
     try {
       const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.imageWithChild));
@@ -224,12 +249,7 @@ async function checkGuideEvents(user: any, phoneId: string) {
   }
 }
 
-// ── Helper: resolve the real sender phone ID from a quoted message ────────────
-// In group chats msg.author holds the sender; msg.from is the group ID.
-// For DMs, msg.from is the sender. We normalise here.
 function resolvePhoneId(quotedMsg: Message): string {
-  // quotedMsg.author is set in group chats (it's the participant)
-  // quotedMsg.from is the chat (could be group or individual)
   return (quotedMsg as any).author || quotedMsg.from;
 }
 
@@ -272,7 +292,6 @@ setInterval(async () => {
     for (const user of users) {
       let hpDrain = 0;
       if (user.condition === "Infected") hpDrain += 5;
-
       if (hpDrain > 0 && !user.isDead) {
         const newHp = Math.max(0, user.hp - hpDrain);
         const isDead = newHp <= 0;
@@ -281,8 +300,6 @@ setInterval(async () => {
           await client.sendMessage(user.phoneId, "💀 Your life force has faded. You have perished. You cannot use commands until revived.");
         }
       }
-
-      // Dragon Egg Progress
       if (user.dragonEggProgress > 0 && !user.dragonEggHatched) {
         const others = users.filter(u => u.phoneId !== user.phoneId && u.xp >= 30);
         if (others.length > 0) {
@@ -290,7 +307,6 @@ setInterval(async () => {
           await storage.updateUser(victim.phoneId, { xp: victim.xp - 30 });
           await storage.updateUser(user.phoneId, { dragonEggProgress: user.dragonEggProgress + 30 });
           await client.sendMessage(victim.phoneId, "A strange fatigue washes over you. Something is feeding nearby.\nYou lost 30 XP.");
-
           if (user.dragonEggProgress + 30 >= 1500) {
             await storage.updateUser(user.phoneId, { dragonEggHatched: true });
             await client.sendMessage(user.phoneId, "The shell shatters. Something ancient rises.\nYour Dragon Egg has fully hatched. +500 XP per day added permanently.");
@@ -298,7 +314,6 @@ setInterval(async () => {
         }
       }
     }
-
     const stats = await storage.getGlobalStats();
     const now = new Date();
     if (!stats.activeDisease && (!stats.lastOutbreakAt || now.getTime() - new Date(stats.lastOutbreakAt).getTime() > 604800000)) {
@@ -307,17 +322,12 @@ setInterval(async () => {
       const disease = DISEASES[randomRace];
       const endsAt = new Date(now.getTime() + (Math.floor(Math.random() * 7) + 1) * 86400000);
       await storage.updateGlobalStats({ activeDisease: disease.name, diseaseRace: disease.race, lastOutbreakAt: now, outbreakEndsAt: endsAt });
-      // Notify owner
       await client.sendMessage(OWNER_NUMBER, `☣️ *DISEASE OUTBREAK*\n\n${disease.startMsg}\n\nAffected race: *${disease.race}*\nCure: *${disease.cure}*`);
-      // Warn every at-risk user directly
       const atRiskUsers = await storage.getUsers();
       for (const u of atRiskUsers) {
         if (u.species === disease.race && !u.hasShadowVeil && !u.isDead) {
           await client.sendMessage(u.phoneId,
-            `⚠️ *OUTBREAK WARNING*\n\n${disease.startMsg}\n\n` +
-            `As a *${disease.race}*, you are at risk of infection.\n` +
-            `Buy *${disease.cure}* from !shop to protect yourself.\n` +
-            `Or use a *Cursed Bone* for permanent Shadow Veil immunity.`
+            `⚠️ *OUTBREAK WARNING*\n\n${disease.startMsg}\n\nAs a *${disease.race}*, you are at risk of infection.\nBuy *${disease.cure}* from !shop to protect yourself.\nOr use a *Cursed Bone* for permanent Shadow Veil immunity.`
           ).catch(() => {});
         }
       }
@@ -325,21 +335,18 @@ setInterval(async () => {
       const disease = Object.values(DISEASES).find(d => d.name === stats.activeDisease);
       await storage.updateGlobalStats({ activeDisease: null, diseaseRace: null, outbreakEndsAt: null });
       await client.sendMessage(OWNER_NUMBER, `✨ *DISEASE CLEARED*\n\n${disease?.endMsg}`);
-      // Notify survivors
       const survivors = await storage.getUsers();
       for (const u of survivors) {
         if (u.species === disease?.race && !u.isDead) {
-          await client.sendMessage(u.phoneId,
-            `✨ *THE PLAGUE HAS PASSED*\n\n${disease?.endMsg}\n\nYou survived.`
-          ).catch(() => {});
+          await client.sendMessage(u.phoneId, `✨ *THE PLAGUE HAS PASSED*\n\n${disease?.endMsg}\n\nYou survived.`).catch(() => {});
         }
       }
     }
+    // Expire old challenges
+    await storage.expireOldChallenges();
   } catch (err) { console.error("Interval error:", err); }
 }, 300000);
 
-
-// ── Weekly XP for guides ──────────────────────────────────────────────────────
 setInterval(async () => {
   if (!client) return;
   try {
@@ -377,7 +384,22 @@ export async function initBot() {
     }
   });
   client.on('qr', (qr) => { currentQrCode = qr; connectionStatus = "WAITING_FOR_QR"; });
-  client.on('ready', () => { connectionStatus = "CONNECTED"; currentQrCode = undefined; console.log('Bot is ready'); });
+  client.on('ready', async () => {
+    connectionStatus = "CONNECTED";
+    currentQrCode = undefined;
+    console.log('Bot is ready');
+    // Clean up any users stuck in battle state from a previous crash/restart
+    try {
+      const allUsers = await storage.getUsers();
+      for (const u of allUsers) {
+        if ((u as any).inBattle) {
+          await storage.updateUser(u.phoneId, { inBattle: false } as any);
+        }
+      }
+      await storage.expireOldChallenges();
+      console.log('[startup] inBattle cleanup complete.');
+    } catch (err) { console.error('[startup] cleanup error:', err); }
+  });
   client.on('authenticated', () => { connectionStatus = "CONNECTED"; currentQrCode = undefined; });
   client.on('auth_failure', () => { connectionStatus = "DISCONNECTED"; });
   client.on('disconnected', () => { connectionStatus = "DISCONNECTED"; });
@@ -390,6 +412,453 @@ export function refreshQr() {
   else { initBot(); }
 }
 
+// ══════════════════════════════════════════════════════════════════
+//  BATTLE HELPERS
+// ══════════════════════════════════════════════════════════════════
+
+function getBattleByParticipant(phoneId: string): BattleState | null {
+  for (const battle of activeBattles.values()) {
+    if (battle.challenger.phoneId === phoneId || battle.target.phoneId === phoneId) {
+      return battle;
+    }
+  }
+  return null;
+}
+
+function getDefaultEquippedActives(botRank: number): Skill[] {
+  const unlocked = getUnlockedSkills(botRank);
+  const actives = unlocked.filter(s => s.type === "active");
+  return actives.slice(0, 3);
+}
+
+function getDefaultEquippedPassive(botRank: number): Skill | null {
+  const unlocked = getUnlockedSkills(botRank);
+  return unlocked.find(s => s.type === "passive") || null;
+}
+
+function buildCombatant(user: User): Combatant {
+  const bExp = (user as any).battleExp || 0;
+  const stats = computeStats(user, bExp);
+
+  // Resolve equipped actives
+  const equippedActiveIds: string[] = (user.equippedActives as string[]) || [];
+  let equippedActives: Skill[] = equippedActiveIds
+    .map(id => ALL_SKILLS.find(s => s.id === id))
+    .filter(Boolean) as Skill[];
+
+  if (equippedActives.length === 0) {
+    equippedActives = getDefaultEquippedActives(user.rank);
+  }
+
+  // Ensure at least 1 active
+  if (equippedActives.length === 0) {
+    equippedActives = [ALL_SKILLS.find(s => s.type === "active")!];
+  }
+
+  const equippedPassiveId = (user as any).equippedPassive as string | null;
+  let equippedPassive: Skill | null = null;
+  if (equippedPassiveId) {
+    equippedPassive = ALL_SKILLS.find(s => s.id === equippedPassiveId) || null;
+  }
+  if (!equippedPassive) {
+    equippedPassive = getDefaultEquippedPassive(user.rank);
+  }
+
+  return {
+    phoneId: user.phoneId,
+    name: user.name,
+    stats,
+    hp: stats.maxHp,
+    mp: stats.maxMp,
+    equippedActives,
+    equippedPassive,
+    activeEffects: [],
+    cooldowns: {},
+    battleExp: bExp,
+  };
+}
+
+// ── Announce turn and ask first mover for skill pick ─────────────
+async function announceTurn(state: BattleState): Promise<void> {
+  const turnBlock = formatTurnBlock(state);
+  const firstMover = state.firstMoverId === state.challenger.phoneId
+    ? state.challenger
+    : state.target;
+
+  const skillList = formatSkillList(firstMover);
+  const stunned = firstMover.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
+
+  let pickMsg: string;
+  if (stunned) {
+    pickMsg = `\n\n⚡ *${firstMover.name}* is stunned and cannot act this turn.`;
+    state.challengerSkillChoice = firstMover.phoneId === state.challenger.phoneId ? "__stunned__" : state.challengerSkillChoice;
+    state.targetSkillChoice = firstMover.phoneId === state.target.phoneId ? "__stunned__" : state.targetSkillChoice;
+  } else {
+    pickMsg = `\n\n*${firstMover.name}*, it is your turn.\nPick a skill:\n${skillList}\n\nType *1*, *2*, or *3* to use that skill.\nYou have 2 minutes.`;
+    state.phase = firstMover.phoneId === state.challenger.phoneId
+      ? "waiting_challenger"
+      : "waiting_target";
+  }
+
+  await client.sendMessage(state.chatId, `${turnBlock}${pickMsg}`);
+
+  // Start turn timer
+  clearTurnTimer(state.id);
+  if (!stunned) {
+    const timer = setTimeout(async () => {
+      await handleTurnTimeout(state, firstMover.phoneId);
+    }, 120000);
+    turnTimers.set(state.id, timer);
+  } else {
+    // Stunned — immediately auto-resolve this mover
+    await resolveStunnedMover(state, firstMover.phoneId);
+  }
+}
+
+async function resolveStunnedMover(state: BattleState, phoneId: string): Promise<void> {
+  if (phoneId === state.challenger.phoneId) {
+    state.challengerSkillChoice = "__stunned__";
+  } else {
+    state.targetSkillChoice = "__stunned__";
+  }
+  await promptSecondMoverOrResolve(state);
+}
+
+async function promptSecondMoverOrResolve(state: BattleState): Promise<void> {
+  const firstMover = state.firstMoverId === state.challenger.phoneId ? state.challenger : state.target;
+  const secondMover = state.firstMoverId === state.challenger.phoneId ? state.target : state.challenger;
+
+  const firstChose = state.firstMoverId === state.challenger.phoneId
+    ? state.challengerSkillChoice !== null
+    : state.targetSkillChoice !== null;
+
+  if (!firstChose) return; // Still waiting for first mover
+
+  // Check if second mover also chose / auto
+  const secondChose = state.firstMoverId === state.challenger.phoneId
+    ? state.targetSkillChoice !== null
+    : state.challengerSkillChoice !== null;
+
+  if (!secondChose) {
+    // Prompt second mover
+    const stunned2 = secondMover.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
+    if (stunned2) {
+      // Announce the stun so the group sees it
+      await client.sendMessage(
+        state.chatId,
+        `⚡ *${secondMover.name}* is stunned and cannot act this turn.`
+      );
+      if (secondMover.phoneId === state.challenger.phoneId) {
+        state.challengerSkillChoice = "__stunned__";
+      } else {
+        state.targetSkillChoice = "__stunned__";
+      }
+      await resolveTurn(state);
+    } else {
+      const skillList2 = formatSkillList(secondMover);
+      await client.sendMessage(
+        state.chatId,
+        `*${secondMover.name}*, it is your turn.\nPick a skill:\n${skillList2}\n\nType *1*, *2*, or *3*.\nYou have 2 minutes.`
+      );
+      state.phase = secondMover.phoneId === state.challenger.phoneId
+        ? "waiting_challenger"
+        : "waiting_target";
+
+      clearTurnTimer(state.id);
+      const timer = setTimeout(async () => {
+        await handleTurnTimeout(state, secondMover.phoneId);
+      }, 120000);
+      turnTimers.set(state.id, timer);
+    }
+  } else {
+    await resolveTurn(state);
+  }
+}
+
+async function handleTurnTimeout(state: BattleState, phoneId: string): Promise<void> {
+  const combatant = phoneId === state.challenger.phoneId ? state.challenger : state.target;
+  const defaultSk = getDefaultSkill(combatant);
+  await client.sendMessage(
+    state.chatId,
+    `⏱️ *${combatant.name}* took too long. Auto-using *${defaultSk.name}*.`
+  );
+  if (phoneId === state.challenger.phoneId) {
+    state.challengerSkillChoice = defaultSk.id;
+  } else {
+    state.targetSkillChoice = defaultSk.id;
+  }
+  await promptSecondMoverOrResolve(state);
+}
+
+function clearTurnTimer(battleId: string): void {
+  const t = turnTimers.get(battleId);
+  if (t) { clearTimeout(t); turnTimers.delete(battleId); }
+}
+
+// ── Core turn resolution ──────────────────────────────────────────
+async function resolveTurn(state: BattleState): Promise<void> {
+  state.phase = "resolving";
+  clearTurnTimer(state.id);
+
+  const { challenger, target } = state;
+  const firstMover = state.firstMoverId === challenger.phoneId ? challenger : target;
+  const secondMover = state.firstMoverId === challenger.phoneId ? target : challenger;
+
+  const firstSkillId = firstMover.phoneId === challenger.phoneId
+    ? state.challengerSkillChoice
+    : state.targetSkillChoice;
+  const secondSkillId = firstMover.phoneId === challenger.phoneId
+    ? state.targetSkillChoice
+    : state.challengerSkillChoice;
+
+  // Apply turn-start DoT/regen effects to both combatants
+  const dotLogs: string[] = [
+    ...applyTurnEffects(challenger),
+    ...applyTurnEffects(target),
+  ];
+
+  const resolutionLines: string[] = [];
+  if (dotLogs.length) resolutionLines.push(...dotLogs, "");
+
+  // ── BUG FIX: Check if DoT killed someone before skill resolution ─────────
+  if (challenger.hp <= 0 && target.hp <= 0) {
+    await endBattle(state, null, null, resolutionLines);
+    return;
+  }
+  if (challenger.hp <= 0) {
+    resolutionLines.push(`💀 *${challenger.name}* has perished from their wounds before they could act.`);
+    await endBattle(state, target, challenger, resolutionLines);
+    return;
+  }
+  if (target.hp <= 0) {
+    resolutionLines.push(`💀 *${target.name}* has perished from their wounds before they could act.`);
+    await endBattle(state, challenger, target, resolutionLines);
+    return;
+  }
+
+  // Resolve first mover's skill
+  const firstResult = await resolveSkillAction(firstMover, secondMover, firstSkillId);
+  resolutionLines.push(...firstResult.lines);
+
+  // Check fatal after first mover
+  if (secondMover.hp <= 0) {
+    await endBattle(state, firstMover, secondMover, resolutionLines);
+    return;
+  }
+
+  // Resolve second mover's skill
+  const secondResult = await resolveSkillAction(secondMover, firstMover, secondSkillId);
+  resolutionLines.push(...secondResult.lines);
+
+  // Check fatal after second mover
+  if (firstMover.hp <= 0 && secondMover.hp <= 0) {
+    await endBattle(state, null, null, resolutionLines); // Draw
+    return;
+  }
+  if (firstMover.hp <= 0) {
+    await endBattle(state, secondMover, firstMover, resolutionLines);
+    return;
+  }
+
+  // Tick cooldowns and effects for both
+  tickCooldowns(challenger);
+  tickCooldowns(target);
+  const expiredCh = tickEffects(challenger);
+  const expiredTg = tickEffects(target);
+  if (expiredCh.length) resolutionLines.push(`⏸️ ${challenger.name}: ${expiredCh.join(", ")} effect(s) expired.`);
+  if (expiredTg.length) resolutionLines.push(`⏸️ ${target.name}: ${expiredTg.join(", ")} effect(s) expired.`);
+
+  // Compose result message
+  const chHpBar = makeBar(challenger.hp, challenger.stats.maxHp);
+  const chMpBar = makeBar(challenger.mp, challenger.stats.maxMp);
+  const tgHpBar = makeBar(target.hp, target.stats.maxHp);
+  const tgMpBar = makeBar(target.mp, target.stats.maxMp);
+
+  const activeEffectsSummary: string[] = [];
+  for (const fx of challenger.activeEffects) {
+    if (fx.duration !== 999 && fx.turnsLeft > 0) {
+      activeEffectsSummary.push(`• *${challenger.name}*: ${fx.source} — ${fx.kind} (${fx.turnsLeft} turn(s) left)`);
+    }
+  }
+  for (const fx of target.activeEffects) {
+    if (fx.duration !== 999 && fx.turnsLeft > 0) {
+      activeEffectsSummary.push(`• *${target.name}*: ${fx.source} — ${fx.kind} (${fx.turnsLeft} turn(s) left)`);
+    }
+  }
+
+  let resultMsg =
+    `⚔️ *TURN ${state.turn} RESULT*\n\n` +
+    resolutionLines.join("\n") +
+    `\n\n*${challenger.name}*\n` +
+    `HP: [${chHpBar}] ${challenger.hp}/${challenger.stats.maxHp}\n` +
+    `MP: [${chMpBar}] ${challenger.mp}/${challenger.stats.maxMp}\n\n` +
+    `*${target.name}*\n` +
+    `HP: [${tgHpBar}] ${target.hp}/${target.stats.maxHp}\n` +
+    `MP: [${tgMpBar}] ${target.mp}/${target.stats.maxMp}`;
+
+  if (activeEffectsSummary.length) {
+    resultMsg += `\n\n*Active effects:*\n${activeEffectsSummary.join("\n")}`;
+  }
+
+  resultMsg += `\n\n_Next turn begins shortly..._`;
+
+  await client.sendMessage(state.chatId, resultMsg);
+
+  // Advance turn
+  state.turn++;
+  state.challengerSkillChoice = null;
+  state.targetSkillChoice = null;
+
+  // Re-determine speed order for next turn
+  const { firstId, speedLog } = determineFirstMover(challenger, target);
+  state.firstMoverId = firstId;
+
+  await new Promise(r => setTimeout(r, 2000));
+  await announceTurn(state);
+}
+
+// ── Resolve a single skill action ────────────────────────────────
+async function resolveSkillAction(
+  attacker: Combatant,
+  defender: Combatant,
+  skillId: string | null
+): Promise<{ lines: string[] }> {
+  const lines: string[] = [];
+
+  if (skillId === "__stunned__") {
+    lines.push(`⚡ *${attacker.name}* is stunned. No action taken.`);
+    return { lines };
+  }
+
+  const skill = skillId
+    ? ALL_SKILLS.find(s => s.id === skillId) || getDefaultSkill(attacker)
+    : getDefaultSkill(attacker);
+
+  lines.push(`⚔️ *${attacker.name}* used *${skill.name}* (${skill.rank}-rank)`);
+
+  // Deduct MP
+  attacker.mp = Math.max(0, attacker.mp - skill.mpCost);
+
+  // Calculate damage
+  const { damage, dodged, crit } = calculateDamage(attacker, defender, skill);
+
+  if (dodged) {
+    lines.push(`💨 *${defender.name}* dodged the attack!`);
+  } else if (damage > 0) {
+    defender.hp = Math.max(0, defender.hp - damage);
+    lines.push(`💥 Damage dealt: *${damage}*${crit ? " ✨ CRITICAL!" : ""}`);
+    lines.push(`${defender.name} HP: *${defender.hp}/${defender.stats.maxHp}*`);
+
+    // Lifesteal
+    const lifesteal = attacker.activeEffects.find(fx => fx.kind === "lifesteal");
+    if (lifesteal) {
+      const healed = Math.floor(damage * lifesteal.value);
+      attacker.hp = Math.min(attacker.stats.maxHp, attacker.hp + healed);
+      lines.push(`🩸 *${attacker.name}* lifesteals *${healed} HP*. HP: ${attacker.hp}`);
+      // Remove lifesteal effect
+      attacker.activeEffects = attacker.activeEffects.filter(fx => fx.kind !== "lifesteal");
+    }
+
+    // Fatal blow check
+    if (defender.hp <= 0) {
+      lines.push(`\n💀 *A fatal blow.* ${defender.name} could not withstand the force.`);
+      lines.push(`${defender.name} HP: 0`);
+      lines.push(`\n*${defender.name} has been defeated. The battle ends now.*`);
+    }
+  } else if (skill.attackPercent === 0) {
+    lines.push(`✨ Utility effect activated.`);
+  }
+
+  // Apply skill effect
+  if (skill.effect) {
+    const effectLogs = applySkillEffect(skill.effect, skill.name, attacker, defender);
+    lines.push(...effectLogs);
+  }
+
+  // Apply cooldown
+  if (skill.cooldown > 0) {
+    attacker.cooldowns[skill.id] = skill.cooldown;
+  }
+
+  lines.push("");
+  return { lines };
+}
+
+// ── End battle ────────────────────────────────────────────────────
+async function endBattle(
+  state: BattleState,
+  winner: Combatant | null,
+  loser: Combatant | null,
+  resolutionLines: string[]
+): Promise<void> {
+  state.phase = "ended";
+  clearTurnTimer(state.id);
+  activeBattles.delete(state.challenger.phoneId);
+
+  const { challenger, target, location } = state;
+
+  // Mark both as not in battle
+  await storage.updateUser(challenger.phoneId, { inBattle: false } as any);
+  await storage.updateUser(target.phoneId, { inBattle: false } as any);
+
+  if (!winner || !loser) {
+    // Draw
+    await client.sendMessage(
+      state.chatId,
+      `⚔️ *BATTLE OVER — DRAW*\n📍 ${location}\n\nBoth warriors fall at the same moment.\nNeither claims victory.\nNo XP or Battle EXP transferred.`
+    );
+    return;
+  }
+
+  const xpTransfer = state.xpTransfer;
+  const battleExpGain = 50;
+
+  // Update winner — re-fetch fresh DB values BEFORE updating so display is accurate
+  const winnerUser = await storage.getUserByPhone(winner.phoneId);
+  const loserUser = await storage.getUserByPhone(loser.phoneId);
+
+  const freshWinnerXp = winnerUser?.xp || 0;
+  const freshLoserXp = loserUser?.xp || 0;
+  const loserLoss = Math.min(xpTransfer, freshLoserXp); // can't go below 0
+
+  if (winnerUser) {
+    await storage.updateUser(winner.phoneId, {
+      xp: freshWinnerXp + loserLoss, // winner gets exactly what loser loses
+      battleExp: ((winnerUser as any).battleExp || 0) + battleExpGain,
+      battleWins: ((winnerUser as any).battleWins || 0) + 1,
+    } as any);
+  }
+
+  if (loserUser) {
+    await storage.updateUser(loser.phoneId, {
+      xp: Math.max(0, freshLoserXp - xpTransfer),
+      battleLosses: ((loserUser as any).battleLosses || 0) + 1,
+    } as any);
+  }
+
+  const winnerNewXp = freshWinnerXp + loserLoss;
+  const loserNewXp = Math.max(0, freshLoserXp - xpTransfer);
+  const winnerNewBExp = ((winnerUser as any)?.battleExp || 0) + battleExpGain;
+
+  await client.sendMessage(
+    state.chatId,
+    `⚔️ *BATTLE OVER*\n📍 ${location}\n\n` +
+    `*${winner.name}* stands victorious.\n` +
+    `*${loser.name}* has fallen.\n\n` +
+    `🏆 *Winner:* ${winner.name}\n` +
+    `💀 *Loser:* ${loser.name}\n\n` +
+    `⚡ Battle EXP earned: *+${battleExpGain}*\n` +
+    `💰 Chat XP transferred: *${loserLoss}*\n\n` +
+    `${winner.name} Battle EXP: *${winnerNewBExp}*\n` +
+    `${winner.name} Chat XP: *${winnerNewXp}*\n` +
+    `${loser.name} Chat XP: *${loserNewXp}*`
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MAIN MESSAGE HANDLER
+// ══════════════════════════════════════════════════════════════════
+
 async function handleMessage(msg: Message) {
   const contact = await msg.getContact();
   const phoneId = contact.id._serialized;
@@ -399,7 +868,6 @@ async function handleMessage(msg: Message) {
 
   if (user?.isBanned) return;
 
-  // ── FIX: Tell unregistered users to !start before doing anything else ──────
   if ((!user || !user.isRegistered) && body !== "!start") {
     if (body.startsWith("!")) {
       return msg.reply(`╭══════════════════════╮\n   ✦┊【 Welcome 】┊✦\n╰══════════════════════╯\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  You are not registered yet,\n  Cultivator.\n\n  Type *!start* to begin\n  your ascension journey.\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼\n╰══════════════════════╯`);
@@ -416,7 +884,10 @@ async function handleMessage(msg: Message) {
   if (!user || !user.isRegistered) {
     if (body === "!start") {
       const sp = getRandomSpecies();
-      user = await storage.createUser({ phoneId, name, species: sp.name, isRegistered: true, xp: 0, messages: 0, condition: "Healthy", rank: 8, inventory: [], hp: 100 });
+      user = await storage.createUser({
+        phoneId, name, species: sp.name, isRegistered: true, xp: 0, messages: 0,
+        condition: "Healthy", rank: 8, inventory: [], hp: 100,
+      } as any);
       const startMsg = `╭══════════════════════╮\n   ✦┊【Welcome】┊✦\n╰══════════════════════╯\n  👤 Cultivator: ${name}\n  🧬 Species: ${sp.name} (${sp.rarity})\n\n  Your journey begins.\n  Use !scroll or !help to see commands.\n╰══════════════════════╯`;
       try {
         const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Start.jpg"));
@@ -428,7 +899,7 @@ async function handleMessage(msg: Message) {
     return;
   }
 
-  // ── Infection trigger — runs on every interaction ───────────────────────────
+  // ── Infection trigger ─────────────────────────────────────────────────────────
   {
     const stats = await storage.getGlobalStats();
     if (
@@ -440,25 +911,64 @@ async function handleMessage(msg: Message) {
     ) {
       await storage.updateUser(phoneId, { condition: "Infected", disease: stats.activeDisease, infectedAt: new Date() });
       await client.sendMessage(phoneId,
-        `☣️ *INFECTED*
-
-You have contracted *${stats.activeDisease}*.
-Your HP is draining *5 per 5 minutes*.
-
-Buy a cure from *!shop* before you perish.
-Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
+        `☣️ *INFECTED*\n\nYou have contracted *${stats.activeDisease}*.\nYour HP is draining *5 per 5 minutes*.\n\nBuy a cure from *!shop* before you perish.\nShadow Veil (*!buy cursed bone*) grants permanent immunity.`
       );
+    }
+  }
+
+  // ── Battle skill pick: 1, 2, 3 ───────────────────────────────────────────────
+  if (body === "1" || body === "2" || body === "3") {
+    const battle = getBattleByParticipant(phoneId);
+    if (battle && battle.phase !== "resolving" && battle.phase !== "ended") {
+      const idx = parseInt(body) - 1;
+      const combatant = phoneId === battle.challenger.phoneId ? battle.challenger : battle.target;
+      const isChallenger = phoneId === battle.challenger.phoneId;
+
+      // Prevent picking if already chosen this turn
+      const myChoice = isChallenger ? battle.challengerSkillChoice : battle.targetSkillChoice;
+      if (myChoice !== null) {
+        return msg.reply("⚔️ You already chose your skill this turn. Wait for the turn to resolve.");
+      }
+
+      // Enforce turn order: second mover cannot pick before first mover has chosen
+      const isFirstMover = battle.firstMoverId === phoneId;
+      const firstMoverChose = battle.firstMoverId === battle.challenger.phoneId
+        ? battle.challengerSkillChoice !== null
+        : battle.targetSkillChoice !== null;
+
+      if (!isFirstMover && !firstMoverChose) {
+        return msg.reply("⏳ Wait for your opponent to pick their skill first.");
+      }
+
+      const skill = combatant.equippedActives[idx];
+      if (!skill) {
+        return msg.reply(`❌ Invalid choice. Pick 1–${combatant.equippedActives.length}.`);
+      }
+
+      const { ok, reason } = canUseSkill(combatant, skill);
+      if (!ok) {
+        return msg.reply(`❌ ${reason}\n\nPick another skill.`);
+      }
+
+      if (isChallenger) {
+        battle.challengerSkillChoice = skill.id;
+      } else {
+        battle.targetSkillChoice = skill.id;
+      }
+
+      clearTurnTimer(battle.id);
+      await msg.reply(`✅ *${skill.name}* selected.`);
+      await promptSecondMoverOrResolve(battle);
+      return;
     }
   }
 
   // ── XP gain on normal messages ─────────────────────────────────────────────
   if (body.length >= 3 && !body.startsWith("!")) {
-    // Check mirror shard — use mirrored race XP rate if active
     let activeSpecies = user.species;
     if ((user as any).mirrorUntil && new Date() < new Date((user as any).mirrorUntil)) {
       activeSpecies = (user as any).mirrorRace || user.species;
     } else if ((user as any).mirrorUntil && new Date() >= new Date((user as any).mirrorUntil) && (user as any).mirrorRace) {
-      // Mirror expired — restore original race
       await storage.updateUser(phoneId, { species: (user as any).mirrorOriginalRace, mirrorRace: null, mirrorOriginalRace: null, mirrorUntil: null } as any);
       activeSpecies = (user as any).mirrorOriginalRace || user.species;
       await client.sendMessage(phoneId, `🪞 *The mirror shatters. You are yourself again.*\n🧬 Race restored to *${activeSpecies}*.`);
@@ -485,6 +995,15 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
 
       if (newRank.level < oldRank.level) {
         await client.sendMessage(msg.from, `╭══════════════════════╮\n   🎊 RANK UP! 🎊\n   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n   👤 Cultivator: ${user.name}\n   📈 New Rank: 【${newRank.level}】${newRank.name}\n   ✨ Total XP: ${newXp}\n   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n   Your soul ascends further!\n╰══════════════════════╯`);
+
+        // Announce newly unlocked skills on rank-up
+        const newUnlocked = getUnlockedSkills(newRank.level);
+        const prevUnlocked = getUnlockedSkills(oldRank.level);
+        const fresh = newUnlocked.filter(sk => !prevUnlocked.find(p => p.id === sk.id));
+        if (fresh.length) {
+          const freshList = fresh.map(sk => `  • *${sk.name}* [${sk.rank}] — ${sk.description}`).join("\n");
+          await client.sendMessage(phoneId, `⚔️ *NEW SKILLS UNLOCKED!*\n\n${freshList}\n\nUse *!skills* to view all. Use *!equipskill [id]* to equip.`);
+        }
       }
 
       if (Math.random() < 0.01) {
@@ -508,7 +1027,9 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return;
   }
 
-  // ── Commands ─────────────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════
+  //  COMMANDS
+  // ══════════════════════════════════════════════════════════════════
 
   if (body === "!help") {
     try {
@@ -528,7 +1049,6 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return;
   }
 
-  // ── FIX: !status = quick, !profile = full detailed view ──────────────────────
   if (body === "!status") {
     const currentRank = getRankForXp(user.xp);
     let sectLine = "None";
@@ -537,16 +1057,9 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       if (sect) sectLine = `${sect.name} [${sect.tag}]`;
     }
     return msg.reply(
-      `╭══════════════════════╮\n` +
-      `   ✦┊【Ｑｕｉｃｋ Ｓｔａｔｕｓ】┊✦\n` +
-      `╰══════════════════════╯\n` +
-      `  👤 ${user.name}\n` +
-      `  📈 ${currentRank.name}\n` +
-      `  ✨ XP: ${user.xp}\n` +
-      `  ❤️ HP: ${generateHpBar(user.hp)}\n` +
-      `  🩺 ${getHpStatus(user.hp)}\n` +
-      `  🏯 Sect: ${sectLine}\n` +
-      `╰══════════════════════╯`
+      `╭══════════════════════╮\n   ✦┊【Ｑｕｉｃｋ Ｓｔａｔｕｓ】┊✦\n╰══════════════════════╯\n` +
+      `  👤 ${user.name}\n  📈 ${currentRank.name}\n  ✨ XP: ${user.xp}\n` +
+      `  ❤️ HP: ${generateHpBar(user.hp)}\n  🩺 ${getHpStatus(user.hp)}\n  🏯 Sect: ${sectLine}\n╰══════════════════════╯`
     );
   }
 
@@ -555,58 +1068,36 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     const nextRankIdx = RANKS.findIndex(r => r.level === currentRank.level) - 1;
     const nextRank = nextRankIdx >= 0 ? RANKS[nextRankIdx] : null;
     const xpToNext = nextRank ? nextRank.threshold - user.xp : 0;
-
     let sectLine = "None";
     if (user.sectId) {
       const sect = await storage.getSect(user.sectId);
       if (sect) sectLine = `${sect.name} [${sect.tag}]`;
     }
-
     const guideName = (user as any).guideName;
     const guideChild = (user as any).guideChildName;
     const guideEmoji = guideName ? (GUIDES[guideName.toLowerCase()]?.emoji || "💞") : "";
     const guideLine = guideName ? `${guideEmoji} ${guideName}${guideChild ? ` + 👶 ${guideChild}` : ""}` : "None";
-
     const inv = user.inventory as string[];
     const vampActive = user.isVampire && user.vampireUntil && new Date() < new Date(user.vampireUntil);
     const dustActive = (user as any).dustDomainUntil && new Date() < new Date((user as any).dustDomainUntil);
-
     return msg.reply(
-      `╭══════════════════════╮\n` +
-      `   ✦┊【Ｃｕｌｔｉｖａｔｏｒ Ｐｒｏｆｉｌｅ】┊✦\n` +
-      `╰══════════════════════╯\n` +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-      `  👤 Name: ${user.name}\n` +
-      `  🧬 Species: ${user.species}\n` +
-      `  ⚡ XP Rate: ${SPECIES_XP_RATES[user.species] || 5}/msg\n` +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-      `  📈 Rank: 【${currentRank.level}】${currentRank.name}\n` +
-      `  ✨ Total XP: ${user.xp}\n` +
-      `  💬 Messages: ${user.messages}\n` +
+      `╭══════════════════════╮\n   ✦┊【Ｃｕｌｔｉｖａｔｏｒ Ｐｒｏｆｉｌｅ】┊✦\n╰══════════════════════╯\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `  👤 Name: ${user.name}\n  🧬 Species: ${user.species}\n  ⚡ XP Rate: ${SPECIES_XP_RATES[user.species] || 5}/msg\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `  📈 Rank: 【${currentRank.level}】${currentRank.name}\n  ✨ Total XP: ${user.xp}\n  💬 Messages: ${user.messages}\n` +
       (nextRank ? `  🎯 Next Rank: ${nextRank.name}\n  📊 XP Needed: ${xpToNext}\n` : `  🏅 MAX RANK ACHIEVED\n`) +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-      `  ❤️ HP: ${generateHpBar(user.hp)}\n` +
-      `  🩺 State: ${getHpStatus(user.hp)}\n` +
-      `  🩹 Condition: ${user.condition}\n` +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-      `  🏯 Sect: ${sectLine}\n` +
-      `  💞 Guide: ${guideLine}\n` +
-      `  🎒 Items: ${inv.length}\n` +
-      `  🃏 Cards: (use !cardcollection)\n` +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  ❤️ HP: ${generateHpBar(user.hp)}\n  🩺 State: ${getHpStatus(user.hp)}\n  🩹 Condition: ${user.condition}\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `  🏯 Sect: ${sectLine}\n  💞 Guide: ${guideLine}\n  🎒 Items: ${inv.length}\n  🃏 Cards: (use !cardcollection)\n` +
       (vampActive ? `  🦷 Vampire: Active\n` : "") +
       (dustActive ? `  ✨ Dust Domain: Active\n` : "") +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-      `     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼\n` +
-      `╰══════════════════════╯`
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼\n╰══════════════════════╯`
     );
   }
 
   if (body === "!leaderboard") {
     const top = await storage.getUsers();
     const rank = top.findIndex(u => u.phoneId === phoneId) + 1;
-    // Apply phantom seal — remove hidden users; apply eclipse — hide their stats
     const visible = top.filter(u => {
-      if (u.phoneId === phoneId) return true; // always show yourself
+      if (u.phoneId === phoneId) return true;
       const phantomActive = (u as any).phantomUntil && new Date() < new Date((u as any).phantomUntil);
       return !phantomActive;
     });
@@ -619,6 +1110,289 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return msg.reply(`╭══════════════════════╮\n  🏆 TOP CULTIVATORS\n╰══════════════════════╯\n${list}\n\n  Your Rank: #${rank}\n╰══════════════════════╯`);
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  ⚔️ BATTLE COMMANDS
+  // ══════════════════════════════════════════════════════════════════
+
+  // !skills — view all unlocked skills
+  if (body === "!skills") {
+    const unlocked = getUnlockedSkills(user.rank);
+    if (!unlocked.length) return msg.reply("📖 No skills unlocked yet.\nYou start unlocking skills at Rank 8. Keep chatting to earn XP!");
+    const actives = unlocked.filter(s => s.type === "active");
+    const passives = unlocked.filter(s => s.type === "passive");
+    const equippedIds = (user.equippedActives as string[]) || [];
+    const equippedPassiveId = (user as any).equippedPassive as string | null;
+
+    const activeList = actives.map((sk, i) => {
+      const equipped = equippedIds.includes(sk.id) ? " ✅" : "";
+      return `  [${i + 1}] *${sk.id}*${equipped}\n  ${sk.name} [${sk.rank}] — ${sk.mpCost} MP — CD: ${sk.cooldown === 0 ? "None" : `${sk.cooldown} turn(s)`}\n  ${sk.description}`;
+    }).join("\n\n");
+
+    const passiveList = passives.map(sk => {
+      const equipped = equippedPassiveId === sk.id ? " ✅" : "";
+      return `  *${sk.id}*${equipped}\n  ${sk.name} [${sk.rank}]\n  ${sk.description}`;
+    }).join("\n\n");
+
+    return msg.reply(
+      `╭══════════════════════╮\n  ⚔️ YOUR SKILLS\n╰══════════════════════╯\n\n` +
+      `📖 *ACTIVE SKILLS* (equip up to 3):\n${activeList}\n\n` +
+      `🛡️ *PASSIVE SKILLS* (equip 1):\n${passiveList || "  None unlocked yet."}\n\n` +
+      `*!equipskill [id]* — equip active\n` +
+      `*!unequipskill [num]* — unequip by slot number\n` +
+      `*!equippassive [id]* — equip passive\n╰══════════════════════╯`
+    );
+  }
+
+  // !equipskill [id]
+  if (body.startsWith("!equipskill ")) {
+    const skillId = body.replace("!equipskill ", "").trim();
+    if (!skillId) return msg.reply("❌ Usage: *!equipskill [skill_id]*\nCheck *!skills* to see valid skill IDs.");
+    const skill = ALL_SKILLS.find(s => s.id === skillId);
+    if (!skill) return msg.reply(`❌ No skill with ID *${skillId}* exists.\nCheck *!skills* for valid IDs.`);
+    if (skill.type !== "active") return msg.reply(`❌ *${skill.name}* is a passive skill.\nUse *!equippassive ${skill.id}* instead.`);
+    const unlocked = getUnlockedSkills(user.rank);
+    if (!unlocked.find(s => s.id === skillId)) return msg.reply(`🔒 *${skill.name}* [${skill.rank}-rank] is not unlocked yet.\nRank up higher to access it.`);
+    const current = (user.equippedActives as string[]) || [];
+    if (current.includes(skillId)) return msg.reply(`✅ *${skill.name}* is already in your equipped slots.`);
+    if (current.length >= 3) {
+      const currentNames = current.map((id, i) => {
+        const sk = ALL_SKILLS.find(s => s.id === id);
+        return `  Slot ${i + 1}: ${sk?.name || id} [${sk?.rank}]`;
+      }).join("\n");
+      return msg.reply(
+        `❌ All 3 skill slots are full:\n${currentNames}\n\nUnequip one first:\n*!unequipskill [slot number]*`
+      );
+    }
+    const newEquipped = [...current, skillId];
+    await storage.updateUser(phoneId, { equippedActives: newEquipped } as any);
+    return msg.reply(`✅ *${skill.name}* [${skill.rank}] equipped in slot ${newEquipped.length}! (${newEquipped.length}/3)`);
+  }
+
+  // !unequipskill [num]
+  if (body.startsWith("!unequipskill ")) {
+    const numStr = body.replace("!unequipskill ", "").trim();
+    const idx = parseInt(numStr) - 1;
+    const current = [...((user.equippedActives as string[]) || [])];
+    if (!current.length) return msg.reply("❌ You have no active skills equipped to remove.");
+    if (isNaN(idx) || idx < 0 || idx >= current.length) {
+      const slotList = current.map((id, i) => {
+        const sk = ALL_SKILLS.find(s => s.id === id);
+        return `  Slot ${i + 1}: ${sk?.name || id}`;
+      }).join("\n");
+      return msg.reply(`❌ Invalid slot number. Your equipped actives:\n${slotList}\n\nUse *!unequipskill [1-${current.length}]*`);
+    }
+    const removed = ALL_SKILLS.find(s => s.id === current[idx]);
+    current.splice(idx, 1);
+    await storage.updateUser(phoneId, { equippedActives: current } as any);
+    return msg.reply(`✅ *${removed?.name || "Skill"}* removed from slot ${idx + 1}. (${current.length}/3 slots used)`);
+  }
+
+  // !equippassive [id]
+  if (body.startsWith("!equippassive ")) {
+    const skillId = body.replace("!equippassive ", "").trim();
+    if (!skillId) return msg.reply("❌ Usage: *!equippassive [skill_id]*\nCheck *!skills* to see passive IDs.");
+    const skill = ALL_SKILLS.find(s => s.id === skillId);
+    if (!skill) return msg.reply(`❌ No skill with ID *${skillId}* exists.\nCheck *!skills* for valid IDs.`);
+    if (skill.type !== "passive") return msg.reply(`❌ *${skill.name}* is an active skill.\nUse *!equipskill ${skill.id}* instead.`);
+    const unlocked = getUnlockedSkills(user.rank);
+    if (!unlocked.find(s => s.id === skillId)) return msg.reply(`🔒 *${skill.name}* [${skill.rank}-rank] is not unlocked yet.\nRank up higher to access it.`);
+    const currentPassiveId = (user as any).equippedPassive as string | null;
+    if (currentPassiveId === skillId) return msg.reply(`✅ *${skill.name}* is already your equipped passive.`);
+    await storage.updateUser(phoneId, { equippedPassive: skillId } as any);
+    return msg.reply(`✅ Passive *${skill.name}* [${skill.rank}] equipped.\nIt will activate automatically at the start of your next battle.`);
+  }
+
+  // !battlestats
+  if (body === "!battlestats") {
+    const bExp = (user as any).battleExp || 0;
+    const wins = (user as any).battleWins || 0;
+    const losses = (user as any).battleLosses || 0;
+    const stats = computeStats(user, bExp);
+    const equippedIds = (user.equippedActives as string[]) || [];
+    const equippedPassiveId = (user as any).equippedPassive as string | null;
+    const activeNames = equippedIds.map(id => ALL_SKILLS.find(s => s.id === id)?.name || id).join(", ") || "None";
+    const passiveName = equippedPassiveId ? (ALL_SKILLS.find(s => s.id === equippedPassiveId)?.name || equippedPassiveId) : "None";
+    return msg.reply(
+      `╭══════════════════════╮\n  ⚔️ BATTLE STATS\n╰══════════════════════╯\n\n` +
+      `  👤 ${user.name} [${user.species}]\n\n` +
+      `  💪 STR: ${stats.strength}\n` +
+      `  🏃 AGI: ${stats.agility}\n` +
+      `  🧠 INT: ${stats.intelligence}\n` +
+      `  🍀 LUCK: ${stats.luck}\n` +
+      `  ⚡ SPD: ${stats.speed}\n` +
+      `  ❤️ Max HP: ${stats.maxHp}\n` +
+      `  💙 Max MP: ${stats.maxMp}\n\n` +
+      `  ⚔️ Battle EXP: ${bExp}\n` +
+      `  🏆 Wins: ${wins}\n` +
+      `  💀 Losses: ${losses}\n\n` +
+      `  🎯 Actives: ${activeNames}\n` +
+      `  🛡️ Passive: ${passiveName}\n╰══════════════════════╯`
+    );
+  }
+
+  // !battleboard
+  if (body === "!battleboard") {
+    const allUsers = await storage.getUsers();
+    const sorted = allUsers
+      .filter(u => (u as any).battleWins > 0 || (u as any).battleExp > 0)
+      .sort((a, b) => ((b as any).battleExp || 0) - ((a as any).battleExp || 0));
+    if (!sorted.length) return msg.reply("⚔️ No battles have been fought yet.");
+    const list = sorted.slice(0, 10).map((u, i) =>
+      `  ${i + 1}. ${u.name} — ${(u as any).battleExp || 0} BattleEXP | W:${(u as any).battleWins || 0} L:${(u as any).battleLosses || 0}`
+    ).join("\n");
+    return msg.reply(`╭══════════════════════╮\n  ⚔️ BATTLE LEADERBOARD\n╰══════════════════════╯\n${list}\n╰══════════════════════╯`);
+  }
+
+  // !challenge — reply to target's message
+  if (body === "!challenge") {
+    if (!msg.hasQuotedMsg) return msg.reply("⚔️ *How to challenge:*\nReply to your opponent's message, then type *!challenge*.");
+    if (user.isDead) return msg.reply("💀 You cannot issue a challenge while dead.\nGet revived first with *!revive*.");
+    if (user.hp <= 0) return msg.reply("💔 Your HP is at 0. You are not battle-ready.");
+    if ((user as any).inBattle) return msg.reply("⚔️ You are already in an active battle.\nFinish your current battle first.");
+
+    // Check existing pending challenge
+    const myPending = await storage.getPendingChallenge(phoneId);
+    if (myPending) return msg.reply("⏳ You already have a pending challenge out.\nWait for it to expire or be answered before issuing another.");
+
+    const quoted = await msg.getQuotedMessage();
+    const targetId = resolvePhoneId(quoted);
+
+    if (targetId === phoneId) return msg.reply("🪞 You cannot challenge yourself, Cultivator.");
+
+    const target = await storage.getUserByPhone(targetId);
+    if (!target || !target.isRegistered) return msg.reply("❌ That user hasn't registered yet.\nTell them to type *!start* to join the realm first.");
+    if (target.isDead) return msg.reply(`💀 *${target.name}* is dead and cannot battle.\nThey must be revived first.`);
+    if (target.hp <= 0) return msg.reply(`💔 *${target.name}* has no HP. They cannot battle right now.`);
+    if ((target as any).inBattle) return msg.reply(`⚔️ *${target.name}* is already in an active battle.\nWait for them to finish.`);
+
+    // Check if target has any outgoing OR incoming pending challenge
+    const targetPendingIncoming = await storage.getPendingChallengeForTarget(targetId);
+    const targetPendingOutgoing = await storage.getPendingChallenge(targetId);
+    if (targetPendingIncoming || targetPendingOutgoing) return msg.reply(`⏳ *${target.name}* already has a pending challenge.\nWait for it to resolve before challenging them.`);
+
+    const expiresAt = new Date(Date.now() + 300000); // 5 minutes
+    const challenge = await storage.createChallenge({
+      challengerPhoneId: phoneId,
+      targetPhoneId: targetId,
+      chatId: msg.from,
+      expiresAt,
+      status: "pending",
+    });
+
+    await client.sendMessage(msg.from,
+      `╭══════════════════════╮\n  ⚔️ CHALLENGE ISSUED\n╰══════════════════════╯\n\n` +
+      `*${user.name}* has challenged *${target.name}* to battle!\n\n` +
+      `*${target.name}*, type *!accept* or *!decline*.\n` +
+      `This challenge expires in *5 minutes*.\n╰══════════════════════╯`
+    );
+
+    // Set expiry timer
+    const timer = setTimeout(async () => {
+      const ch = await storage.getPendingChallengeForTarget(targetId);
+      if (ch && ch.id === challenge.id && ch.status === "pending") {
+        await storage.updateChallenge(challenge.id, { status: "expired" });
+        await client.sendMessage(msg.from,
+          `⚔️ *${target.name}* did not respond.\nThe challenge has expired.`
+        );
+      }
+    }, 300000);
+    challengeTimers.set(phoneId, timer);
+    return;
+  }
+
+  // !accept
+  if (body === "!accept") {
+    const challenge = await storage.getPendingChallengeForTarget(phoneId);
+    if (!challenge) return msg.reply("❌ You have no pending challenge to accept.\nSomeone needs to *!challenge* you first.");
+    if (new Date(challenge.expiresAt) < new Date()) {
+      await storage.updateChallenge(challenge.id, { status: "expired" });
+      return msg.reply("⌛ That challenge has already expired.");
+    }
+    if (user.isDead) return msg.reply("💀 You cannot accept a challenge while dead.\nGet revived with *!revive* first.");
+    if (user.hp <= 0) return msg.reply("💔 Your HP is at 0. You are not battle-ready.");
+    if ((user as any).inBattle) return msg.reply("⚔️ You are already in an active battle.");
+
+    const challengerUser = await storage.getUserByPhone(challenge.challengerPhoneId);
+    if (!challengerUser) return msg.reply("❌ The challenger's account was not found. The challenge is cancelled.");
+    if ((challengerUser as any).inBattle) return msg.reply(`⚔️ *${challengerUser.name}* jumped into another battle while waiting. Challenge cancelled.`);
+    if (challengerUser.isDead) return msg.reply(`💀 *${challengerUser.name}* has perished. Challenge cancelled.`);
+
+    // Mark challenge accepted
+    await storage.updateChallenge(challenge.id, { status: "accepted" });
+    const timer = challengeTimers.get(challenge.challengerPhoneId);
+    if (timer) { clearTimeout(timer); challengeTimers.delete(challenge.challengerPhoneId); }
+
+    // Mark both in battle
+    await storage.updateUser(challenge.challengerPhoneId, { inBattle: true } as any);
+    await storage.updateUser(phoneId, { inBattle: true } as any);
+
+    // Build combatants
+    const challengerCombatant = buildCombatant(challengerUser);
+    const targetCombatant = buildCombatant(user);
+
+    // Apply passives
+    const passiveLogs = [
+      ...applyPassive(challengerCombatant),
+      ...applyPassive(targetCombatant),
+    ];
+
+    const location = randomLocation();
+    const { firstId, speedLog } = determineFirstMover(challengerCombatant, targetCombatant);
+    const xpTransfer = Math.floor(Math.random() * 401) + 100; // 100-500
+
+    const battleId = `${challenge.challengerPhoneId}_${Date.now()}`;
+    const state: BattleState = {
+      id: battleId,
+      challenger: challengerCombatant,
+      target: targetCombatant,
+      turn: 1,
+      location,
+      firstMoverId: firstId,
+      phase: "waiting_challenger",
+      challengerSkillChoice: null,
+      targetSkillChoice: null,
+      turnTimer: null,
+      chatId: challenge.chatId,
+      xpTransfer,
+    };
+
+    activeBattles.set(challenge.challengerPhoneId, state);
+
+    let startMsg =
+      `╭══════════════════════╮\n  ⚔️ BATTLE BEGIN\n╰══════════════════════╯\n\n` +
+      `*${challengerCombatant.name}* vs *${targetCombatant.name}*\n` +
+      `📍 Location: *${location}*\n\n` +
+      `Checking speed...\n\n${speedLog}`;
+
+    if (passiveLogs.length) {
+      startMsg += `\n\n${passiveLogs.join("\n")}`;
+    }
+
+    await client.sendMessage(challenge.chatId, startMsg);
+    await new Promise(r => setTimeout(r, 2000));
+    await announceTurn(state);
+    return;
+  }
+
+  // !decline
+  if (body === "!decline") {
+    const challenge = await storage.getPendingChallengeForTarget(phoneId);
+    if (!challenge) return msg.reply("❌ You have no pending challenge to decline.");
+
+    await storage.updateChallenge(challenge.id, { status: "declined" });
+    const timer = challengeTimers.get(challenge.challengerPhoneId);
+    if (timer) { clearTimeout(timer); challengeTimers.delete(challenge.challengerPhoneId); }
+
+    await client.sendMessage(challenge.chatId,
+      `🚶 *${user.name}* has walked away from the challenge.\nThe battle will not take place.`
+    );
+    return;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  INVENTORY / SHOP
+  // ══════════════════════════════════════════════════════════════════
+
   if (body === "!inventory") {
     const inv = user.inventory as string[];
     const itemEmojis: Record<string, string> = {
@@ -629,8 +1403,7 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       "cursed bone": "🦴", "grey rot cure": "💊", "hellfire suppressant": "💊",
       "feral antidote": "💊", "grace restoration vial": "💊",
       "scale restoration salve": "💊", "rootwither remedy": "💊",
-      "living core": "🌿", "dragon egg": "🥚", "void fragment": "🌑",
-      "star dust": "✨",
+      "living core": "🌿", "dragon egg": "🥚", "void fragment": "🌑", "star dust": "✨",
     };
     const itemRarity: Record<string, string> = {
       "Dragon Egg": "Legendary", "Void Fragment": "Rare", "Star Dust": "Uncommon",
@@ -664,14 +1437,8 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     if (isNaN(num) || !inv[num]) return msg.reply("❌ Invalid item number. Check !inventory.");
     const itemName = inv[num];
     const itemLower = itemName.toLowerCase();
-
-    // ── NOTE: NO random fail pool. Every item always works when used.
-    // The old "dormant" fail was only meant for randomly FOUND items during chat,
-    // not for items you deliberately use. All items below always activate.
-
     const updates: any = {};
 
-    // ── 🌟 STAR DUST — opens a Dust Domain for 30 minutes ───────────────────
     if (itemLower === "star dust") {
       if ((user as any).dustDomainUntil && new Date() < new Date((user as any).dustDomainUntil)) {
         return msg.reply("✨ Your Dust Domain is already active!");
@@ -683,42 +1450,22 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       inv.splice(num, 1);
       updates.inventory = inv;
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*The dust scatters. The air around you ripples.*\n\n` +
-        `✨ *DUST DOMAIN ACTIVATED*\n\n` +
-        `The stars align above you. A shimmering domain of light expands outward, bending reality to your will.\n\n` +
-        `⚡ Every *10 messages* you send earns *+5000 XP*.\n` +
-        `⏳ Domain expires at: *${expireStr}* (30 minutes).\n\n` +
-        `*Make every message count, Cultivator.*`
-      );
+      return msg.reply(`*The dust scatters. The air around you ripples.*\n\n✨ *DUST DOMAIN ACTIVATED*\n\nEvery *10 messages* you send earns *+5000 XP*.\n⏳ Domain expires at: *${expireStr}* (30 minutes).\n\n*Make every message count, Cultivator.*`);
     }
 
-    // ── 🌑 VOID FRAGMENT — 97% chance to become Constellation ───────────────
     if (itemLower === "void fragment") {
       inv.splice(num, 1);
       if (Math.random() > 0.03) {
         await storage.updateUser(phoneId, { inventory: inv });
-        return msg.reply(
-          `*You hold the Void Fragment up. Reality cracks around it.*\n\n` +
-          `🌑 The stars refused your call. The fragment dissolves into shadow.\n` +
-          `*Better luck next time.*`
-        );
+        return msg.reply(`*You hold the Void Fragment up. Reality cracks around it.*\n\n🌑 The stars refused your call. The fragment dissolves into shadow.\n*Better luck next time.*`);
       }
       updates.inventory = inv;
       updates.species = "Constellation";
       updates.isConstellation = true;
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*The fragment shatters. The void opens.*\n\n` +
-        `🌑 *RACE TRANSFORMED*\n\n` +
-        `You have transcended mortal flesh. You are now a *✨ Constellation*.\n` +
-        `Your power resonates with the stars themselves.\n` +
-        `⚡ XP Rate: *300 XP per message*\n\n` +
-        `*You are beyond them now.*`
-      );
+      return msg.reply(`*The fragment shatters. The void opens.*\n\n🌑 *RACE TRANSFORMED*\n\nYou have transcended mortal flesh. You are now a *✨ Constellation*.\n⚡ XP Rate: *300 XP per message*\n\n*You are beyond them now.*`);
     }
 
-    // ── 🌿 LIVING CORE — reborn as a random new species ─────────────────────
     if (itemLower === "living core") {
       const sp = getRandomSpecies();
       inv.splice(num, 1);
@@ -729,33 +1476,18 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       updates.condition = "Healthy";
       updates.disease = null;
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*The Living Core pulses in your hands. Ancient life floods your veins.*\n\n` +
-        `🌿 *REBIRTH*\n\n` +
-        `Your old form dissolves. Something new rises from within.\n` +
-        `🧬 New Race: *${sp.name}* (${sp.rarity})\n` +
-        `⚡ XP Rate: *${SPECIES_XP_RATES[sp.name]} XP per message*\n\n` +
-        `*You are reborn. Start again. Climb higher.*`
-      );
+      return msg.reply(`*The Living Core pulses in your hands. Ancient life floods your veins.*\n\n🌿 *REBIRTH*\n\n🧬 New Race: *${sp.name}* (${sp.rarity})\n⚡ XP Rate: *${SPECIES_XP_RATES[sp.name]} XP per message*\n\n*You are reborn. Start again. Climb higher.*`);
     }
 
-    // ── 🦴 CURSED BONE — permanent shadow veil / plague immunity ────────────
     if (itemLower === "cursed bone") {
       if (user.hasShadowVeil) return msg.reply("🦴 Your Shadow Veil is already active. You are already immune to plagues.");
       inv.splice(num, 1);
       updates.inventory = inv;
       updates.hasShadowVeil = true;
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*The bone crumbles to ash in your hand. Cold shadows curl around you.*\n\n` +
-        `🦴 *SHADOW VEIL ACTIVE*\n\n` +
-        `Darkness clings to your soul like armour. Plagues cannot find you.\n` +
-        `You are permanently immune to all disease outbreaks.\n\n` +
-        `*Let the others suffer. Not you.*`
-      );
+      return msg.reply(`*The bone crumbles to ash in your hand. Cold shadows curl around you.*\n\n🦴 *SHADOW VEIL ACTIVE*\n\nDarkness clings to your soul like armour. You are permanently immune to all disease outbreaks.\n\n*Let the others suffer. Not you.*`);
     }
 
-    // ── 🥚 DRAGON EGG — begins feeding on other users' XP ───────────────────
     if (itemLower === "dragon egg") {
       if (user.dragonEggProgress > 0) return msg.reply("🥚 Your Dragon Egg is already active and feeding.");
       inv.splice(num, 1);
@@ -763,16 +1495,9 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       updates.dragonEggProgress = 1;
       updates.dragonEggHatched = false;
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*You place the egg on the ground. It twitches.*\n\n` +
-        `🥚 *DRAGON EGG AWAKENED*\n\n` +
-        `The egg has begun feeding. Every 5 minutes, it silently drains *30 XP* from a random cultivator nearby.\n` +
-        `It needs *1500 XP total* to hatch.\n\n` +
-        `*Something ancient stirs within the shell.*`
-      );
+      return msg.reply(`*You place the egg on the ground. It twitches.*\n\n🥚 *DRAGON EGG AWAKENED*\n\nThe egg has begun feeding. Every 5 minutes, it silently drains *30 XP* from a random cultivator nearby.\nIt needs *1500 XP total* to hatch.\n\n*Something ancient stirs within the shell.*`);
     }
 
-    // ── 🦷 VAMPIRE TOOTH — become a vampire for 1 week ──────────────────────
     if (itemLower === "vampire tooth") {
       if (user.isVampire && user.vampireUntil && new Date() < new Date(user.vampireUntil)) {
         return msg.reply("🦷 You are already a Vampire. Your fangs are still sharp.");
@@ -782,16 +1507,9 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       updates.isVampire = true;
       updates.vampireUntil = new Date(Date.now() + 604800000);
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*The tooth pierces your skin. Cold fire spreads through your veins.*\n\n` +
-        `🦷 *VAMPIRIC CURSE ACCEPTED*\n\n` +
-        `You are now a Vampire for *1 week*.\n` +
-        `Use *!suck* (reply to someone's message) to drain their XP once per hour.\n\n` +
-        `*Feed well. The night is yours.*`
-      );
+      return msg.reply(`*The tooth pierces your skin. Cold fire spreads through your veins.*\n\n🦷 *VAMPIRIC CURSE ACCEPTED*\n\nYou are now a Vampire for *1 week*.\nUse *!suck* (reply to someone's message) to drain their XP once per hour.\n\n*Feed well. The night is yours.*`);
     }
 
-    // ── 🩸 BLOOD RUNE — steal XP from a random user ─────────────────────────
     if (itemLower === "blood rune") {
       const allUsers = await storage.getUsers();
       const victims = allUsers.filter(u => u.phoneId !== phoneId && u.xp >= 50 && !u.hasShadowVeil && !u.isDead);
@@ -802,78 +1520,51 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
         return msg.reply(`🩸 *Blood Rune activated, but there are no suitable targets nearby.* The rune fades unused.`);
       }
       const victim = victims[Math.floor(Math.random() * victims.length)];
-      const stolen = Math.floor(Math.random() * 401) + 100; // 100–500 XP
+      const stolen = Math.floor(Math.random() * 401) + 100;
       const actualStolen = Math.min(stolen, victim.xp);
       inv.splice(num, 1);
       updates.inventory = inv;
       await storage.updateUser(phoneId, { ...updates, xp: user.xp + actualStolen });
       await storage.updateUser(victim.phoneId, { xp: Math.max(0, victim.xp - actualStolen) });
-      await client.sendMessage(victim.phoneId,
-        `*A dark sigil burns into your chest. Something takes from you in the night.*\n🩸 You lost *${actualStolen} XP* to a Blood Rune.`
-      );
-      return msg.reply(
-        `*You press the rune to your palm. Blood answers blood.*\n\n` +
-        `🩸 *BLOOD RUNE ACTIVATED*\n\n` +
-        `A distant cultivator staggers. Their XP bleeds into you.\n` +
-        `💰 *+${actualStolen} XP* stolen from the shadows.\n\n` +
-        `*They will never know it was you.*`
-      );
+      await client.sendMessage(victim.phoneId, `*A dark sigil burns into your chest. Something takes from you in the night.*\n🩸 You lost *${actualStolen} XP* to a Blood Rune.`);
+      return msg.reply(`*You press the rune to your palm. Blood answers blood.*\n\n🩸 *BLOOD RUNE ACTIVATED*\n\n💰 *+${actualStolen} XP* stolen from the shadows.\n\n*They will never know it was you.*`);
     }
 
-    // ── 🌒 ECLIPSE STONE — hide your race & XP from others for 24hrs ────────
     if (itemLower === "eclipse stone") {
       const expiresAt = new Date(Date.now() + 86400000);
       inv.splice(num, 1);
       updates.inventory = inv;
       updates.eclipseUntil = expiresAt;
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*The stone pulses once — then goes dark.*\n\n` +
-        `🌒 *ECLIPSE ACTIVE*\n\n` +
-        `Your identity is cloaked. For the next *24 hours*, your species and XP are hidden from the leaderboard and any inspection.\n\n` +
-        `*Move in shadow. Let no one track your ascension.*`
-      );
+      return msg.reply(`*The stone pulses once — then goes dark.*\n\n🌒 *ECLIPSE ACTIVE*\n\nYour identity is cloaked for *24 hours*.\n\n*Move in shadow. Let no one track your ascension.*`);
     }
 
-    // ── 👻 PHANTOM SEAL — vanish from the leaderboard for 24hrs ────────────
     if (itemLower === "phantom seal") {
       const expiresAt = new Date(Date.now() + 86400000);
       inv.splice(num, 1);
       updates.inventory = inv;
       updates.phantomUntil = expiresAt;
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*The seal dissolves into mist. Your presence fades.*\n\n` +
-        `👻 *PHANTOM SEAL ACTIVE*\n\n` +
-        `You have vanished from the leaderboard for *24 hours*.\n` +
-        `Others cannot see your rank or placement.\n\n` +
-        `*You were never there.*`
-      );
+      return msg.reply(`*The seal dissolves into mist. Your presence fades.*\n\n👻 *PHANTOM SEAL ACTIVE*\n\nYou have vanished from the leaderboard for *24 hours*.\n\n*You were never there.*`);
     }
 
-    // ── 🪙 CURSED COIN — random outcome, good or bad ────────────────────────
     if (itemLower === "cursed coin") {
       inv.splice(num, 1);
       updates.inventory = inv;
       const roll = Math.random();
       let coinResult = "";
       if (roll < 0.05) {
-        // Jackpot: +2000 XP
         updates.xp = user.xp + 2000;
         coinResult = `🪙 *JACKPOT!* The coin lands on a forgotten god's face.\n*+2000 XP* flows into you from nowhere.`;
       } else if (roll < 0.20) {
-        // Good: +500 XP
         updates.xp = user.xp + 500;
         coinResult = `🪙 The coin spins... and smiles at you.\n*+500 XP* granted by fortune.`;
       } else if (roll < 0.40) {
-        // Neutral: nothing
         coinResult = `🪙 The coin spins... and vanishes mid-air.\n*Nothing happens.* The curse offers nothing today.`;
       } else if (roll < 0.65) {
-        // Bad: -300 XP
         updates.xp = Math.max(0, user.xp - 300);
         coinResult = `🪙 The coin lands face-down.\n💸 *-300 XP* drained by the curse.`;
       } else if (roll < 0.80) {
-        // Worse: infected
         const stats = await storage.getGlobalStats();
         if (stats?.activeDisease && !user.hasShadowVeil && user.condition === "Healthy") {
           updates.condition = "Infected";
@@ -885,7 +1576,6 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
           coinResult = `🪙 The coin frowns at you.\n💸 *-200 XP* taken by bad luck.`;
         }
       } else {
-        // Rare good: shadow veil
         updates.hasShadowVeil = true;
         coinResult = `🪙 *The coin glows black.*\n🦴 Against all odds — *Shadow Veil granted!* You are now immune to plagues.`;
       }
@@ -893,7 +1583,6 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       return msg.reply(`*You flip the Cursed Coin into the air...*\n\n${coinResult}`);
     }
 
-    // ── 🪞 MIRROR SHARD — copy another user's race for 30 mins ──────────────
     if (itemLower === "mirror shard") {
       if (!msg.hasQuotedMsg) {
         return msg.reply("🪞 *Mirror Shard:* Reply to the message of the person whose race you want to copy, then use *!useitem [num]*.");
@@ -907,25 +1596,12 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       updates.inventory = inv;
       updates.mirrorRace = target.species;
       updates.mirrorOriginalRace = user.species;
-      updates.mirrorUntil = new Date(Date.now() + 1800000); // 30 mins
+      updates.mirrorUntil = new Date(Date.now() + 1800000);
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*The shard reflects a face that isn't yours.*\n\n` +
-        `🪞 *MIRROR ACTIVE*\n\n` +
-        `You have copied the race of *${target.name}*.\n` +
-        `🧬 Temporary Race: *${target.species}*\n` +
-        `⚡ XP Rate: *${SPECIES_XP_RATES[target.species] || 5} XP per message*\n` +
-        `⏳ Duration: *30 minutes*\n\n` +
-        `*Become them. Then return to yourself.*`
-      );
+      return msg.reply(`*The shard reflects a face that isn't yours.*\n\n🪞 *MIRROR ACTIVE*\n\n🧬 Temporary Race: *${target.species}*\n⚡ XP Rate: *${SPECIES_XP_RATES[target.species] || 5} XP per message*\n⏳ Duration: *30 minutes*\n\n*Become them. Then return to yourself.*`);
     }
 
-    // ── 💊 CURES ──────────────────────────────────────────────────────────────
-    if (
-      itemLower.includes("cure") || itemLower.includes("remedy") ||
-      itemLower.includes("antidote") || itemLower.includes("vial") ||
-      itemLower.includes("salve") || itemLower.includes("suppressant")
-    ) {
+    if (itemLower.includes("cure") || itemLower.includes("remedy") || itemLower.includes("antidote") || itemLower.includes("vial") || itemLower.includes("salve") || itemLower.includes("suppressant")) {
       const disease = Object.values(DISEASES).find(d => d.cure === itemLower);
       if (!disease) return msg.reply("❌ This cure doesn't match any known disease.");
       if (user.species !== disease.race) return msg.reply(`❌ This cure was made for *${disease.race}*, not *${user.species}*. Wrong species.`);
@@ -936,16 +1612,9 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
       updates.disease = null;
       updates.hp = 100;
       await storage.updateUser(phoneId, updates);
-      return msg.reply(
-        `*You drink the vial. The fever breaks. The shadows retreat.*\n\n` +
-        `💉 *CURED*\n\n` +
-        `You have recovered from *${disease.name}*.\n` +
-        `❤️ HP restored to *100*.\n\n` +
-        `*You live to fight another day.*`
-      );
+      return msg.reply(`*You drink the vial. The fever breaks. The shadows retreat.*\n\n💉 *CURED*\n\nYou have recovered from *${disease.name}*.\n❤️ HP restored to *100*.\n\n*You live to fight another day.*`);
     }
 
-    // ── Fallback — item not handled ───────────────────────────────────────────
     return msg.reply(`❌ *${itemName}* cannot be used directly. Check !scroll for usage instructions.`);
   }
 
@@ -968,7 +1637,6 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return msg.reply(`🦷 You drained *${amt} XP* from *${target.name}*.`);
   }
 
-  // ── FIX: !givexp — use resolvePhoneId so it works in group chats ────────────
   if (body.startsWith("!givexp ")) {
     if (!msg.hasQuotedMsg) return msg.reply("❌ Reply to someone's message to give XP.");
     const amt = parseInt(body.split(" ")[1]);
@@ -994,7 +1662,7 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     const targetId = resolvePhoneId(quoted);
     if (targetId === phoneId) return msg.reply("❌ You cannot give items to yourself.");
     const target = await storage.getUserByPhone(targetId);
-    if (!target || !target.isRegistered) return msg.reply("❌ That user is not registered. They need to type *!start* first.");
+    if (!target || !target.isRegistered) return msg.reply("❌ That user is not registered.");
     const item = inv.splice(num, 1)[0];
     await storage.updateUser(phoneId, { inventory: inv });
     await storage.updateUser(targetId, { inventory: [...(target.inventory as string[]), item] });
@@ -1039,7 +1707,7 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
         const media = new MessageMedia("image/jpeg", buffer.toString("base64"), `${card.name}.jpg`);
         await msg.reply(media, undefined, { caption: cardMsg });
         return;
-      } catch { /* fall through to text reply */ }
+      } catch { }
     }
     return msg.reply(cardMsg);
   }
@@ -1059,7 +1727,6 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return msg.reply(`╭══════════════════════╮\n  🔍 CARD DETAILS\n╰══════════════════════╯\n  📛 Name: ${card.name}\n  📺 Series: ${card.series}\n  ✨ Rarity: ${card.rarity}\n  🆔 Card ID: #${card.id}\n╰══════════════════════╯`);
   }
 
-  // ── FIX: !givecard — use resolvePhoneId ──────────────────────────────────────
   if (body.startsWith("!givecard ")) {
     if (!msg.hasQuotedMsg) return msg.reply("❌ Reply to someone's message to give a card.");
     const num = parseInt(body.split(" ")[1]) - 1;
@@ -1069,7 +1736,7 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     const targetId = resolvePhoneId(quoted);
     if (targetId === phoneId) return msg.reply("❌ You cannot give cards to yourself.");
     const target = await storage.getUserByPhone(targetId);
-    if (!target || !target.isRegistered) return msg.reply("❌ That user is not registered. They need to type *!start* first.");
+    if (!target || !target.isRegistered) return msg.reply("❌ That user is not registered.");
     const card = userCards[num];
     await storage.updateCard(card.id, { ownerPhoneId: targetId });
     await client.sendMessage(targetId, `🎴 *${user.name}* gave you the card *${card.name}* [${card.rarity}]!`);
@@ -1116,8 +1783,7 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     if (!guide) return msg.reply("❌ Guide not found.");
     if ((user as any).guideSmashAt) return msg.reply(`${guide.emoji} *${guide.name}:* "...Again?! Give me a moment to breathe, will you?! 😳"`);
     await storage.updateUser(phoneId, { guideSmashAt: new Date(), guidePregnant: false } as any);
-    const scene = guide.smashScene.join("\n");
-    return msg.reply(scene);
+    return msg.reply(guide.smashScene.join("\n"));
   }
 
   if (body.startsWith("!namechild ")) {
@@ -1129,9 +1795,7 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     const childName = body.replace("!namechild ", "").trim();
     if (!childName || childName.length > 20) return msg.reply("❌ Invalid name. Keep it under 20 characters.");
     await storage.updateUser(phoneId, { guideChildName: childName } as any);
-    const nameMsg = guide.name === "Anna"
-      ? `🔴 *Anna:* "~${childName}~!! Oh that's PERFECT darling!! She's already kicking like she approves!! 😭🌸 Welcome to the world, little ${childName}~ Your daddy is... well. He's trying his best."`
-      : `⚒️ *Maya:* "...${childName}. ...Yeah. That fits her. Good choice, kid." *She doesn't smile. But her eyes do.*`;
+    const nameMsg = `🔴 *Anna:* "~${childName}~!! Oh that's PERFECT darling!! She's already kicking like she approves!! 😭🌸 Welcome to the world, little ${childName}~"`;
     await msg.reply(nameMsg);
     await msg.reply(`✨ Your family is complete!\n👨 You + ${guide.emoji} ${guide.name} + 👶 ${childName}\n\n+5000 XP per week permanently added!`);
     return;
@@ -1141,9 +1805,7 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     if (!(user as any).guideName) return msg.reply("❌ You don't have a guide.");
     const guideName = (user as any).guideName?.toLowerCase();
     const guide = GUIDES[guideName];
-    const leaveMsg = guide?.name === "Anna"
-      ? `🔴 *Anna:* "...Oh. You're leaving? ...Fine. Fine! Go! I'm not crying, YOU'RE crying!! 😤 Come back when you're ready, darling~"`
-      : `⚒️ *Maya:* "...Understood. Take care of yourself out there. Don't do anything stupid." *She turns back to the forge.*`;
+    const leaveMsg = `🔴 *Anna:* "...Oh. You're leaving? ...Fine. Fine! Go! I'm not crying, YOU'RE crying!! 😤 Come back when you're ready, darling~"`;
     await storage.updateUser(phoneId, { guideName: null, guideSmashAt: null, guidePregnant: false, guideChildName: null } as any);
     return msg.reply(leaveMsg);
   }
@@ -1199,8 +1861,6 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return msg.reply(`🚶 You have left *${sect?.name || "your sect"}*.`);
   }
 
-  // ── SECT LEADER COMMANDS ──────────────────────────────────────────────────────
-
   if (body.startsWith("!kickmember ")) {
     if (!user.sectId) return msg.reply("❌ You are not in a sect.");
     const sect = await storage.getSect(user.sectId);
@@ -1231,7 +1891,7 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return msg.reply(`⚡ *${target.name}* has been punished. They lost *${penalty} XP*.`);
   }
 
-  // ── OWNER COMMANDS — everything below is owner-only ──────────────────────────
+  // ── OWNER COMMANDS ────────────────────────────────────────────────────────────
 
   if (phoneId !== OWNER_NUMBER) return;
 
@@ -1247,14 +1907,10 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return;
   }
 
-  // ── FIX: !ban — search by name OR phone number ────────────────────────────────
   if (body.startsWith("!ban ")) {
     const targetName = body.replace("!ban ", "").trim();
     const allUsers = await storage.getUsers();
-    const target = allUsers.find(u =>
-      u.name.toLowerCase() === targetName.toLowerCase() ||
-      u.phoneId.includes(targetName)
-    );
+    const target = allUsers.find(u => u.name.toLowerCase() === targetName.toLowerCase() || u.phoneId.includes(targetName));
     if (!target) return msg.reply(`❌ User *${targetName}* not found.`);
     if (target.isBanned) return msg.reply(`⚠️ *${target.name}* is already banned.`);
     await storage.updateUser(target.phoneId, { isBanned: true });
@@ -1262,28 +1918,21 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     return msg.reply(`🔨 *${target.name}* has been banned.`);
   }
 
-  // ── FIX: !unban — search all users not just banned list ──────────────────────
   if (body.startsWith("!unban ")) {
     const targetName = body.replace("!unban ", "").trim();
     const allUsers = await storage.getUsers();
-    const target = allUsers.find(u =>
-      (u.name.toLowerCase() === targetName.toLowerCase() ||
-        u.phoneId.includes(targetName)) &&
-      u.isBanned
-    );
+    const target = allUsers.find(u => (u.name.toLowerCase() === targetName.toLowerCase() || u.phoneId.includes(targetName)) && u.isBanned);
     if (!target) return msg.reply(`❌ Banned user *${targetName}* not found.`);
     await storage.updateUser(target.phoneId, { isBanned: false });
     await client.sendMessage(target.phoneId, `🔓 You have been unbanned. Welcome back to Astral Bot.`);
     return msg.reply(`🔓 *${target.name}* has been unbanned.`);
   }
 
-  // ── FIX: !missastral — correct reply syntax with image ───────────────────────
   if (body.startsWith("!missastral")) {
     const missMsg = `*Miss Astral opens one eye slowly...*\n\n🐱 I am alive, yare yare.\nI may sleep soon tho.`;
     try {
       const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Missastral.jpg"));
       const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "missastral.jpg");
-      // FIX: use client.sendMessage to the chat instead of msg.reply with wrong args
       await client.sendMessage(msg.from, media, { caption: missMsg });
     } catch (err) {
       console.error("Miss Astral image error:", err);
@@ -1305,9 +1954,26 @@ Shadow Veil (*!buy cursed bone*) grants permanent immunity.`
     await storage.updateUser(target.phoneId, { xp: target.xp + amt });
     return msg.reply(`✅ Added *${amt} XP* to *${target.name}*. New total: ${target.xp + amt}`);
   }
+
+  // Owner: force end battle
+  if (body.startsWith("!endbattle ")) {
+    const targetName = body.replace("!endbattle ", "").trim();
+    for (const [key, battle] of activeBattles.entries()) {
+      if (battle.challenger.name.toLowerCase() === targetName.toLowerCase() ||
+          battle.target.name.toLowerCase() === targetName.toLowerCase()) {
+        clearTurnTimer(battle.id);
+        activeBattles.delete(key);
+        await storage.updateUser(battle.challenger.phoneId, { inBattle: false } as any);
+        await storage.updateUser(battle.target.phoneId, { inBattle: false } as any);
+        await client.sendMessage(battle.chatId, `⚔️ Battle between *${battle.challenger.name}* and *${battle.target.name}* has been force-ended by the owner.`);
+        return msg.reply(`✅ Battle ended.`);
+      }
+    }
+    return msg.reply(`❌ No active battle found with *${targetName}*.`);
+  }
 }
 
-// Jikan API card fetch
+// ── Jikan API card fetch ──────────────────────────────────────────
 async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: string; series: string; rarity: string; imageUrl: string | null }> {
   try {
     const rarityRoll = Math.random();
