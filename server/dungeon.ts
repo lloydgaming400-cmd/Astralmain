@@ -50,6 +50,7 @@ export interface DungeonState {
   playerMp: number;
   playerMaxHp: number;
   playerMaxMp: number;
+  playerStats: any;          // BattleStats from computeStats()
   playerActiveEffects: any[];
   playerCooldowns: Record<string, number>;
   monsterActiveEffects: any[];
@@ -399,8 +400,8 @@ export function resolveDungeonTurn(
 
     let dmg = Math.floor(baseStat * 10 * playerSkill.attackPercent);
 
-    // Crit check
-    let critChance = 15;
+    // Crit check — use real luck stat
+    let critChance = state.playerStats?.luck ?? 15;
     for (const fx of state.playerActiveEffects) {
       if (fx.kind === "crit_up") critChance += fx.value;
     }
