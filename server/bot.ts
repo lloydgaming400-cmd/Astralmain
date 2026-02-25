@@ -1493,7 +1493,7 @@ async function handleMessage(msg: Message) {
   //  BATTLE SYSTEM
   // ════════════════════════════════════════════════════════════════
 
-  if (body === "!skills") {
+ if (body === "!skills") {
     const unlockedSkills = getUnlockedSkills(user.rank);
     const actives = unlockedSkills.filter(s => s.type === "active");
     const passives = unlockedSkills.filter(s => s.type === "passive");
@@ -1569,8 +1569,11 @@ async function handleMessage(msg: Message) {
 
     if (targetId === phoneId) return msg.reply("❌ You cannot challenge yourself.");
 
-    const target = await storage.getUserByPhone(targetId);
+    // ── FIX: use fuzzy lookup so @lid and @c.us variants both resolve correctly ──
+    const target = await storage.getUserByPhoneFuzzy(targetId);
     if (!target || !target.isRegistered) return msg.reply("❌ That person is not registered. They need to use !start first.");
+    const resolvedTargetId = target.phoneId; // always use the stored ID from here on
+
     if (target.isDead) return msg.reply("❌ You cannot challenge a dead person.");
     if (target.inBattle) return msg.reply("❌ That person is already in a battle.");
 
@@ -1587,13 +1590,13 @@ async function handleMessage(msg: Message) {
     const expiresAt = new Date(Date.now() + 300000);
     await storage.createChallenge({
       challengerPhoneId: phoneId,
-      targetPhoneId: targetId,
+      targetPhoneId: resolvedTargetId, // ── FIX: use stored ID
       chatId: msg.from,
       expiresAt,
       status: "pending",
     });
 
-    await client.sendMessage(targetId,
+    await client.sendMessage(resolvedTargetId, // ── FIX: use stored ID
       `⚔️ *${user.name}* has challenged you to a battle!\n\n` +
       `Reply *!accept* to accept or *!decline* to refuse.\n` +
       `This challenge expires in 5 minutes.`
@@ -1608,15 +1611,16 @@ async function handleMessage(msg: Message) {
       await storage.updateChallenge(challenge.id, { status: "expired" });
       return msg.reply("❌ That challenge has expired.");
     }
-if (user.inBattle) return msg.reply("❌ You are already in a battle.");
+    if (user.inBattle) return msg.reply("❌ You are already in a battle.");
 
-    const challenger = await storage.getUserByPhone(challenge.challengerPhoneId);
+    // ── FIX: use fuzzy lookup for challenger too ──
+    const challenger = await storage.getUserByPhoneFuzzy(challenge.challengerPhoneId);
     if (!challenger) return msg.reply("❌ Challenger not found.");
     if (challenger.inBattle) return msg.reply("❌ The challenger is already in another battle.");
 
     await storage.updateChallenge(challenge.id, { status: "accepted" });
     await storage.updateUser(phoneId, { inBattle: true });
-    await storage.updateUser(challenge.challengerPhoneId, { inBattle: true });
+    await storage.updateUser(challenger.phoneId, { inBattle: true }); // ── FIX: use stored ID
 
     const cStats = computeStats(challenger, challenger.battleExp || 0);
     const tStats = computeStats(user, user.battleExp || 0);
@@ -1722,9 +1726,9 @@ if (user.inBattle) return msg.reply("❌ You are already in a battle.");
     const challenge = await storage.getPendingChallengeForTarget(phoneId);
     if (!challenge) return msg.reply("❌ You have no pending challenge to decline.");
     await storage.updateChallenge(challenge.id, { status: "declined" });
-    const challenger = await storage.getUserByPhone(challenge.challengerPhoneId);
+    const challenger = await storage.getUserByPhoneFuzzy(challenge.challengerPhoneId); // ── FIX
     if (challenger) {
-      await client.sendMessage(challenge.challengerPhoneId, `❌ *${user.name}* declined your challenge.`);
+      await client.sendMessage(challenger.phoneId, `❌ *${user.name}* declined your challenge.`); // ── FIX
     }
     return msg.reply("❌ Challenge declined.");
   }
@@ -1893,8 +1897,7 @@ if (user.inBattle) return msg.reply("❌ You are already in a battle.");
       `╰══════════════════════════╯`
     );
   }
-
-  if (body === "!getcard") {
+if (body === "!getcard") {
     const now = new Date();
     if (user.lastCardClaim) {
       const diff = now.getTime() - new Date(user.lastCardClaim).getTime();
@@ -1903,35 +1906,88 @@ if (user.inBattle) return msg.reply("❌ You are already in a battle.");
         return msg.reply(`🎴 You already claimed your card today! Come back in ${hoursLeft} hour(s).`);
       }
     }
+
     await msg.reply("🎴 Drawing your card from the archives...");
-    const card = await fetchRandomAnimeCard();
-    await storage.createCard({ ownerPhoneId: phoneId, characterId: card.characterId, name: card.name, series: card.series, imageUrl: card.imageUrl, rarity: card.rarity });
+
+    let card: { characterId: number; name: string; series: string; rarity: string; imageUrl: string | null };
+    try {
+      card = await fetchRandomAnimeCard();
+    } catch {
+      card = { characterId: 0, name: "Unknown Spirit", series: "Astral Realm", rarity: "Common", imageUrl: null };
+    }
+
+    await storage.createCard({
+      ownerPhoneId: phoneId,
+      characterId: card.characterId,
+      name: card.name,
+      series: card.series,
+      imageUrl: card.imageUrl,
+      rarity: card.rarity,
+    });
     await storage.updateUser(phoneId, { lastCardClaim: now });
+
     const rarityEmoji =
       card.rarity === "Legendary" ? "🌟" :
       card.rarity === "Epic" ? "💜" :
       card.rarity === "Rare" ? "💙" :
       card.rarity === "Uncommon" ? "💚" : "⬜";
+
     const cardMsg =
       `╭══════════════════════╮\n  🎴 CARD OBTAINED!\n╰══════════════════════╯\n` +
       `  📛 Name: ${card.name}\n  📺 Series: ${card.series}\n` +
       `  ${rarityEmoji} Rarity: ${card.rarity}\n\n` +
       `  Use !cardcollection to view all.\n╰══════════════════════╯`;
+
     if (card.imageUrl) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-        let imgBuffer: Buffer;
+      const imageUrls = [
+        `https://wsrv.nl/?url=${encodeURIComponent(card.imageUrl)}`,
+        `https://images.weserv.nl/?url=${encodeURIComponent(card.imageUrl)}`,
+        card.imageUrl,
+      ];
+
+      let imageSent = false;
+      for (const url of imageUrls) {
+        if (imageSent) break;
         try {
-          const imgRes = await fetch(card.imageUrl, { signal: controller.signal as any });
-          imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-        } finally {
-          clearTimeout(timeout);
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
+          let imgBuffer: Buffer;
+          try {
+            const imgRes = await fetch(url, {
+              signal: controller.signal as any,
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+                'Referer': 'https://myanimelist.net/',
+              }
+            });
+            if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
+            imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+            if (imgBuffer.length < 100) throw new Error("Image too small");
+          } finally {
+            clearTimeout(timeout);
+          }
+
+          let mimeType = "image/jpeg";
+          if (imgBuffer[0] === 0x89 && imgBuffer[1] === 0x50) mimeType = "image/png";
+          else if (imgBuffer[0] === 0x47 && imgBuffer[1] === 0x49) mimeType = "image/gif";
+          else if (imgBuffer[0] === 0x52 && imgBuffer[1] === 0x49) mimeType = "image/webp";
+
+          const media = new MessageMedia(mimeType, imgBuffer.toString("base64"), `${card.name}.jpg`);
+          await msg.reply(media, undefined, { caption: cardMsg });
+          imageSent = true;
+        } catch (err) {
+          console.error(`[getcard] Failed to fetch image from ${url}:`, err);
         }
-        const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), `${card.name}.jpg`);
-        await msg.reply(media, undefined, { caption: cardMsg });
-      } catch { await msg.reply(cardMsg); }
-    } else { await msg.reply(cardMsg); }
+      }
+
+      if (!imageSent) {
+        await msg.reply(cardMsg);
+      }
+      return;
+    }
+
+    await msg.reply(cardMsg);
     return;
   }
 
@@ -1949,80 +2005,46 @@ if (user.inBattle) return msg.reply("❌ You are already in a battle.");
     const userCards = await storage.getUserCards(phoneId);
     if (isNaN(num) || !userCards[num]) return msg.reply("❌ Invalid card number. Check !cardcollection.");
     const card = userCards[num];
-    return msg.reply(
+
+    const rarityEmoji =
+      card.rarity === "Legendary" ? "🌟" :
+      card.rarity === "Epic" ? "💜" :
+      card.rarity === "Rare" ? "💙" :
+      card.rarity === "Uncommon" ? "💚" : "⬜";
+
+    const cardMsg =
       `╭══════════════════════╮\n  🔍 CARD DETAILS\n╰══════════════════════╯\n` +
       `  📛 Name: ${card.name}\n  📺 Series: ${card.series}\n` +
-      `  ✨ Rarity: ${card.rarity}\n  🆔 Card ID: #${card.id}\n╰══════════════════════╯`
-    );
-  }
+      `  ${rarityEmoji} Rarity: ${card.rarity}\n  🆔 Card ID: #${card.id}\n╰══════════════════════╯`;
 
-  // ════════════════════════════════════════════════════════════════
-  //  GUIDE SYSTEM
-  // ════════════════════════════════════════════════════════════════
-
-  if (body === "!getguide") {
-    if (user.guideName) {
-      const existing = GUIDES[user.guideName.toLowerCase()];
-      return msg.reply(`${existing?.emoji || "✨"} You already have *${user.guideName}* as your guide.`);
+    if (card.imageUrl) {
+      try {
+        const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(card.imageUrl)}`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        let imgBuffer: Buffer;
+        try {
+          const imgRes = await fetch(proxyUrl, {
+            signal: controller.signal as any,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            }
+          });
+          if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
+          imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+        } finally {
+          clearTimeout(timeout);
+        }
+        const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), `${card.name}.jpg`);
+        return msg.reply(media, undefined, { caption: cardMsg });
+      } catch {
+        // fall through to text
+      }
     }
-    try {
-      const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.image));
-      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "anna.jpg");
-      await msg.reply(media, undefined, { caption: ANNA.greeting });
-    } catch { await msg.reply(ANNA.greeting); }
-    await storage.updateUser(phoneId, { guideName: "Anna" });
-    await msg.reply(ANNA.claimMsg);
-    return;
+    return msg.reply(cardMsg);
   }
-
-  if (body === "!talkguide") {
-    const guideName = user.guideName?.toLowerCase();
-    if (!guideName) return msg.reply("❌ You don't have a guide. Use !getguide to claim one.");
-    const guide = GUIDES[guideName];
-    if (!guide) return msg.reply("❌ Guide not found.");
-    const response = guide.talkResponses[Math.floor(Math.random() * guide.talkResponses.length)];
-    return msg.reply(response);
-  }
-
-  if (body === "!smashmyguide") {
-    const guideName = user.guideName?.toLowerCase();
-    if (!guideName) return msg.reply("❌ You don't have a guide. Use !getguide to claim one.");
-    const guide = GUIDES[guideName];
-    if (!guide) return msg.reply("❌ Guide not found.");
-    if (user.guideSmashAt) return msg.reply(`${guide.emoji} *${guide.name}:* "...Again? Give me a moment to breathe, will you? 😳"`);
-    await storage.updateUser(phoneId, { guideSmashAt: new Date(), guidePregnant: false });
-    return msg.reply(guide.smashScene.join("\n"));
-  }
-
-  if (body.startsWith("!namechild ")) {
-    const guideName = user.guideName?.toLowerCase();
-    if (!guideName) return msg.reply("❌ You don't have a guide.");
-    const guide = GUIDES[guideName];
-    if (!guide) return msg.reply("❌ Guide not found.");
-    if (!user.guidePregnant) return msg.reply("❌ No child to name yet.");
-    if (user.guideChildName) return msg.reply(`❌ Your child is already named *${user.guideChildName}*.`);
-    const childName = body.replace("!namechild ", "").trim();
-    if (!childName || childName.length > 20) return msg.reply("❌ Invalid name. Keep it under 20 characters.");
-    await storage.updateUser(phoneId, { guideChildName: childName });
-    const nameMsg = guide.name === "Anna"
-      ? `🔴 *Anna:* "~${childName}~!! Oh that's PERFECT darling!! She's already kicking like she approves!! 😭🌸 Welcome to the world, little ${childName}~\nYour daddy is... well. He's trying his best. 💕"`
-      : `✨ *${guide.name}:* "...${childName}. ...Yeah. That fits her. Good choice."`;
-    await msg.reply(nameMsg);
-    await msg.reply(`✨ Your family is complete!\n👨 You + ${guide.emoji} ${guide.name} + 👶 ${childName}\n\n+5000 XP per week permanently added!`);
-    return;
-  }
-
-  if (body === "!leaveguide") {
-    if (!user.guideName) return msg.reply("❌ You don't have a guide.");
-    const guideName = user.guideName?.toLowerCase();
-    const guide = GUIDES[guideName ?? ""];
-    const leaveMsg = guide?.name === "Anna"
-      ? `🔴 *Anna:* "...Oh. You're leaving? ...Fine. Fine! Go! I'm not crying, YOU'RE crying!! 😤 Come back when you're ready, darling~"`
-      : `✨ *${guide?.name}:* "...Understood. Take care of yourself."`;
-    await storage.updateUser(phoneId, { guideName: null, guideSmashAt: null, guidePregnant: false, guideChildName: null });
-    return msg.reply(leaveMsg);
-  }
-
+   
   // ════════════════════════════════════════════════════════════════
   //  SECTS
   // ════════════════════════════════════════════════════════════════
