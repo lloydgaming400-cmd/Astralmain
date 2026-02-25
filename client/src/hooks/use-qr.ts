@@ -10,7 +10,7 @@ export function useQrStatus() {
       if (!res.ok) throw new Error("Failed to fetch QR status");
       return api.qr.status.responses[200].parse(await res.json());
     },
-    refetchInterval: 3000, // Poll every 3 seconds
+    refetchInterval: 1000, // Poll every 1 second for faster QR appearance
   });
 }
 
