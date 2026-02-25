@@ -24,6 +24,7 @@ const playerBattleMap = new Map<string, string>();
 
 export interface IStorage {
   getUserByPhone(phoneId: string): Promise<User | undefined>;
+  getUserByPhoneFuzzy(phoneId: string): Promise<User | undefined>; // ← NEW
   getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(phoneId: string, updates: Partial<InsertUser>): Promise<User>;
@@ -68,6 +69,20 @@ export class DatabaseStorage implements IStorage {
   async getUserByPhone(phoneId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.phoneId, phoneId));
     return user;
+  }
+
+  // ── Fuzzy lookup: matches @lid and @c.us variants of the same number ──────────
+  async getUserByPhoneFuzzy(phoneId: string): Promise<User | undefined> {
+    // Try exact match first (fastest path)
+    const exact = await this.getUserByPhone(phoneId);
+    if (exact) return exact;
+
+    // Strip suffix and try matching the bare number against all stored IDs
+    const bare = phoneId.replace(/@lid$/, "").replace(/@c\.us$/, "");
+    const allUsers = await db.select().from(users);
+    return allUsers.find(
+      (u) => u.phoneId.replace(/@lid$/, "").replace(/@c\.us$/, "") === bare
+    );
   }
 
   async resetDatabase(): Promise<void> {
