@@ -18,7 +18,6 @@ export const users = pgTable("users", {
   missAstralLastUsed: timestamp("miss_astral_last_used"),
   missAstralUsageCount: integer("miss_astral_usage_count").notNull().default(0),
   isRegistered: boolean("is_registered").notNull().default(false),
-  // FIX: default was 1 (highest rank) — new users should start at 8 (lowest)
   rank: integer("rank").notNull().default(8),
   condition: text("condition").notNull().default("Healthy"),
   hp: integer("hp").notNull().default(100),
@@ -38,7 +37,7 @@ export const users = pgTable("users", {
   infectedAt: timestamp("infected_at"),
   isDead: boolean("is_dead").notNull().default(false),
 
-  // ── Guide System ────────────────────────────────────────────────────────────
+  // ── Guide System ─────────────────────────────────────────────────────────────
   guideName: text("guide_name"),
   guideSmashAt: timestamp("guide_smash_at"),
   guidePregnant: boolean("guide_pregnant").notNull().default(false),
@@ -59,13 +58,23 @@ export const users = pgTable("users", {
   equippedPassive: text("equipped_passive"),                          // skill ID or null
   inBattle: boolean("in_battle").notNull().default(false),
 
-  // FIX: These were missing from schema — caused runtime `as any` casts and silent DB errors
+  // ── Dungeon System ────────────────────────────────────────────────────────────
   dungeonFloor: integer("dungeon_floor").notNull().default(1),
   dungeonActive: boolean("dungeon_active").notNull().default(false),
-  petType: text("pet_type"), // dragon, fairy, phoenix, griffin, wolf, kraken
+
+  // ── Pet System ────────────────────────────────────────────────────────────────
+  petType: text("pet_type"),    // dragon, fairy, phoenix, griffin, wolf, kraken
   petName: text("pet_name"),
   petXpStolen: integer("pet_xp_stolen").notNull().default(0),
   petHatched: boolean("pet_hatched").notNull().default(false),
+
+  // ── Permanent Stat Bonuses (earned through battles & dungeon) ─────────────────
+  // These stack forever. Each battle/floor awards a small permanent increase.
+  strBonus: integer("str_bonus").notNull().default(0),
+  agiBonus: integer("agi_bonus").notNull().default(0),
+  intBonus: integer("int_bonus").notNull().default(0),
+  lckBonus: integer("lck_bonus").notNull().default(0),
+  spdBonus: integer("spd_bonus").notNull().default(0),
 });
 
 export const globalStats = pgTable("global_stats", {
