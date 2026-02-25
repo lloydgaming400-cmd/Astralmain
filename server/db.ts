@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
+
 const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
@@ -14,7 +15,7 @@ export async function runMigrations() {
   try {
     console.log("[db] Running database migrations...");
     await db.execute(`
-      -- Existing columns (safe to re-run)
+      -- Existing columns (safe to re-run with IF NOT EXISTS)
       ALTER TABLE users ADD COLUMN IF NOT EXISTS eclipse_until TIMESTAMP;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS phantom_until TIMESTAMP;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS mirror_race TEXT;
@@ -45,9 +46,13 @@ export async function runMigrations() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS equipped_passive TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS in_battle BOOLEAN NOT NULL DEFAULT FALSE;
 
-      -- Dungeon System columns
+      -- FIX: Dungeon System columns (were in migration but missing from schema.ts)
       ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_floor INTEGER NOT NULL DEFAULT 1;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_active BOOLEAN NOT NULL DEFAULT FALSE;
+
+      -- FIX: Reset any stuck battle/dungeon states from a previous crash/restart
+      UPDATE users SET in_battle = FALSE WHERE in_battle = TRUE;
+      UPDATE users SET dungeon_active = FALSE WHERE dungeon_active = TRUE;
 
       -- Challenges table
       CREATE TABLE IF NOT EXISTS challenges (
@@ -62,5 +67,6 @@ export async function runMigrations() {
     console.log("[db] Migrations complete ✅");
   } catch (err) {
     console.error("[db] Migration error:", err);
+    // Don't rethrow — allow server to start even if migration partially fails
   }
 }
