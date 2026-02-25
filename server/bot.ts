@@ -2444,6 +2444,90 @@ if (body === "!getcard") {
   }
 
   // ════════════════════════════════════════════════════════════════
+  //  GUIDE SYSTEM
+  // ════════════════════════════════════════════════════════════════
+
+  if (body === "!getguide") {
+    if (user.guideName) {
+      return msg.reply(`💞 You already have a guide — *${user.guideName}*! Type !talkguide to speak with them.`);
+    }
+    try {
+      const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.image));
+      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "anna.jpg");
+      await msg.reply(media, undefined, { caption: ANNA.greeting });
+    } catch {
+      await msg.reply(ANNA.greeting);
+    }
+    await storage.updateUser(phoneId, { guideName: "Anna" });
+    setTimeout(async () => {
+      try {
+        const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.image));
+        const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "anna.jpg");
+        await client.sendMessage(phoneId, media, { caption: ANNA.claimMsg });
+      } catch {
+        await client.sendMessage(phoneId, ANNA.claimMsg);
+      }
+    }, 2000);
+    return;
+  }
+
+  if (body === "!talkguide") {
+    if (!user.guideName) return msg.reply("💞 You don't have a guide yet. Type !getguide to claim one.");
+    const guide = GUIDES[user.guideName.toLowerCase()];
+    if (!guide) return msg.reply("❌ Guide not found.");
+    const response = guide.talkResponses[Math.floor(Math.random() * guide.talkResponses.length)];
+    try {
+      const imgBuffer = fs.readFileSync(path.join(process.cwd(), guide.image));
+      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "guide.jpg");
+      await msg.reply(media, undefined, { caption: response });
+    } catch {
+      await msg.reply(response);
+    }
+    return;
+  }
+
+  if (body === "!smashmyguide") {
+    if (!user.guideName) return msg.reply("💞 You don't have a guide. Type !getguide first.");
+    if (user.guideSmashAt) return msg.reply("🔴 *Anna:* \"Darling~ Again?! ...Maybe later. 😤\"");
+    for (const line of ANNA.smashScene) {
+      await client.sendMessage(phoneId, line);
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    await storage.updateUser(phoneId, { guideSmashAt: new Date() });
+    return;
+  }
+
+  if (body.startsWith("!namechild ")) {
+    if (!user.guideName) return msg.reply("💞 You don't have a guide.");
+    if (!user.guidePregnant) return msg.reply("🔴 *Anna:* \"Darling~ There's no child yet! 😤\"");
+    if (user.guideChildName) return msg.reply(`👶 Your child is already named *${user.guideChildName}*!`);
+    const childName = body.replace("!namechild ", "").trim();
+    if (!childName || childName.length > 20) return msg.reply("❌ Name must be 1–20 characters.");
+    await storage.updateUser(phoneId, { guideChildName: childName });
+    return msg.reply(
+      `🔴 *Anna:* "...${childName}. That's a beautiful name, darling. 😭🌸\n` +
+      `She's going to grow up so strong. Just like you.\n` +
+      `Our little *${childName}*... I love her already~ 💕"`
+    );
+  }
+
+  if (body === "!leaveguide") {
+    if (!user.guideName) return msg.reply("💞 You don't have a guide to leave.");
+    await storage.updateUser(phoneId, {
+      guideName: null,
+      guideSmashAt: null,
+      guidePregnant: false,
+      guideChildName: null,
+    });
+    return msg.reply(
+      `*Anna watches you go. She doesn't say anything.*\n\n` +
+      `🔴 *Anna:* "...I hope you find what you're looking for, darling."\n\n` +
+      `*The door closes. She's gone.*\n` +
+      `Your guide bond has been released.`
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════
   //  OWNER COMMANDS
   // ════════════════════════════════════════════════════════════════
 
