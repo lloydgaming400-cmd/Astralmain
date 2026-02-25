@@ -670,7 +670,6 @@ export function calculateDamage(
   defender: Combatant,
   skill: Skill
 ): DamageResult {
-  // Get effective stat (may be buffed by active effects)
   const statMap: Record<StatType, keyof BattleStats> = {
     strength: "strength",
     agility: "agility",
@@ -678,37 +677,31 @@ export function calculateDamage(
     luck: "luck",
     speed: "speed",
   };
-  let baseStat = attacker.stats[statMap[skill.statBase]];
+  
+  // Use strength primarily for damage as requested
+  const strengthStat = attacker.stats.strength;
 
-  // Apply STR/AGI buffs from active effects
-  for (const fx of attacker.activeEffects) {
-    if (fx.kind === "str_up" && skill.statBase === "strength") baseStat += fx.value;
-    if (fx.kind === "agi_up" && skill.statBase === "agility") baseStat += fx.value;
-    if (fx.kind === "haste" && skill.statBase === "speed") baseStat += fx.value;
-  }
+  // Base damage from strength (scales from ~36 at 20 str to ~360 at 200 str)
+  let dmg = Math.floor(strengthStat * 1.8 * (1 + skill.attackPercent));
+  
+  // Add small random variance
+  dmg += Math.floor(Math.random() * 20);
 
-  // Silence check — if silenced, can't use any skill ranked C+
-  const silenced = defender.activeEffects.some(fx => fx.kind === "silence");
-  // (silenced check is handled in pick validation, not here)
+  // Strictly clamp between 30 and 500 for normal hits
+  dmg = Math.max(30, Math.min(500, dmg));
 
-  // Raw damage
-  let dmg = Math.floor(baseStat * 10 * skill.attackPercent);
-
-  if (dmg === 0 && skill.type === "active" && skill.attackPercent === 0) {
-    // pure utility skill, no damage
-    return { damage: 0, dodged: false, crit: false, message: "" };
-  }
-
-  // Crit chance = luck stat + any crit_up effects
   let critChance = attacker.stats.luck;
   for (const fx of attacker.activeEffects) {
     if (fx.kind === "crit_up") critChance += fx.value;
   }
-  critChance = Math.min(critChance, 85); // cap 85%
+  critChance = Math.min(critChance, 85);
   const crit = Math.random() * 100 < critChance;
-  if (crit) dmg = Math.floor(dmg * 1.5);
+  if (crit) {
+    dmg = Math.floor(dmg * 1.5);
+    // Ensure even crits stay within reasonable bounds (cap at 750)
+    dmg = Math.min(750, dmg);
+  }
 
-  // 10% base dodge chance
   let dodgeChance = 10;
   for (const fx of defender.activeEffects) {
     if (fx.kind === "dodge_up") dodgeChance += fx.value;
@@ -716,7 +709,6 @@ export function calculateDamage(
   const dodged = Math.random() * 100 < dodgeChance;
   if (dodged) dmg = 0;
 
-  // Shield absorption (flat passive or active)
   if (!dodged && dmg > 0) {
     let shieldLeft = 0;
     for (const fx of defender.activeEffects) {

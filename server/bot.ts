@@ -63,6 +63,18 @@ async function resolveQuotedUser(msg: Message): Promise<{ phoneId: string; conta
   }
 }
 
+const PET_HATCH_THRESHOLD = 50000;
+const PET_TYPES = ["dragon", "fairy", "phoenix", "griffin", "wolf", "kraken"];
+
+const PET_DESCRIPTIONS: Record<string, string> = {
+  dragon: "A majestic beast of fire and scale. Its breath incinerates all who dare oppose its master.",
+  fairy: "A shimmering spirit of the woods. Its light blinds foes and mends the wounds of its chosen one.",
+  phoenix: "A bird of eternal flame. It rises from the ashes, scorching enemies with every beat of its wings.",
+  griffin: "The king of the skies. Its sharp talons and powerful shrieks strike terror into the hearts of mortals.",
+  wolf: "A shadow of the frozen wastes. It hunts in silence, tearing through armor with icy fangs.",
+  kraken: "A terror from the deep abyss. Its tentacles drag the unworthy into the dark, crushing pressure of the sea.",
+};
+
 const HELP_MENU = `╭══════════════════════════╮
    ✦┊　🌌  ASTRAL BOT  🌌　┊✦
 ╰══════════════════════════╯
@@ -155,7 +167,17 @@ const SCROLL_MENU = `╭══════════════════�
      𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
 ╰══════════════════════╯`;
 
-const SPECIES_XP_RATES: Record<string, number> = {
+const PET_HATCH_THRESHOLD = 50000;
+const PET_TYPES = ["dragon", "fairy", "phoenix", "griffin", "wolf", "kraken"];
+
+const PET_DESCRIPTIONS: Record<string, string> = {
+  dragon: "A majestic beast of fire and scale. Its breath incinerates all who dare oppose its master.",
+  fairy: "A shimmering spirit of the woods. Its light blinds foes and mends the wounds of its chosen one.",
+  phoenix: "A bird of eternal flame. It rises from the ashes, scorching enemies with every beat of its wings.",
+  griffin: "The king of the skies. Its sharp talons and powerful shrieks strike terror into the hearts of mortals.",
+  wolf: "A shadow of the frozen wastes. It hunts in silence, tearing through armor with icy fangs.",
+  kraken: "A terror from the deep abyss. Its tentacles drag the unworthy into the dark, crushing pressure of the sea.",
+};
   "Human": 5,
   "Demon": 10,
   "Beast Clan": 15,
@@ -375,6 +397,15 @@ async function resolveBattleTurn(battleId: string) {
       ? [challenger, target, cSkill, tSkill]
       : [target, challenger, tSkill, cSkill];
 
+  const applyPetHelp = async (owner: Combatant, opponent: Combatant) => {
+    const ownerUser = await storage.getUserByPhone(owner.phoneId);
+    if (ownerUser?.petHatched && owner.hp < owner.stats.maxHp * 0.4 && Math.random() < 0.3) {
+      const petDmg = Math.floor(owner.stats.strength * 0.8 + 20);
+      opponent.hp = Math.max(0, opponent.hp - petDmg);
+      logs.push(`🐾 *${ownerUser.petName || ownerUser.petType}* (Pet) senses *${owner.name}* is in danger! It attacks *${opponent.name}* for ${petDmg} damage!`);
+    }
+  };
+
   const firstStunned = first.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
   if (!firstStunned) {
     if (first.mp < firstSkill.mpCost) {
@@ -382,8 +413,7 @@ async function resolveBattleTurn(battleId: string) {
       first.hp = 0;
     } else {
       first.mp = Math.max(0, first.mp - firstSkill.mpCost);
-      // Cooldowns removed as per request
-
+      
       const dmgResult = calculateDamage(first, second, firstSkill);
       if (dmgResult.dodged) {
         logs.push(`💨 *${second.name}* dodged *${firstSkill.name}*!`);
@@ -405,6 +435,8 @@ async function resolveBattleTurn(battleId: string) {
         const effectLogs = applySkillEffect(firstSkill.effect, firstSkill.name, first, second);
         logs.push(...effectLogs);
       }
+      
+      await applyPetHelp(first, second);
     }
   } else {
     logs.push(`😴 *${first.name}* is stunned/frozen and loses their turn!`);
@@ -418,7 +450,6 @@ async function resolveBattleTurn(battleId: string) {
         second.hp = 0;
       } else {
         second.mp = Math.max(0, second.mp - secondSkill.mpCost);
-        // Cooldowns removed as per request
 
         const dmgResult2 = calculateDamage(second, first, secondSkill);
         if (dmgResult2.dodged) {
@@ -431,7 +462,7 @@ async function resolveBattleTurn(battleId: string) {
           const lifestealFx2 = second.activeEffects.find(fx => fx.kind === "lifesteal");
           if (lifestealFx2 && dmgResult2.damage > 0) {
             const healed2 = Math.floor(dmgResult2.damage * lifestealFx2.value);
-            first.hp = Math.min(first.stats.maxHp, first.hp + healed2); // Fixed from second.hp logic error in original code too
+            first.hp = Math.min(first.stats.maxHp, first.hp + healed2); 
             second.activeEffects = second.activeEffects.filter(fx => fx.kind !== "lifesteal");
             logs.push(`🩸 *${second.name}* leeched ${healed2} HP.`);
           }
@@ -441,6 +472,8 @@ async function resolveBattleTurn(battleId: string) {
           const effectLogs2 = applySkillEffect(secondSkill.effect, secondSkill.name, second, first);
           logs.push(...effectLogs2);
         }
+        
+        await applyPetHelp(second, first);
       }
     } else {
       logs.push(`😴 *${second.name}* is stunned/frozen and loses their turn!`);
@@ -993,6 +1026,15 @@ async function handleMessage(msg: Message) {
       ? `${GUIDES[user.guideName.toLowerCase()]?.emoji || "✨"} ${user.guideName}${user.guideChildName ? ` + 👶 ${user.guideChildName}` : ""}`
       : "None";
 
+    let petLine = "None";
+    if (user.petType) {
+      if (user.petHatched) {
+        petLine = `🐾 ${user.petType.charAt(0).toUpperCase() + user.petType.slice(1)} (${user.petName || 'Unnamed'})\n     _${PET_DESCRIPTIONS[user.petType] || ''}_`;
+      } else {
+        petLine = `🐾 [${user.petType.charAt(0).toUpperCase() + user.petType.slice(1)} egg pending hatch (${user.petXpStolen}/${PET_HATCH_THRESHOLD})]`;
+      }
+    }
+
     return msg.reply(
       `╭══════════════════════╮\n` +
       `   ✦┊【 P R O F I L E 】┊✦\n` +
@@ -1006,6 +1048,7 @@ async function handleMessage(msg: Message) {
       `  🏯 Sect: ${sectLine}\n` +
       `  ❤️ HP: ${generateHpBar(user.hp)}\n` +
       `  🩺 Condition: ${user.condition}\n` +
+      `  🐾 Pet: ${petLine}\n` +
       ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
       `  ⚔️ BATTLE RECORD\n` +
       `  🏅 Wins: ${user.battleWins || 0}  💀 Losses: ${user.battleLosses || 0}\n` +
@@ -1118,7 +1161,7 @@ async function handleMessage(msg: Message) {
       return msg.reply(`❌ *${itemName}* requires a target. Reply to someone's message to use it.`);
     }
 
-    const isFindable = ["dragon egg", "void fragment", "star dust", "vampire tooth", "cursed bone", "living core"].includes(itemLower);
+    const isFindable = ["dragon egg", "void fragment", "star dust", "vampire tooth", "cursed bone", "living core", "pet egg"].includes(itemLower);
     if (isFindable && Math.random() > 0.11) {
       inv.splice(num, 1);
       await storage.updateUser(phoneId, { inventory: inv });
@@ -1176,6 +1219,14 @@ async function handleMessage(msg: Message) {
       updates.phantomUntil = new Date(Date.now() + 86400000);
       reply = `👻 *Phantom Seal* activated! You have vanished from the leaderboard for 24 hours.`;
 
+    } else if (itemLower === "pet egg") {
+      if (user.petType) return msg.reply("❌ You already have a pet or an egg.");
+      const type = PET_TYPES[Math.floor(Math.random() * PET_TYPES.length)];
+      updates.petType = type;
+      updates.petXpStolen = 0;
+      updates.petHatched = false;
+      reply = `🥚 You found a mysterious *${type.charAt(0).toUpperCase() + type.slice(1)} Egg*! It will hatch once it witnesses you stealing 50,000 XP using Blood Runes or Vampire abilities.`;
+
     } else if (itemLower === "cursed coin") {
       const outcomes = [
         async () => {
@@ -1221,6 +1272,20 @@ async function handleMessage(msg: Message) {
       if (actualSteal <= 0) return msg.reply("❌ Target has no XP to steal.");
       await storage.updateUser(targetId, { xp: target.xp - actualSteal });
       await storage.updateUser(phoneId, { xp: user.xp + actualSteal });
+      
+      // Update Pet Progress
+      if (user.petType && !user.petHatched) {
+        const newXp = user.petXpStolen + actualSteal;
+        const hatched = newXp >= PET_HATCH_THRESHOLD;
+        await storage.updateUser(phoneId, { 
+          petXpStolen: newXp,
+          petHatched: hatched
+        });
+        if (hatched) {
+          await client.sendMessage(phoneId, `🎊 *CONGRATULATIONS!* Your ${user.petType} egg has hatched! You can now name it with !petname [name]. It will assist you in battles when your HP is low.`);
+        }
+      }
+
       await client.sendMessage(targetId, `🩸 A Blood Rune was used against you. You lost *${actualSteal} XP*.`);
       inv.splice(num, 1);
       await storage.updateUser(phoneId, { inventory: inv });

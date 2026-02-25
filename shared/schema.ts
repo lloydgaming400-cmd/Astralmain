@@ -62,6 +62,10 @@ export const users = pgTable("users", {
   // FIX: These were missing from schema — caused runtime `as any` casts and silent DB errors
   dungeonFloor: integer("dungeon_floor").notNull().default(1),
   dungeonActive: boolean("dungeon_active").notNull().default(false),
+  petType: text("pet_type"), // dragon, fairy, phoenix, griffin, wolf, kraken
+  petName: text("pet_name"),
+  petXpStolen: integer("pet_xp_stolen").notNull().default(0),
+  petHatched: boolean("pet_hatched").notNull().default(false),
 });
 
 export const globalStats = pgTable("global_stats", {
