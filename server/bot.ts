@@ -43,7 +43,11 @@ import {
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
-const OWNER_NUMBER = "87209327755401@lid";
+// FIX: WhatsApp Web.js uses @c.us for regular contacts, NOT @lid
+// Replace the number below with the actual owner's number
+const OWNER_NUMBER = process.env.OWNER_PHONE
+  ? `${process.env.OWNER_PHONE}@c.us`
+  : ""; // Set OWNER_PHONE env var e.g. "601234567890" (no +)
 
 const HELP_MENU = `╭══════════════════════════╮
    ✦┊　🌌  ASTRAL BOT  🌌　┊✦
@@ -109,6 +113,13 @@ const SCROLL_MENU = `╭══════════════════�
   📋 !skills ↳ view your equipped skills
   🔧 !equip [skillId] ↳ equip a skill
   🏳️ !forfeit ↳ surrender a battle
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  🏰 DUNGEON
+  🏰 !dungeon ↳ enter the Tower
+  🗡️ !dpick [1/2/3] ↳ attack
+  🏃 !descape ↳ flee dungeon
+  📊 !dfloor ↳ check your floor
+  🏆 !dtower ↳ tower leaderboard
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   👼 SURVIVAL
   🕊️ !revive ↳ revive fallen ally (reply)
@@ -190,7 +201,8 @@ const DISEASES: Record<string, { name: string; race: string; startMsg: string; e
   "Spirit":       { name: "Soul Decay",           race: "Spirit",       startMsg: "A corruption has swept through the Spirit race. Soul Decay is dissolving their very essence.",                      endMsg: "Soul Decay has dissipated. The Spirit race endures once more.",               cure: "soul restoration tonic" },
 };
 
-// ── Jikan API card fetch ───────────────────────────────────────────────────────
+// ── Jikan API card fetch with timeout ─────────────────────────────────────────
+// FIX: Added AbortController timeout so !getcard doesn't hang indefinitely
 async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: string; series: string; rarity: string; imageUrl: string | null }> {
   try {
     const rarityRoll = Math.random();
@@ -199,8 +211,22 @@ async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: stri
       rarityRoll < 0.15 ? "Epic" :
       rarityRoll < 0.35 ? "Rare" :
       rarityRoll < 0.65 ? "Uncommon" : "Common";
+
     const page = Math.floor(Math.random() * 20) + 1;
-    const res = await fetch(`https://api.jikan.moe/v4/characters?page=${page}&limit=25`);
+
+    // FIX: 8-second timeout to prevent hanging
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    let res: any;
+    try {
+      res = await fetch(`https://api.jikan.moe/v4/characters?page=${page}&limit=25`, {
+        signal: controller.signal as any,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
     const data = await res.json() as any;
     if (!data?.data?.length) throw new Error("No data");
     const chars = data.data.filter((c: any) => c.images?.jpg?.image_url);
@@ -252,7 +278,6 @@ const ANNA = {
   ],
 };
 
-// FIX #3: Define GUIDES map so all guide commands can look up by name
 const GUIDES: Record<string, typeof ANNA> = {
   anna: ANNA,
 };
@@ -263,13 +288,11 @@ async function checkGuideEvents(user: any, phoneId: string) {
   const now = Date.now();
   const smashTime = new Date(user.guideSmashAt).getTime();
 
-  // Pregnant after 24h
   if (!user.guidePregnant && now - smashTime >= 86400000) {
-    await storage.updateUser(phoneId, { guidePregnant: true } as any);
+    await storage.updateUser(phoneId, { guidePregnant: true });
     await client.sendMessage(phoneId, ANNA.pregnantMsg);
   }
 
-  // Birth after 72h
   if (user.guidePregnant && !user.guideChildName && now - smashTime >= 259200000) {
     try {
       const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.imageWithChild));
@@ -317,7 +340,6 @@ async function resolveBattleTurn(battleId: string) {
   if (!record) return;
   const state = record.state as BattleState;
 
-  // Clear the turn timer if it exists
   if (state.turnTimer) {
     clearTimeout(state.turnTimer);
     state.turnTimer = null;
@@ -325,7 +347,6 @@ async function resolveBattleTurn(battleId: string) {
 
   const { challenger, target } = state;
 
-  // Auto-pick for anyone who didn't choose
   if (!state.challengerSkillChoice) {
     state.challengerSkillChoice = getDefaultSkill(challenger).id;
   }
@@ -339,19 +360,15 @@ async function resolveBattleTurn(battleId: string) {
   state.phase = "resolving";
   const logs: string[] = [];
 
-  // Determine turn order
   const { firstId } = determineFirstMover(challenger, target);
   const [first, second, firstSkill, secondSkill] =
     firstId === challenger.phoneId
       ? [challenger, target, cSkill, tSkill]
       : [target, challenger, tSkill, cSkill];
 
-  // Process first attacker
   const firstStunned = first.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
   if (!firstStunned) {
-    // Deduct MP
     first.mp = Math.max(0, first.mp - firstSkill.mpCost);
-    // Set cooldown
     if (firstSkill.cooldown > 0) first.cooldowns[firstSkill.id] = firstSkill.cooldown;
 
     const dmgResult = calculateDamage(first, second, firstSkill);
@@ -362,7 +379,6 @@ async function resolveBattleTurn(battleId: string) {
       second.hp = Math.max(0, second.hp - dmgResult.damage);
       logs.push(`⚔️ *${first.name}* used *${firstSkill.name}* → ${dmgResult.damage} damage to *${second.name}*.`);
 
-      // Lifesteal
       const lifestealFx = first.activeEffects.find(fx => fx.kind === "lifesteal");
       if (lifestealFx && dmgResult.damage > 0) {
         const healed = Math.floor(dmgResult.damage * lifestealFx.value);
@@ -380,7 +396,6 @@ async function resolveBattleTurn(battleId: string) {
     logs.push(`😴 *${first.name}* is stunned/frozen and loses their turn!`);
   }
 
-  // Check if second combatant is already dead
   if (second.hp > 0) {
     const secondStunned = second.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
     if (!secondStunned) {
@@ -413,11 +428,9 @@ async function resolveBattleTurn(battleId: string) {
     }
   }
 
-  // Apply DoT / regen
   logs.push(...applyTurnEffects(challenger));
   logs.push(...applyTurnEffects(target));
 
-  // Tick cooldowns and effect durations
   tickCooldowns(challenger);
   tickCooldowns(target);
   const expiredC = tickEffects(challenger);
@@ -425,7 +438,6 @@ async function resolveBattleTurn(battleId: string) {
   if (expiredC.length) logs.push(`⏱️ Effects expired on *${challenger.name}*: ${expiredC.join(", ")}`);
   if (expiredT.length) logs.push(`⏱️ Effects expired on *${target.name}*: ${expiredT.join(", ")}`);
 
-  // Check for winner
   const winner = challenger.hp <= 0 ? target : (target.hp <= 0 ? challenger : null);
 
   const logText = logs.join("\n");
@@ -436,7 +448,6 @@ async function resolveBattleTurn(battleId: string) {
     const xpGain = state.xpTransfer;
     state.phase = "ended";
 
-    // Update DB
     const winnerUser = await storage.getUserByPhone(winner.phoneId);
     const loserUser = await storage.getUserByPhone(loser.phoneId);
     if (winnerUser) {
@@ -469,7 +480,6 @@ async function resolveBattleTurn(battleId: string) {
     return;
   }
 
-  // Next turn
   state.turn++;
   state.phase = "waiting_challenger";
   state.challengerSkillChoice = null;
@@ -486,22 +496,14 @@ async function resolveBattleTurn(battleId: string) {
 
   await client.sendMessage(state.chatId, nextMsg);
 
-  // 60-second auto-resolve timer
   state.turnTimer = setTimeout(() => resolveBattleTurn(battleId), 60000);
   storage.updateBattleState(battleId, state);
-}
-
-// ── HP/MP regen between turns (small passive) ──────────────────────────────
-// MP regenerates 10 per turn passively for all combatants
-function regenMpPassive(c: Combatant) {
-  c.mp = Math.min(c.stats.maxMp, c.mp + 10);
 }
 
 let client: Client;
 let isInitializing = false;
 let isClientReady = false;
 
-// Helper — only send if client is fully connected
 async function safeSend(to: string, message: string): Promise<void> {
   if (!client || !isClientReady) return;
   try {
@@ -529,32 +531,28 @@ setInterval(async () => {
         }
       }
 
-      // FIX: Expire vampire status
       if (user.isVampire && user.vampireUntil && new Date() > new Date(user.vampireUntil)) {
         await storage.updateUser(user.phoneId, { isVampire: false, vampireUntil: null });
         await client.sendMessage(user.phoneId, "🦷 Your vampire powers have expired. The tooth crumbles to dust.");
       }
 
-      // FIX: Expire eclipse stone
-      if ((user as any).eclipseUntil && new Date() > new Date((user as any).eclipseUntil)) {
-        await storage.updateUser(user.phoneId, { eclipseUntil: null } as any);
+      if (user.eclipseUntil && new Date() > new Date(user.eclipseUntil)) {
+        await storage.updateUser(user.phoneId, { eclipseUntil: null });
       }
 
-      // FIX: Expire phantom seal
-      if ((user as any).phantomUntil && new Date() > new Date((user as any).phantomUntil)) {
-        await storage.updateUser(user.phoneId, { phantomUntil: null } as any);
+      if (user.phantomUntil && new Date() > new Date(user.phantomUntil)) {
+        await storage.updateUser(user.phoneId, { phantomUntil: null });
       }
 
-      // FIX: Expire mirror shard
-      if ((user as any).mirrorUntil && new Date() > new Date((user as any).mirrorUntil)) {
-        if ((user as any).mirrorOriginalRace) {
+      if (user.mirrorUntil && new Date() > new Date(user.mirrorUntil)) {
+        if (user.mirrorOriginalRace) {
           await storage.updateUser(user.phoneId, {
-            species: (user as any).mirrorOriginalRace,
+            species: user.mirrorOriginalRace,
             mirrorRace: null,
             mirrorOriginalRace: null,
             mirrorUntil: null,
-          } as any);
-          await safeSend(user.phoneId, `🪞 Mirror Shard expired. You have returned to your true form: *${(user as any).mirrorOriginalRace}*.`);
+          });
+          await safeSend(user.phoneId, `🪞 Mirror Shard expired. You have returned to your true form: *${user.mirrorOriginalRace}*.`);
         }
       }
 
@@ -583,14 +581,13 @@ setInterval(async () => {
       const disease = DISEASES[randomRace];
       const endsAt = new Date(now.getTime() + (Math.floor(Math.random() * 7) + 1) * 86400000);
       await storage.updateGlobalStats({ activeDisease: disease.name, diseaseRace: disease.race, lastOutbreakAt: now, outbreakEndsAt: endsAt });
-      await safeSend(OWNER_NUMBER, `⚠️ *DISEASE OUTBREAK*\n\n${disease.startMsg}`);
+      if (OWNER_NUMBER) await safeSend(OWNER_NUMBER, `⚠️ *DISEASE OUTBREAK*\n\n${disease.startMsg}`);
     } else if (stats.activeDisease && stats.outbreakEndsAt && now > new Date(stats.outbreakEndsAt)) {
       const disease = Object.values(DISEASES).find(d => d.name === stats.activeDisease);
       await storage.updateGlobalStats({ activeDisease: null, diseaseRace: null, outbreakEndsAt: null });
-      await safeSend(OWNER_NUMBER, `✨ *DISEASE CLEARED*\n\n${disease?.endMsg}`);
+      if (OWNER_NUMBER) await safeSend(OWNER_NUMBER, `✨ *DISEASE CLEARED*\n\n${disease?.endMsg}`);
     }
 
-    // Expire old challenges
     await storage.expireOldChallenges();
   } catch (err) {
     console.error("Interval error:", err);
@@ -603,8 +600,8 @@ setInterval(async () => {
   try {
     const users = await storage.getUsers();
     for (const user of users) {
-      const hasGuide = !!(user as any).guideName;
-      const hasChild = !!(user as any).guideChildName;
+      const hasGuide = !!user.guideName;
+      const hasChild = !!user.guideChildName;
       if (!hasGuide) continue;
       const weeklyXp = hasChild ? 5000 : 1000;
       await storage.updateUser(user.phoneId, { xp: user.xp + weeklyXp });
@@ -632,7 +629,7 @@ setInterval(async () => {
   }
 }, 86400000);
 
-// ── Clean up stale Chromium /tmp files (fixes broken symlink warning) ───────────
+// ── Clean up stale Chromium /tmp files ───────────────────────────────────────
 function cleanupChromiumTemp(): void {
   try {
     const tmpFiles = fs.readdirSync('/tmp').filter(f => f.startsWith('.org.chromium') || f.startsWith('.com.google.Chrome'));
@@ -645,7 +642,6 @@ function cleanupChromiumTemp(): void {
   } catch { /* /tmp not accessible, ignore */ }
 }
 
-// ── Find chromium/chrome executable safely ────────────────────────────────────
 function findChromiumPath(): string {
   const candidates = [
     '/usr/bin/chromium',
@@ -671,13 +667,11 @@ export async function initBot() {
   isInitializing = true;
   isClientReady = false;
 
-  // Clean up any stale Chromium temp files from previous crashes
   cleanupChromiumTemp();
 
   const authPath = path.join(process.cwd(), '.wwebjs_auth');
   const cachePath = path.join(process.cwd(), '.wwebjs_cache');
 
-  // Only wipe auth on a truly fresh start, not reconnect attempts
   if (connectionStatus === "DISCONNECTED" && !fs.existsSync(path.join(authPath, 'session'))) {
     if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
     if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
@@ -801,7 +795,9 @@ async function handleMessage(msg: Message) {
       const sp = getRandomSpecies();
       user = await storage.createUser({
         phoneId, name, species: sp.name, isRegistered: true,
-        xp: 0, messages: 0, condition: "Healthy", rank: 8,
+        xp: 0, messages: 0, condition: "Healthy",
+        // FIX: new users start at rank 8 (lowest), matching RANKS array
+        rank: 8,
         inventory: [], hp: 100,
       });
       const startMsg =
@@ -855,15 +851,18 @@ async function handleMessage(msg: Message) {
 
     try {
       const oldRank = getRankForXp(user.xp);
-      const newXp = user.xp + rate + dustBonus;
+      // FIX: re-fetch user before XP update to avoid stale-read race condition
+      const freshUser = await storage.getUserByPhone(phoneId);
+      if (!freshUser) return;
+      const newXp = freshUser.xp + rate + dustBonus;
       const newRank = getRankForXp(newXp);
-      const updates: any = { xp: newXp, messages: user.messages + 1, rank: newRank.level };
+      const updates: Partial<typeof user> = { xp: newXp, messages: freshUser.messages + 1, rank: newRank.level };
 
       if (newRank.level < oldRank.level) {
         await client.sendMessage(msg.from,
           `╭══════════════════════╮\n   🎊 RANK UP! 🎊\n` +
           `   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-          `   👤 Cultivator: ${user.name}\n` +
+          `   👤 Cultivator: ${freshUser.name}\n` +
           `   📈 New Rank: 【${newRank.level}】${newRank.name}\n` +
           `   ✨ Total XP: ${newXp}\n` +
           `   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
@@ -883,12 +882,12 @@ async function handleMessage(msg: Message) {
         };
         const itemNames = Object.keys(itemPool);
         const item = itemNames[Math.floor(Math.random() * itemNames.length)];
-        if (!(user.inventory as string[]).includes(item)) {
-          updates.inventory = [...(user.inventory as string[]), item];
+        if (!(freshUser.inventory as string[]).includes(item)) {
+          (updates as any).inventory = [...(freshUser.inventory as string[]), item];
           await client.sendMessage(phoneId, `${itemPool[item]}\nType !inventory to see your items.`);
         }
       }
-      await storage.updateUser(phoneId, updates);
+      await storage.updateUser(phoneId, updates as any);
     } catch (err) { console.error("XP/Rank update error:", err); }
     return;
   }
@@ -937,7 +936,6 @@ async function handleMessage(msg: Message) {
     );
   }
 
-  // FIX #1: !status now has its own if block
   if (body === "!status") {
     const currentRank = getRankForXp(user.xp);
     let sectLine = "None";
@@ -962,7 +960,6 @@ async function handleMessage(msg: Message) {
     );
   }
 
-  // FIX #6: !profile — full profile with battle stats
   if (body === "!profile") {
     const currentRank = getRankForXp(user.xp);
     let sectLine = "None";
@@ -973,8 +970,8 @@ async function handleMessage(msg: Message) {
     const battleStats = computeStats(user, user.battleExp || 0);
     const allUsers = await storage.getUsers();
     const leaderboardRank = allUsers.findIndex(u => u.phoneId === phoneId) + 1;
-    const guideLine = (user as any).guideName
-      ? `${GUIDES[(user as any).guideName]?.emoji || "✨"} ${(user as any).guideName}${(user as any).guideChildName ? ` + 👶 ${(user as any).guideChildName}` : ""}`
+    const guideLine = user.guideName
+      ? `${GUIDES[user.guideName.toLowerCase()]?.emoji || "✨"} ${user.guideName}${user.guideChildName ? ` + 👶 ${user.guideChildName}` : ""}`
       : "None";
 
     return msg.reply(
@@ -1004,17 +1001,16 @@ async function handleMessage(msg: Message) {
 
   if (body === "!leaderboard") {
     const allUsers = await storage.getUsers();
-    // FIX: filter out phantom-sealed users
     const visibleUsers = allUsers.filter(u => {
-      if ((u as any).phantomUntil && new Date() < new Date((u as any).phantomUntil)) return false;
+      if (u.phantomUntil && new Date() < new Date(u.phantomUntil)) return false;
       return true;
     });
     const myRank = allUsers.findIndex(u => u.phoneId === phoneId) + 1;
     const list = visibleUsers.slice(0, 10).map((u, i) => {
-      const xpDisplay = (u as any).eclipseUntil && new Date() < new Date((u as any).eclipseUntil)
+      const xpDisplay = u.eclipseUntil && new Date() < new Date(u.eclipseUntil)
         ? "???"
         : `${u.xp} XP`;
-      const speciesDisplay = (u as any).eclipseUntil && new Date() < new Date((u as any).eclipseUntil)
+      const speciesDisplay = u.eclipseUntil && new Date() < new Date(u.eclipseUntil)
         ? "???"
         : u.species;
       return `  ${i + 1}. ${u.name} — ${xpDisplay} [${speciesDisplay}]`;
@@ -1097,14 +1093,12 @@ async function handleMessage(msg: Message) {
   }
 
   if (body.startsWith("!useitem ")) {
-    // FIX: Some items require a reply target — blood rune and mirror shard
     const num = parseInt(body.split(" ")[1]) - 1;
     const inv = [...(user.inventory as string[])];
     if (isNaN(num) || !inv[num]) return msg.reply("❌ Invalid item number. Check !inventory.");
     const itemName = inv[num];
     const itemLower = itemName.toLowerCase();
 
-    // Items that need a reply target
     if ((itemLower === "blood rune" || itemLower === "mirror shard") && !msg.hasQuotedMsg) {
       return msg.reply(`❌ *${itemName}* requires a target. Reply to someone's message to use it.`);
     }
@@ -1119,7 +1113,6 @@ async function handleMessage(msg: Message) {
     let reply = `✨ You used ${itemName}!`;
     const updates: any = {};
 
-    // ── Star Dust ───────────────────────────────────────────────────
     if (itemLower === "star dust") {
       const expiresAt = new Date(Date.now() + 1800000);
       updates.dustDomainUntil = expiresAt;
@@ -1127,7 +1120,6 @@ async function handleMessage(msg: Message) {
       const expireStr = expiresAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
       reply = `*The dust scatters and the world around you shifts. A domain of light opens before you.*\n✨ Dust Domain active. You earn 5000 XP per 10 messages for the next 30 minutes. Make it count.\nExpires: ${expireStr}`;
 
-    // ── Void Fragment ────────────────────────────────────────────────
     } else if (itemLower === "void fragment") {
       if (Math.random() > 0.03) {
         inv.splice(num, 1);
@@ -1138,7 +1130,6 @@ async function handleMessage(msg: Message) {
       updates.isConstellation = true;
       reply = `🌑 Race Transformed to ✨ Constellation! Your power is now 300 XP per message.`;
 
-    // ── Living Core ──────────────────────────────────────────────────
     } else if (itemLower === "living core") {
       const sp = getRandomSpecies();
       updates.species = sp.name;
@@ -1148,34 +1139,28 @@ async function handleMessage(msg: Message) {
       updates.disease = null;
       reply = `*The Living Core pulses with ancient life. Your form dissolves and reshapes.*\n🌿 Race Transformed.\nNew Race: ${sp.name} (${sp.rarity})\nXP Rate: ${SPECIES_XP_RATES[sp.name]} XP per message\n*You are reborn.*`;
 
-    // ── Cursed Bone ──────────────────────────────────────────────────
     } else if (itemLower === "cursed bone") {
       updates.hasShadowVeil = true;
       reply = `🦴 Shadow Veil active! You are now permanently immune to plagues.`;
 
-    // ── Dragon Egg ───────────────────────────────────────────────────
     } else if (itemLower === "dragon egg") {
       if (user.dragonEggProgress > 0) return msg.reply("❌ You already have a Dragon Egg incubating.");
       updates.dragonEggProgress = 1;
       reply = `🥚 The egg begins to pulse. It has begun feeding on nearby XP. (needs 1500 XP to hatch)`;
 
-    // ── Vampire Tooth ─────────────────────────────────────────────────
     } else if (itemLower === "vampire tooth") {
       updates.isVampire = true;
       updates.vampireUntil = new Date(Date.now() + 604800000);
       reply = `🦷 You are now a Vampire for 1 week! Use !suck (reply to a message) to feed.`;
 
-    // FIX #9: Eclipse Stone ───────────────────────────────────────────
     } else if (itemLower === "eclipse stone") {
       updates.eclipseUntil = new Date(Date.now() + 86400000);
       reply = `🌒 *Eclipse Stone* activated! Your race and XP are hidden from the leaderboard for 24 hours.`;
 
-    // FIX #9: Phantom Seal ────────────────────────────────────────────
     } else if (itemLower === "phantom seal") {
       updates.phantomUntil = new Date(Date.now() + 86400000);
       reply = `👻 *Phantom Seal* activated! You have vanished from the leaderboard for 24 hours.`;
 
-    // FIX #9: Cursed Coin ─────────────────────────────────────────────
     } else if (itemLower === "cursed coin") {
       const outcomes = [
         async () => {
@@ -1208,7 +1193,6 @@ async function handleMessage(msg: Message) {
       await storage.updateUser(phoneId, { inventory: inv });
       return msg.reply(`🪙 *Cursed Coin flipped...*\n\n${outcomeMsg}`);
 
-    // FIX #9: Blood Rune ──────────────────────────────────────────────
     } else if (itemLower === "blood rune") {
       const quoted = await msg.getQuotedMessage();
       const targetId = quoted.author || quoted.from;
@@ -1225,7 +1209,6 @@ async function handleMessage(msg: Message) {
       await storage.updateUser(phoneId, { inventory: inv });
       return msg.reply(`🩸 *Blood Rune activated!* You stole *${actualSteal} XP* from *${target.name}*.`);
 
-    // FIX #9: Mirror Shard ────────────────────────────────────────────
     } else if (itemLower === "mirror shard") {
       const quoted = await msg.getQuotedMessage();
       const targetId = quoted.author || quoted.from;
@@ -1234,11 +1217,10 @@ async function handleMessage(msg: Message) {
       if (targetId === phoneId) return msg.reply("❌ You cannot mirror yourself.");
       updates.mirrorRace = target.species;
       updates.mirrorOriginalRace = user.species;
-      updates.mirrorUntil = new Date(Date.now() + 1800000); // 30 min
+      updates.mirrorUntil = new Date(Date.now() + 1800000);
       updates.species = target.species;
       reply = `🪞 *Mirror Shard shattered!* You have copied *${target.name}*'s race: *${target.species}* for 30 minutes.`;
 
-    // ── Cures ────────────────────────────────────────────────────────
     } else if (
       itemLower.includes("cure") || itemLower.includes("remedy") ||
       itemLower.includes("antidote") || itemLower.includes("vial") ||
@@ -1262,7 +1244,6 @@ async function handleMessage(msg: Message) {
   }
 
   if (body.startsWith("!suck")) {
-    // FIX: check vampire status expiry
     if (!user.isVampire || (user.vampireUntil && new Date() > new Date(user.vampireUntil))) {
       await storage.updateUser(phoneId, { isVampire: false, vampireUntil: null });
       return msg.reply("🦷 You are not a vampire.");
@@ -1324,7 +1305,8 @@ async function handleMessage(msg: Message) {
     const target = await storage.getUserByPhone(targetId);
     if (!target) return msg.reply("❌ Target not found.");
     if (!target.isDead) return msg.reply("❌ That person is not dead.");
-    if (target.species !== user.species) return msg.reply("❌ You can only revive someone of the same species.");
+    // FIX: Removed overly restrictive same-species check.
+    // Any living cultivator can revive a fallen ally regardless of species.
     await storage.updateUser(targetId, { isDead: false, hp: 10 });
     await client.sendMessage(targetId, `🕊️ ${user.name} has revived you! You are back with 10 HP. Stay safe.`);
     return msg.reply(`🕊️ You revived *${target.name}*!`);
@@ -1413,11 +1395,10 @@ async function handleMessage(msg: Message) {
     if (target.isDead) return msg.reply("❌ You cannot challenge a dead person.");
     if (target.inBattle) return msg.reply("❌ That person is already in a battle.");
 
-    // Check if already has pending challenge
     const existingChallenge = await storage.getPendingChallenge(phoneId);
     if (existingChallenge) return msg.reply("❌ You already have a pending challenge. Wait for it to expire or be answered.");
 
-    const expiresAt = new Date(Date.now() + 300000); // 5 min
+    const expiresAt = new Date(Date.now() + 300000);
     await storage.createChallenge({
       challengerPhoneId: phoneId,
       targetPhoneId: targetId,
@@ -1451,7 +1432,6 @@ async function handleMessage(msg: Message) {
     await storage.updateUser(phoneId, { inBattle: true });
     await storage.updateUser(challenge.challengerPhoneId, { inBattle: true });
 
-    // Build combatants
     const cStats = computeStats(challenger, challenger.battleExp || 0);
     const tStats = computeStats(user, user.battleExp || 0);
 
@@ -1462,7 +1442,6 @@ async function handleMessage(msg: Message) {
       .map(id => ALL_SKILLS.find(s => s.id === id))
       .filter(Boolean) as Skill[];
 
-    // Auto-fill empty slots with rank-appropriate defaults
     const defaultActives = getUnlockedSkills(challenger.rank).filter(s => s.type === "active");
     const defaultActivesT = getUnlockedSkills(user.rank).filter(s => s.type === "active");
     while (cActives.length < 3 && defaultActives.length > cActives.length) cActives.push(defaultActives[cActives.length]);
@@ -1501,7 +1480,6 @@ async function handleMessage(msg: Message) {
       battleExp: user.battleExp || 0,
     };
 
-    // Apply passives
     const passiveLogs: string[] = [
       ...applyPassive(cCombatant),
       ...applyPassive(tCombatant),
@@ -1549,7 +1527,6 @@ async function handleMessage(msg: Message) {
 
     await client.sendMessage(challenge.chatId, startMsg);
 
-    // 60-second timer
     battleState.turnTimer = setTimeout(() => resolveBattleTurn(battleId), 60000);
     storage.updateBattleState(battleId, battleState);
     return;
@@ -1598,14 +1575,12 @@ async function handleMessage(msg: Message) {
     storage.updateBattleState(battle.id, state);
     await msg.reply(`✅ *${chosenSkill.name}* selected!`);
 
-    // Both picked — resolve immediately
     if (state.challengerSkillChoice && state.targetSkillChoice) {
       await resolveBattleTurn(battle.id);
     }
     return;
   }
 
-  // FIX #2: !forfeit now uses real storage methods
   if (body === "!forfeit") {
     const activeBattle = storage.getActiveBattleByPlayer(phoneId);
     if (!activeBattle) return msg.reply("🏳️ You are not currently in a battle. Nothing to forfeit.");
@@ -1656,9 +1631,17 @@ async function handleMessage(msg: Message) {
       `  Use !cardcollection to view all.\n╰══════════════════════╯`;
     if (card.imageUrl) {
       try {
-        const imgRes = await fetch(card.imageUrl);
-        const buffer = Buffer.from(await imgRes.arrayBuffer());
-        const media = new MessageMedia("image/jpeg", buffer.toString("base64"), `${card.name}.jpg`);
+        // FIX: timeout on image fetch too
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        let imgBuffer: Buffer;
+        try {
+          const imgRes = await fetch(card.imageUrl, { signal: controller.signal as any });
+          imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+        } finally {
+          clearTimeout(timeout);
+        }
+        const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), `${card.name}.jpg`);
         await msg.reply(media, undefined, { caption: cardMsg });
       } catch { await msg.reply(cardMsg); }
     } else { await msg.reply(cardMsg); }
@@ -1706,25 +1689,23 @@ async function handleMessage(msg: Message) {
   //  GUIDE SYSTEM
   // ════════════════════════════════════════════════════════════════
 
-  // FIX #4: !getguide — implemented
   if (body === "!getguide") {
-    if ((user as any).guideName) {
-      const existing = GUIDES[(user as any).guideName.toLowerCase()];
-      return msg.reply(`${existing?.emoji || "✨"} You already have *${(user as any).guideName}* as your guide.`);
+    if (user.guideName) {
+      const existing = GUIDES[user.guideName.toLowerCase()];
+      return msg.reply(`${existing?.emoji || "✨"} You already have *${user.guideName}* as your guide.`);
     }
     try {
       const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.image));
       const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "anna.jpg");
       await msg.reply(media, undefined, { caption: ANNA.greeting });
     } catch { await msg.reply(ANNA.greeting); }
-    await storage.updateUser(phoneId, { guideName: "Anna" } as any);
+    await storage.updateUser(phoneId, { guideName: "Anna" });
     await msg.reply(ANNA.claimMsg);
     return;
   }
 
-  // FIX #4: !talkguide — implemented
   if (body === "!talkguide") {
-    const guideName = (user as any).guideName?.toLowerCase();
+    const guideName = user.guideName?.toLowerCase();
     if (!guideName) return msg.reply("❌ You don't have a guide. Use !getguide to claim one.");
     const guide = GUIDES[guideName];
     if (!guide) return msg.reply("❌ Guide not found.");
@@ -1733,25 +1714,25 @@ async function handleMessage(msg: Message) {
   }
 
   if (body === "!smashmyguide") {
-    const guideName = (user as any).guideName?.toLowerCase();
+    const guideName = user.guideName?.toLowerCase();
     if (!guideName) return msg.reply("❌ You don't have a guide. Use !getguide to claim one.");
     const guide = GUIDES[guideName];
     if (!guide) return msg.reply("❌ Guide not found.");
-    if ((user as any).guideSmashAt) return msg.reply(`${guide.emoji} *${guide.name}:* "...Again? Give me a moment to breathe, will you? 😳"`);
-    await storage.updateUser(phoneId, { guideSmashAt: new Date(), guidePregnant: false } as any);
+    if (user.guideSmashAt) return msg.reply(`${guide.emoji} *${guide.name}:* "...Again? Give me a moment to breathe, will you? 😳"`);
+    await storage.updateUser(phoneId, { guideSmashAt: new Date(), guidePregnant: false });
     return msg.reply(guide.smashScene.join("\n"));
   }
 
   if (body.startsWith("!namechild ")) {
-    const guideName = (user as any).guideName?.toLowerCase();
+    const guideName = user.guideName?.toLowerCase();
     if (!guideName) return msg.reply("❌ You don't have a guide.");
     const guide = GUIDES[guideName];
     if (!guide) return msg.reply("❌ Guide not found.");
-    if (!(user as any).guidePregnant) return msg.reply("❌ No child to name yet.");
-    if ((user as any).guideChildName) return msg.reply(`❌ Your child is already named *${(user as any).guideChildName}*.`);
+    if (!user.guidePregnant) return msg.reply("❌ No child to name yet.");
+    if (user.guideChildName) return msg.reply(`❌ Your child is already named *${user.guideChildName}*.`);
     const childName = body.replace("!namechild ", "").trim();
     if (!childName || childName.length > 20) return msg.reply("❌ Invalid name. Keep it under 20 characters.");
-    await storage.updateUser(phoneId, { guideChildName: childName } as any);
+    await storage.updateUser(phoneId, { guideChildName: childName });
     const nameMsg = guide.name === "Anna"
       ? `🔴 *Anna:* "~${childName}~!! Oh that's PERFECT darling!! She's already kicking like she approves!! 😭🌸 Welcome to the world, little ${childName}~\nYour daddy is... well. He's trying his best. 💕"`
       : `✨ *${guide.name}:* "...${childName}. ...Yeah. That fits her. Good choice."`;
@@ -1761,13 +1742,13 @@ async function handleMessage(msg: Message) {
   }
 
   if (body === "!leaveguide") {
-    if (!(user as any).guideName) return msg.reply("❌ You don't have a guide.");
-    const guideName = (user as any).guideName?.toLowerCase();
-    const guide = GUIDES[guideName];
+    if (!user.guideName) return msg.reply("❌ You don't have a guide.");
+    const guideName = user.guideName?.toLowerCase();
+    const guide = GUIDES[guideName ?? ""];
     const leaveMsg = guide?.name === "Anna"
       ? `🔴 *Anna:* "...Oh. You're leaving? ...Fine. Fine! Go! I'm not crying, YOU'RE crying!! 😤 Come back when you're ready, darling~"`
       : `✨ *${guide?.name}:* "...Understood. Take care of yourself."`;
-    await storage.updateUser(phoneId, { guideName: null, guideSmashAt: null, guidePregnant: false, guideChildName: null } as any);
+    await storage.updateUser(phoneId, { guideName: null, guideSmashAt: null, guidePregnant: false, guideChildName: null });
     return msg.reply(leaveMsg);
   }
 
@@ -1775,7 +1756,6 @@ async function handleMessage(msg: Message) {
   //  SECTS
   // ════════════════════════════════════════════════════════════════
 
-  // FIX #7: !createsect — implemented
   if (body.startsWith("!createsect ")) {
     if (user.sectId) return msg.reply("❌ You are already in a sect. Leave your sect first with !sectleave.");
     const parts = body.replace("!createsect ", "").trim().split(" ");
@@ -1852,8 +1832,6 @@ async function handleMessage(msg: Message) {
     return msg.reply(`🚶 You have left *${sect?.name || "your sect"}*.`);
   }
 
-  // ── Sect Leader Commands ──────────────────────────────────────────────────
-
   if (body.startsWith("!kickmember ")) {
     if (!user.sectId) return msg.reply("❌ You are not in a sect.");
     const sect = await storage.getSect(user.sectId);
@@ -1889,11 +1867,10 @@ async function handleMessage(msg: Message) {
   // ════════════════════════════════════════════════════════════════
 
   if (body === "!dungeon") {
-    // Check if in PvP battle (not dungeon)
-    if (user.inBattle && !(user as any).dungeonActive) return msg.reply("❌ You are in a PvP battle. Finish it first.");
+    // FIX: check dungeonActive (typed field) instead of casting
+    if (user.inBattle && !user.dungeonActive) return msg.reply("❌ You are in a PvP battle. Finish it first.");
     const existing = getDungeon(phoneId);
     if (existing) {
-      // Resume existing dungeon
       const status = formatDungeonStatus(existing);
       const skillList = (user.equippedActives as string[])
         .map((id, i) => {
@@ -1914,9 +1891,9 @@ async function handleMessage(msg: Message) {
       );
     }
 
-    // Start new dungeon run
     const stats = computeStats(user, user.battleExp || 0);
-    const startFloor = (user as any).dungeonFloor || 1;
+    // FIX: use typed user.dungeonFloor instead of (user as any).dungeonFloor
+    const startFloor = user.dungeonFloor || 1;
     const monster = getMonsterForFloor(startFloor);
 
     const dungeonState: DungeonState = {
@@ -1939,7 +1916,6 @@ async function handleMessage(msg: Message) {
       turnTimer: null,
     };
 
-    // Apply passive if equipped
     if (user.equippedPassive) {
       const passive = ALL_SKILLS.find(s => s.id === user.equippedPassive);
       if (passive?.effect) {
@@ -1953,7 +1929,8 @@ async function handleMessage(msg: Message) {
     }
 
     setDungeon(phoneId, dungeonState);
-    await storage.updateUser(phoneId, { inBattle: true, dungeonActive: true } as any);
+    // FIX: use typed fields — no more `as any`
+    await storage.updateUser(phoneId, { inBattle: true, dungeonActive: true });
 
     const skillList = (user.equippedActives as string[])
       .map((id, i) => {
@@ -1990,7 +1967,6 @@ async function handleMessage(msg: Message) {
     const skill = ALL_SKILLS.find(s => s.id === skillId);
     if (!skill) return msg.reply("❌ Skill not found. Use !equip to set up your skills.");
 
-    // Build a mock combatant to use canUseSkill
     const mockCombatant: any = {
       mp: dungeon.playerMp,
       cooldowns: dungeon.playerCooldowns,
@@ -2000,7 +1976,6 @@ async function handleMessage(msg: Message) {
     const check = canUseSkill(mockCombatant, skill);
     if (!check.ok) return msg.reply(`❌ ${check.reason}`);
 
-    // Clear turn timer if existed
     if (dungeon.turnTimer) clearTimeout(dungeon.turnTimer);
 
     const result = resolveDungeonTurn(dungeon, skill);
@@ -2008,12 +1983,10 @@ async function handleMessage(msg: Message) {
 
     const logText = logs.join("\n");
 
-    // ── Monster defeated ──────────────────────────────────────────
     if (monsterDied) {
       const reward = getFloorReward(newState.floor, newState.noDeathRun);
       newState.xpEarned += reward.xp;
 
-      // Give XP and item
       const updates: any = { xp: user.xp + reward.xp };
       if (reward.item) {
         updates.inventory = [...(user.inventory as string[]), reward.item];
@@ -2021,9 +1994,9 @@ async function handleMessage(msg: Message) {
       await storage.updateUser(phoneId, updates);
 
       if (newState.floor >= 10) {
-        // Tower cleared!
         deleteDungeon(phoneId);
-        await storage.updateUser(phoneId, { inBattle: false, dungeonActive: false, dungeonFloor: 1 } as any);
+        // FIX: typed fields
+        await storage.updateUser(phoneId, { inBattle: false, dungeonActive: false, dungeonFloor: 1 });
         return msg.reply(
           `${logText}\n\n${reward.message}\n\n` +
           `╭══════════════════════╮\n` +
@@ -2036,18 +2009,17 @@ async function handleMessage(msg: Message) {
         );
       }
 
-      // Advance to next floor
       newState.floor++;
       const nextMonster = getMonsterForFloor(newState.floor);
       newState.monster = nextMonster;
       newState.monsterActiveEffects = [];
       newState.turn = 1;
-      // Heal player 30% between floors
       const healAmt = Math.floor(newState.playerMaxHp * 0.3);
       newState.playerHp = Math.min(newState.playerMaxHp, newState.playerHp + healAmt);
       newState.playerMp = Math.min(newState.playerMaxMp, newState.playerMp + 30);
 
-      await storage.updateUser(phoneId, { dungeonFloor: newState.floor } as any);
+      // FIX: typed field
+      await storage.updateUser(phoneId, { dungeonFloor: newState.floor });
       setDungeon(phoneId, newState);
 
       const skillList = equippedIds
@@ -2073,19 +2045,18 @@ async function handleMessage(msg: Message) {
       );
     }
 
-    // ── Player died ────────────────────────────────────────────────
     if (playerDied) {
       newState.noDeathRun = false;
       const lostXp = Math.floor(newState.xpEarned * 0.2);
       const keptXp = newState.xpEarned - lostXp;
 
-      // Give kept XP, reset floor to 1
+      // FIX: typed fields
       await storage.updateUser(phoneId, {
         xp: user.xp + keptXp,
         inBattle: false,
         dungeonActive: false,
         dungeonFloor: 1,
-      } as any);
+      });
       deleteDungeon(phoneId);
 
       return msg.reply(
@@ -2101,7 +2072,6 @@ async function handleMessage(msg: Message) {
       );
     }
 
-    // ── Battle continues ───────────────────────────────────────────
     setDungeon(phoneId, newState);
 
     const skillListContinue = equippedIds
@@ -2129,12 +2099,13 @@ async function handleMessage(msg: Message) {
     if (dungeon.turnTimer) clearTimeout(dungeon.turnTimer);
 
     const keptXp = dungeon.xpEarned;
+    // FIX: typed fields
     await storage.updateUser(phoneId, {
       xp: user.xp + keptXp,
       inBattle: false,
       dungeonActive: false,
       dungeonFloor: dungeon.floor,
-    } as any);
+    });
     deleteDungeon(phoneId);
 
     return msg.reply(
@@ -2148,7 +2119,8 @@ async function handleMessage(msg: Message) {
 
   if (body === "!dfloor") {
     const dungeon = getDungeon(phoneId);
-    const savedFloor = (user as any).dungeonFloor || 1;
+    // FIX: typed field
+    const savedFloor = user.dungeonFloor || 1;
     if (dungeon) {
       return msg.reply(
         `🏰 *Tower Status*\n\n` +
@@ -2167,12 +2139,13 @@ async function handleMessage(msg: Message) {
 
   if (body === "!dtower") {
     const allUsers = await storage.getUsers();
+    // FIX: typed field
     const ranked = allUsers
-      .filter(u => (u as any).dungeonFloor > 1)
-      .sort((a, b) => ((b as any).dungeonFloor || 1) - ((a as any).dungeonFloor || 1));
+      .filter(u => u.dungeonFloor > 1)
+      .sort((a, b) => (b.dungeonFloor || 1) - (a.dungeonFloor || 1));
     if (!ranked.length) return msg.reply("🏰 No cultivators have climbed the tower yet.");
     const list = ranked.slice(0, 10).map((u, i) =>
-      `  ${i + 1}. ${u.name} — Floor *${(u as any).dungeonFloor}*`
+      `  ${i + 1}. ${u.name} — Floor *${u.dungeonFloor}*`
     ).join("\n");
     return msg.reply(
       `╭══════════════════════╮\n` +
@@ -2185,7 +2158,8 @@ async function handleMessage(msg: Message) {
   //  OWNER COMMANDS
   // ════════════════════════════════════════════════════════════════
 
-  if (phoneId !== OWNER_NUMBER) return;
+  // FIX: Guard against empty OWNER_NUMBER
+  if (!OWNER_NUMBER || phoneId !== OWNER_NUMBER) return;
 
   if (body === "!guidespawn") {
     const announcement =
