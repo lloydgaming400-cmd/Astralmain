@@ -192,7 +192,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "C",
     type: "active",
     mpCost: 20,
-    cooldown: 1,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.14,
     effect: { kind: "burn", value: 15, duration: 2, target: "opponent" },
@@ -204,7 +204,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "C",
     type: "active",
     mpCost: 20,
-    cooldown: 2,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.12,
     effect: { kind: "slow", value: 10, duration: 2, target: "opponent" },
@@ -216,7 +216,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "C",
     type: "active",
     mpCost: 20,
-    cooldown: 1,
+    cooldown: 0,
     statBase: "strength",
     attackPercent: 0.16,
     effect: { kind: "bleed", value: 10, duration: 3, target: "opponent" },
@@ -228,7 +228,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "C",
     type: "active",
     mpCost: 20,
-    cooldown: 2,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0,
     effect: { kind: "shield", value: 80, duration: 1, target: "self" },
@@ -266,7 +266,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "B",
     type: "active",
     mpCost: 35,
-    cooldown: 2,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.20,
     effect: null,
@@ -278,7 +278,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "B",
     type: "active",
     mpCost: 35,
-    cooldown: 2,
+    cooldown: 0,
     statBase: "strength",
     attackPercent: 0.22,
     effect: { kind: "stun", value: 0, duration: 1, target: "opponent" },
@@ -290,7 +290,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "B",
     type: "active",
     mpCost: 35,
-    cooldown: 1,
+    cooldown: 0,
     statBase: "agility",
     attackPercent: 0.18,
     effect: { kind: "haste", value: 15, duration: 2, target: "self" },
@@ -302,7 +302,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "B",
     type: "active",
     mpCost: 35,
-    cooldown: 3,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.10,
     effect: { kind: "mp_drain", value: 40, duration: 1, target: "opponent" },
@@ -314,7 +314,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "B",
     type: "active",
     mpCost: 35,
-    cooldown: 3,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0,
     effect: { kind: "regen", value: 30, duration: 3, target: "self" },
@@ -376,7 +376,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "A",
     type: "active",
     mpCost: 50,
-    cooldown: 3,
+    cooldown: 0,
     statBase: "strength",
     attackPercent: 0.30,
     effect: { kind: "str_up", value: 20, duration: 2, target: "self" },
@@ -388,7 +388,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "A",
     type: "active",
     mpCost: 50,
-    cooldown: 3,
+    cooldown: 0,
     statBase: "agility",
     attackPercent: 0.25,
     effect: { kind: "dodge_up", value: 35, duration: 2, target: "self" },
@@ -400,7 +400,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "A",
     type: "active",
     mpCost: 50,
-    cooldown: 3,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.28,
     effect: { kind: "burn", value: 25, duration: 3, target: "opponent" },
@@ -412,7 +412,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "A",
     type: "active",
     mpCost: 50,
-    cooldown: 4,
+    cooldown: 0,
     statBase: "strength",
     attackPercent: 0.35,
     effect: null,
@@ -424,7 +424,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "A",
     type: "active",
     mpCost: 50,
-    cooldown: 4,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.20,
     effect: { kind: "regen", value: 50, duration: 3, target: "self" },
@@ -436,7 +436,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "A",
     type: "active",
     mpCost: 50,
-    cooldown: 3,
+    cooldown: 0,
     statBase: "agility",
     attackPercent: 0.22,
     effect: { kind: "agi_up", value: 25, duration: 3, target: "self" },
@@ -448,7 +448,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "A",
     type: "active",
     mpCost: 50,
-    cooldown: 4,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.18,
     effect: { kind: "freeze", value: 0, duration: 1, target: "opponent" },
@@ -486,7 +486,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "S",
     type: "active",
     mpCost: 75,
-    cooldown: 5,
+    cooldown: 0,
     statBase: "strength",
     attackPercent: 0.50,
     effect: { kind: "lifesteal", value: 0.5, duration: 1, target: "self" },
@@ -498,7 +498,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "S",
     type: "active",
     mpCost: 75,
-    cooldown: 5,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.45,
     effect: { kind: "silence", value: 0, duration: 3, target: "opponent" },
@@ -510,7 +510,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "S",
     type: "active",
     mpCost: 75,
-    cooldown: 4,
+    cooldown: 0,
     statBase: "agility",
     attackPercent: 0.40,
     effect: { kind: "bleed", value: 30, duration: 4, target: "opponent" },
@@ -522,7 +522,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "S",
     type: "active",
     mpCost: 75,
-    cooldown: 6,
+    cooldown: 0,
     statBase: "intelligence",
     attackPercent: 0.55,
     effect: { kind: "str_up", value: 50, duration: 3, target: "self" },
@@ -534,7 +534,7 @@ export const ALL_SKILLS: Skill[] = [
     rank: "S",
     type: "active",
     mpCost: 75,
-    cooldown: 5,
+    cooldown: 0,
     statBase: "strength",
     attackPercent: 0.48,
     effect: { kind: "mp_drain", value: 75, duration: 1, target: "opponent" },
@@ -708,12 +708,11 @@ export function calculateDamage(
   const crit = Math.random() * 100 < critChance;
   if (crit) dmg = Math.floor(dmg * 1.5);
 
-  // Dodge chance = defender agility + dodge_up effects
-  let dodgeChance = defender.stats.agility;
+  // 10% base dodge chance
+  let dodgeChance = 10;
   for (const fx of defender.activeEffects) {
     if (fx.kind === "dodge_up") dodgeChance += fx.value;
   }
-  dodgeChance = Math.min(dodgeChance, 80); // cap 80%
   const dodged = Math.random() * 100 < dodgeChance;
   if (dodged) dmg = 0;
 
@@ -899,9 +898,7 @@ export function canUseSkill(
   if (combatant.mp < skill.mpCost) {
     return { ok: false, reason: `Not enough MP for *${skill.name}*. Need ${skill.mpCost} MP, have ${combatant.mp}.` };
   }
-  if (combatant.cooldowns[skill.id]) {
-    return { ok: false, reason: `*${skill.name}* is on cooldown. ${combatant.cooldowns[skill.id]} turn(s) remaining.` };
-  }
+  // Cooldown check removed
   const silenced = combatant.activeEffects.some(fx => fx.kind === "silence");
   if (silenced && skill.rank !== "D") {
     return { ok: false, reason: `You are *silenced*. Only D-rank skills can be used.` };
@@ -919,8 +916,7 @@ export function canUseSkill(
 
 export function formatSkillList(combatant: Combatant): string {
   return combatant.equippedActives.map((sk, i) => {
-    const cd = combatant.cooldowns[sk.id];
-    const status = cd ? `CD: ${cd} turn(s)` : "Ready";
+    const status = "Ready";
     const mpOk = combatant.mp >= sk.mpCost ? "" : " ⚠️ low MP";
     return `  ${i + 1}. *${sk.name}* — ${sk.rank} — ${status}${mpOk}\n     ${sk.description}`;
   }).join("\n");

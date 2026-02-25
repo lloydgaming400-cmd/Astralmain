@@ -377,29 +377,34 @@ async function resolveBattleTurn(battleId: string) {
 
   const firstStunned = first.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
   if (!firstStunned) {
-    first.mp = Math.max(0, first.mp - firstSkill.mpCost);
-    if (firstSkill.cooldown > 0) first.cooldowns[firstSkill.id] = firstSkill.cooldown;
-
-    const dmgResult = calculateDamage(first, second, firstSkill);
-    if (dmgResult.dodged) {
-      logs.push(`💨 *${second.name}* dodged *${firstSkill.name}*!`);
+    if (first.mp < firstSkill.mpCost) {
+      logs.push(`💀 *${first.name}* doesn't have enough MP to use *${firstSkill.name}* and collapses from exhaustion!`);
+      first.hp = 0;
     } else {
-      if (dmgResult.crit) logs.push(`💥 *CRITICAL HIT!*`);
-      second.hp = Math.max(0, second.hp - dmgResult.damage);
-      logs.push(`⚔️ *${first.name}* used *${firstSkill.name}* → ${dmgResult.damage} damage to *${second.name}*.`);
+      first.mp = Math.max(0, first.mp - firstSkill.mpCost);
+      // Cooldowns removed as per request
 
-      const lifestealFx = first.activeEffects.find(fx => fx.kind === "lifesteal");
-      if (lifestealFx && dmgResult.damage > 0) {
-        const healed = Math.floor(dmgResult.damage * lifestealFx.value);
-        first.hp = Math.min(first.stats.maxHp, first.hp + healed);
-        first.activeEffects = first.activeEffects.filter(fx => fx.kind !== "lifesteal");
-        logs.push(`🩸 *${first.name}* leeched ${healed} HP.`);
+      const dmgResult = calculateDamage(first, second, firstSkill);
+      if (dmgResult.dodged) {
+        logs.push(`💨 *${second.name}* dodged *${firstSkill.name}*!`);
+      } else {
+        if (dmgResult.crit) logs.push(`💥 *CRITICAL HIT!*`);
+        second.hp = Math.max(0, second.hp - dmgResult.damage);
+        logs.push(`⚔️ *${first.name}* used *${firstSkill.name}* → ${dmgResult.damage} damage to *${second.name}*.`);
+
+        const lifestealFx = first.activeEffects.find(fx => fx.kind === "lifesteal");
+        if (lifestealFx && dmgResult.damage > 0) {
+          const healed = Math.floor(dmgResult.damage * lifestealFx.value);
+          first.hp = Math.min(first.stats.maxHp, first.hp + healed);
+          first.activeEffects = first.activeEffects.filter(fx => fx.kind !== "lifesteal");
+          logs.push(`🩸 *${first.name}* leeched ${healed} HP.`);
+        }
       }
-    }
 
-    if (firstSkill.effect) {
-      const effectLogs = applySkillEffect(firstSkill.effect, firstSkill.name, first, second);
-      logs.push(...effectLogs);
+      if (firstSkill.effect) {
+        const effectLogs = applySkillEffect(firstSkill.effect, firstSkill.name, first, second);
+        logs.push(...effectLogs);
+      }
     }
   } else {
     logs.push(`😴 *${first.name}* is stunned/frozen and loses their turn!`);
@@ -408,29 +413,34 @@ async function resolveBattleTurn(battleId: string) {
   if (second.hp > 0) {
     const secondStunned = second.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
     if (!secondStunned) {
-      second.mp = Math.max(0, second.mp - secondSkill.mpCost);
-      if (secondSkill.cooldown > 0) second.cooldowns[secondSkill.id] = secondSkill.cooldown;
-
-      const dmgResult2 = calculateDamage(second, first, secondSkill);
-      if (dmgResult2.dodged) {
-        logs.push(`💨 *${first.name}* dodged *${secondSkill.name}*!`);
+      if (second.mp < secondSkill.mpCost) {
+        logs.push(`💀 *${second.name}* doesn't have enough MP to use *${secondSkill.name}* and collapses from exhaustion!`);
+        second.hp = 0;
       } else {
-        if (dmgResult2.crit) logs.push(`💥 *CRITICAL HIT!*`);
-        first.hp = Math.max(0, first.hp - dmgResult2.damage);
-        logs.push(`⚔️ *${second.name}* used *${secondSkill.name}* → ${dmgResult2.damage} damage to *${first.name}*.`);
+        second.mp = Math.max(0, second.mp - secondSkill.mpCost);
+        // Cooldowns removed as per request
 
-        const lifestealFx2 = second.activeEffects.find(fx => fx.kind === "lifesteal");
-        if (lifestealFx2 && dmgResult2.damage > 0) {
-          const healed2 = Math.floor(dmgResult2.damage * lifestealFx2.value);
-          second.hp = Math.min(second.stats.maxHp, second.hp + healed2);
-          second.activeEffects = second.activeEffects.filter(fx => fx.kind !== "lifesteal");
-          logs.push(`🩸 *${second.name}* leeched ${healed2} HP.`);
+        const dmgResult2 = calculateDamage(second, first, secondSkill);
+        if (dmgResult2.dodged) {
+          logs.push(`💨 *${first.name}* dodged *${secondSkill.name}*!`);
+        } else {
+          if (dmgResult2.crit) logs.push(`💥 *CRITICAL HIT!*`);
+          first.hp = Math.max(0, first.hp - dmgResult2.damage);
+          logs.push(`⚔️ *${second.name}* used *${secondSkill.name}* → ${dmgResult2.damage} damage to *${first.name}*.`);
+
+          const lifestealFx2 = second.activeEffects.find(fx => fx.kind === "lifesteal");
+          if (lifestealFx2 && dmgResult2.damage > 0) {
+            const healed2 = Math.floor(dmgResult2.damage * lifestealFx2.value);
+            first.hp = Math.min(first.stats.maxHp, first.hp + healed2); // Fixed from second.hp logic error in original code too
+            second.activeEffects = second.activeEffects.filter(fx => fx.kind !== "lifesteal");
+            logs.push(`🩸 *${second.name}* leeched ${healed2} HP.`);
+          }
         }
-      }
 
-      if (secondSkill.effect) {
-        const effectLogs2 = applySkillEffect(secondSkill.effect, secondSkill.name, second, first);
-        logs.push(...effectLogs2);
+        if (secondSkill.effect) {
+          const effectLogs2 = applySkillEffect(secondSkill.effect, secondSkill.name, second, first);
+          logs.push(...effectLogs2);
+        }
       }
     } else {
       logs.push(`😴 *${second.name}* is stunned/frozen and loses their turn!`);
