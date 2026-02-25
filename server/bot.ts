@@ -168,23 +168,23 @@ function getRankForXp(xp: number) {
 }
 
 const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
-  "blood rune": { price: 1000, description: "Steal XP from another user." },
-  "eclipse stone": { price: 1200, description: "Hide your race & XP for 24hrs." },
-  "phantom seal": { price: 1100, description: "Vanish from the leaderboard for 24hrs." },
-  "cursed coin": { price: 200, description: "Unknown outcome. Flip and find out." },
-  "mirror shard": { price: 1300, description: "Copy another user's race for 30mins." },
-  "vampire tooth": { price: 1500, description: "Become a vampire for a week." },
-  "cursed bone": { price: 2000, description: "Attract shadows for permanent protection." },
-  "grey rot cure": { price: 500, description: "Cures the Grey Rot. (Human)" },
-  "hellfire suppressant": { price: 600, description: "Cures Hellfire Fever. (Demon)" },
-  "feral antidote": { price: 600, description: "Cures the Feral Plague. (Beast Clan)" },
-  "grace restoration vial": { price: 700, description: "Cures Corruption Blight. (Fallen Angel)" },
-  "scale restoration salve": { price: 800, description: "Cures Scale Sickness. (Dragon)" },
-  "rootwither remedy": { price: 700, description: "Cures Rootwither. (Elf)" },
-  "living core": { price: 2500, description: "Rebirth into a new random species." },
-  "dragon egg": { price: 5000, description: "A mysterious egg that feeds on XP." },
-  "void fragment": { price: 8000, description: "A fragment of the void. Extremely unstable." },
-  "star dust": { price: 3000, description: "Dust from the stars. Grants a temporary domain." },
+  "blood rune": { price: 50000, description: "Steal XP from another user." },
+  "eclipse stone": { price: 60000, description: "Hide your race & XP for 24hrs." },
+  "phantom seal": { price: 55000, description: "Vanish from the leaderboard for 24hrs." },
+  "cursed coin": { price: 10000, description: "Unknown outcome. Flip and find out." },
+  "mirror shard": { price: 65000, description: "Copy another user's race for 30mins." },
+  "vampire tooth": { price: 75000, description: "Become a vampire for a week." },
+  "cursed bone": { price: 100000, description: "Attract shadows for permanent protection." },
+  "grey rot cure": { price: 25000, description: "Cures the Grey Rot. (Human)" },
+  "hellfire suppressant": { price: 30000, description: "Cures Hellfire Fever. (Demon)" },
+  "feral antidote": { price: 30000, description: "Cures the Feral Plague. (Beast Clan)" },
+  "grace restoration vial": { price: 35000, description: "Cures Corruption Blight. (Fallen Angel)" },
+  "scale restoration salve": { price: 40000, description: "Cures Scale Sickness. (Dragon)" },
+  "rootwither remedy": { price: 35000, description: "Cures Rootwither. (Elf)" },
+  "living core": { price: 100000, description: "Rebirth into a new random species." },
+  "dragon egg": { price: 100000, description: "A mysterious egg that feeds on XP." },
+  "void fragment": { price: 100000, description: "A fragment of the void. Extremely unstable." },
+  "star dust": { price: 80000, description: "Dust from the stars. Grants a temporary domain." },
 };
 
 const DISEASES: Record<string, { name: string; race: string; startMsg: string; endMsg: string; cure: string }> = {
@@ -864,6 +864,19 @@ async function endBattle(
 //  MAIN MESSAGE HANDLER
 // ══════════════════════════════════════════════════════════════════
 
+const RULES_MENU = `╭══════════════════════╮
+   ✦┊【 Ｓａｃｒｅｄ  Ｌａｗｓ 】┊✦
+╰══════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  1. No spamming commands.
+  2. Respect all cultivators.
+  3. No exploiting game bugs.
+  4. Trading is at your own risk.
+  5. The Dao is absolute.
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
+╰══════════════════════╯`;
+
 async function handleMessage(msg: Message) {
   const phoneId = msg.author || msg.from;
   const contact = await msg.getContact();
@@ -1035,6 +1048,10 @@ async function handleMessage(msg: Message) {
   // ══════════════════════════════════════════════════════════════════
   //  COMMANDS
   // ══════════════════════════════════════════════════════════════════
+
+  if (body === "!rules") {
+    return msg.reply(RULES_MENU);
+  }
 
   if (body === "!help") {
     try {
