@@ -20,6 +20,7 @@ app.use(
     },
   }),
 );
+
 app.use(express.urlencoded({ extended: false }));
 
 export function log(message: string, source = "express") {
@@ -36,11 +37,13 @@ app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
+
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
@@ -51,13 +54,12 @@ app.use((req, res, next) => {
       log(logLine);
     }
   });
+
   next();
 });
 
 (async () => {
-  // ── Run DB migrations first before anything else starts ──────────────────
   await runMigrations();
-
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
@@ -77,7 +79,8 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || "80", 10);
+
   httpServer.listen(
     {
       port,
