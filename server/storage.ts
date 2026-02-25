@@ -8,6 +8,20 @@ import {
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
+// ── In-memory battle state store (battles are ephemeral, not persisted) ────────
+export interface ActiveBattleRecord {
+  id: string;
+  challengerPhoneId: string;
+  opponentPhoneId: string;
+  chatId: string;
+  startedAt: Date;
+  state: any; // BattleState from battle.ts
+}
+
+const activeBattles = new Map<string, ActiveBattleRecord>();
+// phoneId → battleId lookup for fast player queries
+const playerBattleMap = new Map<string, string>();
+
 export interface IStorage {
   getUserByPhone(phoneId: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
@@ -40,6 +54,14 @@ export interface IStorage {
   getPendingChallengeForTarget(targetPhoneId: string): Promise<Challenge | undefined>;
   updateChallenge(id: number, updates: Partial<InsertChallenge>): Promise<Challenge>;
   expireOldChallenges(): Promise<void>;
+
+  // ── Battle (in-memory) ───────────────────────────────────────────────────────
+  createBattle(record: ActiveBattleRecord): void;
+  getBattle(battleId: string): ActiveBattleRecord | undefined;
+  getActiveBattleByPlayer(phoneId: string): ActiveBattleRecord | undefined;
+  updateBattleState(battleId: string, state: any): void;
+  endBattle(battleId: string, winnerPhoneId: string): Promise<void>;
+  getAllActiveBattles(): ActiveBattleRecord[];
 }
 
 export class DatabaseStorage implements IStorage {
@@ -170,7 +192,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async expireOldChallenges(): Promise<void> {
-    // Mark all pending challenges past their expiry as expired
     const now = new Date();
     const pending = await db
       .select()
@@ -181,6 +202,61 @@ export class DatabaseStorage implements IStorage {
         await db.update(challenges).set({ status: "expired" }).where(eq(challenges.id, ch.id));
       }
     }
+  }
+
+  // ── In-memory Battle Methods ──────────────────────────────────────────────────
+
+  createBattle(record: ActiveBattleRecord): void {
+    activeBattles.set(record.id, record);
+    playerBattleMap.set(record.challengerPhoneId, record.id);
+    playerBattleMap.set(record.opponentPhoneId, record.id);
+  }
+
+  getBattle(battleId: string): ActiveBattleRecord | undefined {
+    return activeBattles.get(battleId);
+  }
+
+  getActiveBattleByPlayer(phoneId: string): ActiveBattleRecord | undefined {
+    const battleId = playerBattleMap.get(phoneId);
+    if (!battleId) return undefined;
+    return activeBattles.get(battleId);
+  }
+
+  updateBattleState(battleId: string, state: any): void {
+    const record = activeBattles.get(battleId);
+    if (record) record.state = state;
+  }
+
+  async endBattle(battleId: string, winnerPhoneId: string): Promise<void> {
+    const record = activeBattles.get(battleId);
+    if (!record) return;
+    // Update win/loss counts in DB
+    const loserPhoneId =
+      record.challengerPhoneId === winnerPhoneId
+        ? record.opponentPhoneId
+        : record.challengerPhoneId;
+    const winner = await this.getUserByPhone(winnerPhoneId);
+    const loser = await this.getUserByPhone(loserPhoneId);
+    if (winner) {
+      await this.updateUser(winnerPhoneId, {
+        battleWins: (winner.battleWins || 0) + 1,
+        inBattle: false,
+      });
+    }
+    if (loser) {
+      await this.updateUser(loserPhoneId, {
+        battleLosses: (loser.battleLosses || 0) + 1,
+        inBattle: false,
+      });
+    }
+    // Clean up maps
+    playerBattleMap.delete(record.challengerPhoneId);
+    playerBattleMap.delete(record.opponentPhoneId);
+    activeBattles.delete(battleId);
+  }
+
+  getAllActiveBattles(): ActiveBattleRecord[] {
+    return Array.from(activeBattles.values());
   }
 }
 
