@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 
-// GET /api/qr/status
 export function useQrStatus() {
   return useQuery({
     queryKey: [api.qr.status.path],
@@ -10,11 +9,10 @@ export function useQrStatus() {
       if (!res.ok) throw new Error("Failed to fetch QR status");
       return api.qr.status.responses[200].parse(await res.json());
     },
-    refetchInterval: 1000, // Poll every 1 second for faster QR appearance
+    refetchInterval: 1000,
   });
 }
 
-// POST /api/qr/refresh
 export function useRefreshQr() {
   const queryClient = useQueryClient();
   return useMutation({
