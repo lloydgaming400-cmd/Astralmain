@@ -71,16 +71,13 @@ const SCROLL_MENU = `╭══════════════════�
   👼 SURVIVAL
   🕊️ !revive ↳ revive fallen ally (reply)
   🦷 !suck ↳ drain XP (vampire, reply)
+  🏳️ !forfeit ↳ surrender a battle
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   💞 GUIDES
   🙋 !getguide ↳ claim your guide
   💬 !talkguide ↳ talk to your guide
   💋 !smashmyguide ↳ ...you know
   👶 !namechild [name] ↳ name your child
- ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
-  👼 SURVIVAL
-  🕊️ !revive ↳ revive fallen ally (reply)
-  🦷 !suck ↳ drain XP (vampire, reply)
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   👑 SECT LEADER ONLY
   🥾 !kickmember [name] ↳ kick member
@@ -121,23 +118,24 @@ function getRankForXp(xp: number) {
 }
 
 const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
-  "blood rune": { price: 1000, description: "Steal XP from another user." },
-  "eclipse stone": { price: 1200, description: "Hide your race & XP for 24hrs." },
-  "phantom seal": { price: 1100, description: "Vanish from the leaderboard for 24hrs." },
-  "cursed coin": { price: 200, description: "Unknown outcome. Flip and find out." },
-  "mirror shard": { price: 1300, description: "Copy another user's race for 30mins." },
-  "vampire tooth": { price: 1500, description: "Become a vampire for a week." },
-  "cursed bone": { price: 2000, description: "Attract shadows for permanent protection." },
-  "grey rot cure": { price: 500, description: "Cures the Grey Rot. (Human)" },
-  "hellfire suppressant": { price: 600, description: "Cures Hellfire Fever. (Demon)" },
-  "feral antidote": { price: 600, description: "Cures the Feral Plague. (Beast Clan)" },
-  "grace restoration vial": { price: 700, description: "Cures Corruption Blight. (Fallen Angel)" },
-  "scale restoration salve": { price: 800, description: "Cures Scale Sickness. (Dragon)" },
-  "rootwither remedy": { price: 700, description: "Cures Rootwither. (Elf)" },
-  "living core": { price: 2500, description: "Rebirth into a new random species." },
-  "dragon egg": { price: 5000, description: "A mysterious egg that feeds on XP." },
-  "void fragment": { price: 8000, description: "A fragment of the void. Extremely unstable." },
-  "star dust": { price: 3000, description: "Dust from the stars. Grants a temporary domain." },
+  "blood rune": { price: 80000, description: "Steal XP from another user." },
+  "eclipse stone": { price: 90000, description: "Hide your race & XP for 24hrs." },
+  "phantom seal": { price: 85000, description: "Vanish from the leaderboard for 24hrs." },
+  "cursed coin": { price: 5000, description: "Unknown outcome. Flip and find out." },
+  "mirror shard": { price: 95000, description: "Copy another user's race for 30mins." },
+  "vampire tooth": { price: 100000, description: "Become a vampire for a week." },
+  "cursed bone": { price: 100000, description: "Attract shadows for permanent protection." },
+  "grey rot cure": { price: 15000, description: "Cures the Grey Rot. (Human)" },
+  "hellfire suppressant": { price: 18000, description: "Cures Hellfire Fever. (Demon)" },
+  "feral antidote": { price: 18000, description: "Cures the Feral Plague. (Beast Clan)" },
+  "grace restoration vial": { price: 20000, description: "Cures Corruption Blight. (Fallen Angel)" },
+  "scale restoration salve": { price: 22000, description: "Cures Scale Sickness. (Dragon)" },
+  "rootwither remedy": { price: 20000, description: "Cures Rootwither. (Elf)" },
+  "soul restoration tonic": { price: 20000, description: "Cures Soul Decay. (Spirit)" },
+  "living core": { price: 100000, description: "Rebirth into a new random species." },
+  "dragon egg": { price: 90000, description: "A mysterious egg that feeds on XP." },
+  "void fragment": { price: 100000, description: "A fragment of the void. Extremely unstable." },
+  "star dust": { price: 75000, description: "Dust from the stars. Grants a temporary domain." },
 };
 
 const DISEASES: Record<string, { name: string; race: string; startMsg: string; endMsg: string; cure: string }> = {
@@ -495,7 +493,43 @@ async function handleMessage(msg: Message) {
     return;
   }
 
-  if (body === "!status" || body === "!profile") {
+  if (body === "!rules") {
+    return msg.reply(`╭══════════════════════════╮
+   ✦┊【 S A C R E D  L A W S 】┊✦
+╰══════════════════════════╯
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  📜 THE SACRED LAWS
+
+  1. Respect all cultivators.
+     Harassment leads to a ban.
+
+  2. No exploiting bugs or glitches.
+     Report them to the owner.
+
+  3. No spamming commands.
+     Abuse will result in a mute.
+
+  4. Dead cultivators cannot act.
+     Find an ally to revive you.
+
+  5. Sect leaders hold authority.
+     Obey or leave your sect.
+
+  6. XP gained through messages only.
+     No bots, no scripts.
+
+  7. The Owner's word is final law.
+     All rulings are absolute.
+
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+  Violators face punishment,
+  exile, or permanent death.
+ ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
+     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼
+╰══════════════════════════╯`);
+  }
+
+
     const currentRank = getRankForXp(user.xp);
     let sectLine = "None";
     if (user.sectId) {
@@ -522,6 +556,7 @@ async function handleMessage(msg: Message) {
       "cursed bone": "🦴", "grey rot cure": "💊", "hellfire suppressant": "💊",
       "feral antidote": "💊", "grace restoration vial": "💊",
       "scale restoration salve": "💊", "rootwither remedy": "💊",
+      "soul restoration tonic": "💊",
       "living core": "🌿", "dragon egg": "🥚", "void fragment": "🌑",
       "star dust": "✨",
     };
@@ -601,7 +636,7 @@ async function handleMessage(msg: Message) {
       updates.isVampire = true;
       updates.vampireUntil = new Date(Date.now() + 604800000);
       reply = `🦷 You are now a Vampire for 1 week! Use !suck (reply to a message) to feed.`;
-    } else if (itemLower.includes("cure") || itemLower.includes("remedy") || itemLower.includes("antidote") || itemLower.includes("vial") || itemLower.includes("salve") || itemLower.includes("suppressant")) {
+    } else if (itemLower.includes("cure") || itemLower.includes("remedy") || itemLower.includes("antidote") || itemLower.includes("vial") || itemLower.includes("salve") || itemLower.includes("suppressant") || itemLower.includes("tonic")) {
       const disease = Object.values(DISEASES).find(d => d.cure === itemLower);
       if (!disease) return msg.reply("❌ This cure doesn't match any known disease.");
       if (user.species !== disease.race) return msg.reply(`❌ This cure was made for *${disease.race}*, not ${user.species}.`);
@@ -684,7 +719,30 @@ async function handleMessage(msg: Message) {
     return msg.reply(`🕊️ You revived *${target.name}*!`);
   }
 
-  // ── CARDS ────────────────────────────────────────────────────────────────────
+  // ── FORFEIT ──────────────────────────────────────────────────────────────────
+
+  if (body === "!forfeit") {
+    const { storage: battleStorage } = await import('./storage');
+    // Look for an active battle involving this user
+    const activeBattle = await storage.getActiveBattleByPlayer(phoneId).catch(() => null);
+    if (!activeBattle) {
+      return msg.reply(`🏳️ You are not currently in a battle. Nothing to forfeit.`);
+    }
+    const isChallenger = activeBattle.challengerPhoneId === phoneId;
+    const opponentId = isChallenger ? activeBattle.opponentPhoneId : activeBattle.challengerPhoneId;
+    const opponent = await storage.getUserByPhone(opponentId);
+    // End the battle — opponent wins
+    await storage.endBattle(activeBattle.id, opponentId);
+    // XP penalty for forfeiting (10% of current XP)
+    const penalty = Math.floor(user.xp * 0.1);
+    await storage.updateUser(phoneId, { xp: Math.max(0, user.xp - penalty) });
+    if (opponent) {
+      await client.sendMessage(opponentId, `🏳️ *${user.name}* has forfeited the battle! You win!\n🏆 Victory recorded.`);
+    }
+    return msg.reply(`🏳️ You have forfeited the battle against *${opponent?.name || "your opponent"}*.\n💸 Penalty: -${penalty} XP for surrendering.`);
+  }
+
+
 
   if (body === "!getcard") {
     const now = new Date();
@@ -788,19 +846,6 @@ async function handleMessage(msg: Message) {
       : `⚒️ *Maya:* "...Understood. Take care of yourself out there. Don't do anything stupid." *She turns back to the forge.*`;
     await storage.updateUser(phoneId, { guideName: null, guideSmashAt: null, guidePregnant: false, guideChildName: null } as any);
     return msg.reply(leaveMsg);
-  }
-
-  // ── FORFEIT ───────────────────────────────────────────────────────────────────
-
-  if (body === "!forfeit") {
-    const battle = getBattleByParticipant(phoneId);
-    if (!battle || battle.phase === "ended") return msg.reply("❌ You are not in an active battle.");
-    const winner = battle.challenger.phoneId === phoneId ? battle.target : battle.challenger;
-    const loser = battle.challenger.phoneId === phoneId ? battle.challenger : battle.target;
-    const resolutionLines = [`🏳️ *${loser.name}* has forfeited the battle.`];
-    await client.sendMessage(battle.chatId, `🏳️ *${loser.name}* forfeits! The battle is over.`);
-    await endBattle(battle, winner, loser, resolutionLines);
-    return;
   }
 
   // ── SECTS ────────────────────────────────────────────────────────────────────
