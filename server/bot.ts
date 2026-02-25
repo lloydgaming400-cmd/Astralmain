@@ -43,14 +43,25 @@ import {
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
-// Owner phone ID — found from challenges.json (87209327755401@lid was most active challenger)
-// WhatsApp assigns @lid IDs in group chats, so we check both formats
 const OWNER_LID = "87209327755401@lid";
 const OWNER_CUS = process.env.OWNER_PHONE ? `${process.env.OWNER_PHONE}@c.us` : "";
-// Helper so owner commands work whether bot sees @lid or @c.us
 const isOwner = (pid: string) => pid === OWNER_LID || (OWNER_CUS && pid === OWNER_CUS);
-// Keep OWNER_NUMBER for sending messages to owner (use @lid as primary)
 const OWNER_NUMBER = OWNER_LID;
+
+// ── FIX: Helper to resolve quoted message to the correct registered phoneId ──
+// In group chats, quoted.author returns @lid but users register with @c.us.
+// This helper gets the contact properly so the ID always matches registration.
+async function resolveQuotedUser(msg: Message): Promise<{ phoneId: string; contact: any } | null> {
+  try {
+    const quoted = await msg.getQuotedMessage();
+    // Get the actual contact object from the quoted message — this gives @c.us format
+    const contact = await quoted.getContact();
+    const phoneId = contact.id._serialized;
+    return { phoneId, contact };
+  } catch {
+    return null;
+  }
+}
 
 const HELP_MENU = `╭══════════════════════════╮
    ✦┊　🌌  ASTRAL BOT  🌌　┊✦
@@ -206,8 +217,6 @@ const DISEASES: Record<string, { name: string; race: string; startMsg: string; e
   "Spirit":       { name: "Soul Decay",           race: "Spirit",       startMsg: "A corruption has swept through the Spirit race. Soul Decay is dissolving their very essence.",                      endMsg: "Soul Decay has dissipated. The Spirit race endures once more.",               cure: "soul restoration tonic" },
 };
 
-// ── Jikan API card fetch with timeout ─────────────────────────────────────────
-// FIX: Added AbortController timeout so !getcard doesn't hang indefinitely
 async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: string; series: string; rarity: string; imageUrl: string | null }> {
   try {
     const rarityRoll = Math.random();
@@ -219,7 +228,6 @@ async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: stri
 
     const page = Math.floor(Math.random() * 20) + 1;
 
-    // FIX: 8-second timeout to prevent hanging
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
@@ -249,8 +257,6 @@ async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: stri
     return fallback[Math.floor(Math.random() * fallback.length)];
   }
 }
-
-// ── GUIDE SYSTEM ──────────────────────────────────────────────────────────────
 
 const ANNA = {
   name: "Anna",
@@ -287,7 +293,6 @@ const GUIDES: Record<string, typeof ANNA> = {
   anna: ANNA,
 };
 
-// ── Guide event checker ───────────────────────────────────────────────────────
 async function checkGuideEvents(user: any, phoneId: string) {
   if (!user.guideName || !user.guideSmashAt) return;
   const now = Date.now();
@@ -339,7 +344,6 @@ function generateHpBar(hp: number) {
   return "█".repeat(filled) + "░".repeat(empty) + ` ${hp}/100`;
 }
 
-// ── Turn resolution for battles ───────────────────────────────────────────────
 async function resolveBattleTurn(battleId: string) {
   const record = storage.getBattle(battleId);
   if (!record) return;
@@ -518,7 +522,6 @@ async function safeSend(to: string, message: string): Promise<void> {
   }
 }
 
-// ── Interval: HP drain, Plague, Egg Hatching ─────────────────────────────────
 setInterval(async () => {
   if (!client || !isClientReady) return;
   try {
@@ -561,7 +564,6 @@ setInterval(async () => {
         }
       }
 
-      // Dragon Egg Progress
       if (user.dragonEggProgress > 0 && !user.dragonEggHatched) {
         const others = users.filter(u => u.phoneId !== user.phoneId && u.xp >= 30);
         if (others.length > 0) {
@@ -577,7 +579,6 @@ setInterval(async () => {
       }
     }
 
-    // Plague events
     const stats = await storage.getGlobalStats();
     const now = new Date();
     if (!stats.activeDisease && (!stats.lastOutbreakAt || now.getTime() - new Date(stats.lastOutbreakAt).getTime() > 604800000)) {
@@ -599,7 +600,6 @@ setInterval(async () => {
   }
 }, 300000);
 
-// ── Weekly XP for guides ──────────────────────────────────────────────────────
 setInterval(async () => {
   if (!client || !isClientReady) return;
   try {
@@ -618,7 +618,6 @@ setInterval(async () => {
   }
 }, 604800000);
 
-// ── Hatched dragon egg daily XP ───────────────────────────────────────────────
 setInterval(async () => {
   if (!client || !isClientReady) return;
   try {
@@ -634,7 +633,6 @@ setInterval(async () => {
   }
 }, 86400000);
 
-// ── Clean up stale Chromium /tmp files ───────────────────────────────────────
 function cleanupChromiumTemp(): void {
   try {
     const tmpFiles = fs.readdirSync('/tmp').filter(f => f.startsWith('.org.chromium') || f.startsWith('.com.google.Chrome'));
@@ -803,14 +801,13 @@ async function handleMessage(msg: Message) {
     return;
   }
 
-  // ── Registration ─────────────────────────────────────────────────────────────
+  // ── Registration ──────────────────────────────────────────────────────────
   if (!user || !user.isRegistered) {
     if (body === "!start") {
       const sp = getRandomSpecies();
       user = await storage.createUser({
         phoneId, name, species: sp.name, isRegistered: true,
         xp: 0, messages: 0, condition: "Healthy",
-        // FIX: new users start at rank 8 (lowest), matching RANKS array
         rank: 8,
         inventory: [], hp: 100,
       });
@@ -832,7 +829,7 @@ async function handleMessage(msg: Message) {
     return;
   }
 
-  // ── Infection trigger on certain commands ─────────────────────────────────
+  // ── Infection trigger ────────────────────────────────────────────────────
   if (["!leaderboard", "!profile", "!status"].includes(body)) {
     const stats = await storage.getGlobalStats();
     if (
@@ -865,7 +862,6 @@ async function handleMessage(msg: Message) {
 
     try {
       const oldRank = getRankForXp(user.xp);
-      // FIX: re-fetch user before XP update to avoid stale-read race condition
       const freshUser = await storage.getUserByPhone(phoneId);
       if (!freshUser) return;
       const newXp = freshUser.xp + rate + dustBonus;
@@ -884,7 +880,6 @@ async function handleMessage(msg: Message) {
         );
       }
 
-      // Rare item drops
       if (Math.random() < 0.01) {
         const itemPool: Record<string, string> = {
           "Dragon Egg":     "*Something warm and heavy settles into your possession.*\n🥚 A Dragon Egg has appeared in your inventory.",
@@ -1021,12 +1016,8 @@ async function handleMessage(msg: Message) {
     });
     const myRank = allUsers.findIndex(u => u.phoneId === phoneId) + 1;
     const list = visibleUsers.slice(0, 10).map((u, i) => {
-      const xpDisplay = u.eclipseUntil && new Date() < new Date(u.eclipseUntil)
-        ? "???"
-        : `${u.xp} XP`;
-      const speciesDisplay = u.eclipseUntil && new Date() < new Date(u.eclipseUntil)
-        ? "???"
-        : u.species;
+      const xpDisplay = u.eclipseUntil && new Date() < new Date(u.eclipseUntil) ? "???" : `${u.xp} XP`;
+      const speciesDisplay = u.eclipseUntil && new Date() < new Date(u.eclipseUntil) ? "???" : u.species;
       return `  ${i + 1}. ${u.name} — ${xpDisplay} [${speciesDisplay}]`;
     }).join("\n");
     return msg.reply(
@@ -1208,10 +1199,12 @@ async function handleMessage(msg: Message) {
       return msg.reply(`🪙 *Cursed Coin flipped...*\n\n${outcomeMsg}`);
 
     } else if (itemLower === "blood rune") {
-      const quoted = await msg.getQuotedMessage();
-      const targetId = quoted.author || quoted.from;
+      // FIX: use resolveQuotedUser for correct @c.us ID
+      const resolved = await resolveQuotedUser(msg);
+      if (!resolved) return msg.reply("❌ Could not resolve target. Try again.");
+      const targetId = resolved.phoneId;
       const target = await storage.getUserByPhone(targetId);
-      if (!target) return msg.reply("❌ Target not found.");
+      if (!target) return msg.reply("❌ Target not found or not registered.");
       if (targetId === phoneId) return msg.reply("❌ You cannot use a Blood Rune on yourself.");
       const stealAmt = Math.floor(Math.random() * 5000) + 2000;
       const actualSteal = Math.min(stealAmt, target.xp);
@@ -1224,10 +1217,12 @@ async function handleMessage(msg: Message) {
       return msg.reply(`🩸 *Blood Rune activated!* You stole *${actualSteal} XP* from *${target.name}*.`);
 
     } else if (itemLower === "mirror shard") {
-      const quoted = await msg.getQuotedMessage();
-      const targetId = quoted.author || quoted.from;
+      // FIX: use resolveQuotedUser for correct @c.us ID
+      const resolved = await resolveQuotedUser(msg);
+      if (!resolved) return msg.reply("❌ Could not resolve target. Try again.");
+      const targetId = resolved.phoneId;
       const target = await storage.getUserByPhone(targetId);
-      if (!target) return msg.reply("❌ Target not found.");
+      if (!target) return msg.reply("❌ Target not found or not registered.");
       if (targetId === phoneId) return msg.reply("❌ You cannot mirror yourself.");
       updates.mirrorRace = target.species;
       updates.mirrorOriginalRace = user.species;
@@ -1263,10 +1258,12 @@ async function handleMessage(msg: Message) {
       return msg.reply("🦷 You are not a vampire.");
     }
     if (!msg.hasQuotedMsg) return msg.reply("🦷 Reply to someone's message to suck their XP.");
-    const quoted = await msg.getQuotedMessage();
-    const targetId = quoted.author || quoted.from;
+    // FIX: use resolveQuotedUser
+    const resolved = await resolveQuotedUser(msg);
+    if (!resolved) return msg.reply("❌ Could not resolve target. Try again.");
+    const targetId = resolved.phoneId;
     const target = await storage.getUserByPhone(targetId);
-    if (!target) return msg.reply("❌ Target not found.");
+    if (!target) return msg.reply("❌ Target not found or not registered.");
     if (target.xp > user.xp * 2) return msg.reply("🦷 They are too powerful. Your fangs find no grip.");
     const now = Date.now();
     if (user.lastSuckAt && now - new Date(user.lastSuckAt).getTime() < 3600000) {
@@ -1285,8 +1282,10 @@ async function handleMessage(msg: Message) {
     const amt = parseInt(body.split(" ")[1]);
     if (isNaN(amt) || amt <= 0) return msg.reply("❌ Invalid amount.");
     if (user.xp < amt) return msg.reply(`❌ You only have ${user.xp} XP.`);
-    const quoted = await msg.getQuotedMessage();
-    const targetId = quoted.author || quoted.from;
+    // FIX: use resolveQuotedUser
+    const resolved = await resolveQuotedUser(msg);
+    if (!resolved) return msg.reply("❌ Could not resolve target. Try again.");
+    const targetId = resolved.phoneId;
     const target = await storage.getUserByPhone(targetId);
     if (!target) return msg.reply("❌ Target not found or not registered.");
     if (targetId === phoneId) return msg.reply("❌ You cannot give XP to yourself.");
@@ -1301,10 +1300,12 @@ async function handleMessage(msg: Message) {
     const num = parseInt(body.split(" ")[1]) - 1;
     const inv = [...(user.inventory as string[])];
     if (isNaN(num) || !inv[num]) return msg.reply("❌ Invalid item number.");
-    const quoted = await msg.getQuotedMessage();
-    const targetId = quoted.author || quoted.from;
+    // FIX: use resolveQuotedUser
+    const resolved = await resolveQuotedUser(msg);
+    if (!resolved) return msg.reply("❌ Could not resolve target. Try again.");
+    const targetId = resolved.phoneId;
     const target = await storage.getUserByPhone(targetId);
-    if (!target) return msg.reply("❌ Target not found.");
+    if (!target) return msg.reply("❌ Target not found or not registered.");
     const item = inv.splice(num, 1)[0];
     await storage.updateUser(phoneId, { inventory: inv });
     await storage.updateUser(targetId, { inventory: [...(target.inventory as string[]), item] });
@@ -1312,15 +1313,33 @@ async function handleMessage(msg: Message) {
     return msg.reply(`🎁 You gave *[${item}]* to ${target.name}.`);
   }
 
+  if (body.startsWith("!givecard ")) {
+    if (!msg.hasQuotedMsg) return msg.reply("❌ Reply to someone's message to give a card.");
+    const num = parseInt(body.split(" ")[1]) - 1;
+    const userCards = await storage.getUserCards(phoneId);
+    if (isNaN(num) || !userCards[num]) return msg.reply("❌ Invalid card number.");
+    // FIX: use resolveQuotedUser
+    const resolved = await resolveQuotedUser(msg);
+    if (!resolved) return msg.reply("❌ Could not resolve target. Try again.");
+    const targetId = resolved.phoneId;
+    const target = await storage.getUserByPhone(targetId);
+    if (!target) return msg.reply("❌ Target not found or not registered.");
+    if (targetId === phoneId) return msg.reply("❌ You cannot give cards to yourself.");
+    const card = userCards[num];
+    await storage.updateCard(card.id, { ownerPhoneId: targetId });
+    await client.sendMessage(targetId, `🎴 ${user.name} gave you the card *${card.name}* [${card.rarity}]!`);
+    return msg.reply(`🎴 You gave *${card.name}* to ${target.name}.`);
+  }
+
   if (body.startsWith("!revive")) {
     if (!msg.hasQuotedMsg) return msg.reply("❌ Reply to a dead person's message to revive them.");
-    const quoted = await msg.getQuotedMessage();
-    const targetId = quoted.author || quoted.from;
+    // FIX: use resolveQuotedUser
+    const resolved = await resolveQuotedUser(msg);
+    if (!resolved) return msg.reply("❌ Could not resolve target. Try again.");
+    const targetId = resolved.phoneId;
     const target = await storage.getUserByPhone(targetId);
-    if (!target) return msg.reply("❌ Target not found.");
+    if (!target) return msg.reply("❌ Target not found or not registered.");
     if (!target.isDead) return msg.reply("❌ That person is not dead.");
-    // FIX: Removed overly restrictive same-species check.
-    // Any living cultivator can revive a fallen ally regardless of species.
     await storage.updateUser(targetId, { isDead: false, hp: 10 });
     await client.sendMessage(targetId, `🕊️ ${user.name} has revived you! You are back with 10 HP. Stay safe.`);
     return msg.reply(`🕊️ You revived *${target.name}*!`);
@@ -1400,19 +1419,21 @@ async function handleMessage(msg: Message) {
     if (!msg.hasQuotedMsg) return msg.reply("❌ Reply to someone's message to challenge them.");
     if (user.inBattle) return msg.reply("❌ You are already in a battle.");
 
-    const quoted = await msg.getQuotedMessage();
-    const targetId = quoted.author || quoted.from;
+    // FIX: use resolveQuotedUser so @lid vs @c.us is normalized
+    const resolved = await resolveQuotedUser(msg);
+    if (!resolved) return msg.reply("❌ Could not resolve target. Try again.");
+    const targetId = resolved.phoneId;
+
     if (targetId === phoneId) return msg.reply("❌ You cannot challenge yourself.");
 
     const target = await storage.getUserByPhone(targetId);
-    if (!target) return msg.reply("❌ That person is not registered. They need to use !start first.");
+    if (!target || !target.isRegistered) return msg.reply("❌ That person is not registered. They need to use !start first.");
     if (target.isDead) return msg.reply("❌ You cannot challenge a dead person.");
     if (target.inBattle) return msg.reply("❌ That person is already in a battle.");
 
     const existingChallenge = await storage.getPendingChallenge(phoneId);
     if (existingChallenge) return msg.reply("❌ You already have a pending challenge. Wait for it to expire or be answered.");
 
-    // Warn if either player has no skills equipped — battle will still work but they'll use defaults
     const challengerActives = (user.equippedActives as string[]) || [];
     const targetActives = (target.equippedActives as string[]) || [];
     const noSkillsWarning: string[] = [];
@@ -1626,21 +1647,14 @@ async function handleMessage(msg: Message) {
     return msg.reply(`🏳️ You have forfeited against *${opponent?.name || "your opponent"}*.\n💸 Penalty: -${penalty} XP for surrendering.`);
   }
 
-  // ════════════════════════════════════════════════════════════════
-  //  BATTLE STATS
-  // ════════════════════════════════════════════════════════════════
-
   if (body === "!battlestats" || body.startsWith("!battlestats ")) {
-    // Determine whose stats to show
     const isLookup = body.startsWith("!battlestats ") && body.length > "!battlestats ".length;
     let target = user;
 
     if (isLookup) {
       const targetName = body.replace("!battlestats ", "").trim();
       const allUsers = await storage.getUsers();
-      const found = allUsers.find(u =>
-        u.name.toLowerCase().includes(targetName.toLowerCase())
-      );
+      const found = allUsers.find(u => u.name.toLowerCase().includes(targetName.toLowerCase()));
       if (!found) return msg.reply(`❌ Cultivator *${targetName}* not found.`);
       target = found;
     }
@@ -1651,11 +1665,9 @@ async function handleMessage(msg: Message) {
     const total = wins + losses;
     const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
 
-    // Win rate bar
     const wrFilled = Math.round(winRate / 10);
     const wrBar = "█".repeat(wrFilled) + "░".repeat(10 - wrFilled);
 
-    // Battle title based on wins
     const getBattleTitle = (w: number): string => {
       if (w === 0)   return "Unproven";
       if (w < 3)     return "Initiate";
@@ -1667,7 +1679,6 @@ async function handleMessage(msg: Message) {
       return "Sovereign";
     };
 
-    // Form indicator (own stats only)
     const getForm = (): string => {
       if (total === 0) return "—";
       if (winRate >= 75) return "🔥 Hot";
@@ -1676,7 +1687,6 @@ async function handleMessage(msg: Message) {
       return "💀 Struggling";
     };
 
-    // Strongest stat
     const statEntries: [string, number][] = [
       ["STR", stats.strength],
       ["AGI", stats.agility],
@@ -1686,7 +1696,6 @@ async function handleMessage(msg: Message) {
     ];
     const topStat = statEntries.reduce((a, b) => b[1] > a[1] ? b : a);
 
-    // Battle EXP tier
     const getBexpTier = (bexp: number): string => {
       if (bexp === 0)   return "Untested";
       if (bexp < 100)   return "Fledgling";
@@ -1769,7 +1778,6 @@ async function handleMessage(msg: Message) {
       `  Use !cardcollection to view all.\n╰══════════════════════╯`;
     if (card.imageUrl) {
       try {
-        // FIX: timeout on image fetch too
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
         let imgBuffer: Buffer;
@@ -1805,22 +1813,6 @@ async function handleMessage(msg: Message) {
       `  📛 Name: ${card.name}\n  📺 Series: ${card.series}\n` +
       `  ✨ Rarity: ${card.rarity}\n  🆔 Card ID: #${card.id}\n╰══════════════════════╯`
     );
-  }
-
-  if (body.startsWith("!givecard ")) {
-    if (!msg.hasQuotedMsg) return msg.reply("❌ Reply to someone's message to give a card.");
-    const num = parseInt(body.split(" ")[1]) - 1;
-    const userCards = await storage.getUserCards(phoneId);
-    if (isNaN(num) || !userCards[num]) return msg.reply("❌ Invalid card number.");
-    const quoted = await msg.getQuotedMessage();
-    const targetId = quoted.author || quoted.from;
-    const target = await storage.getUserByPhone(targetId);
-    if (!target) return msg.reply("❌ Target not found.");
-    if (targetId === phoneId) return msg.reply("❌ You cannot give cards to yourself.");
-    const card = userCards[num];
-    await storage.updateCard(card.id, { ownerPhoneId: targetId });
-    await client.sendMessage(targetId, `🎴 ${user.name} gave you the card *${card.name}* [${card.rarity}]!`);
-    return msg.reply(`🎴 You gave *${card.name}* to ${target.name}.`);
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -2005,7 +1997,6 @@ async function handleMessage(msg: Message) {
   // ════════════════════════════════════════════════════════════════
 
   if (body === "!dungeon") {
-    // FIX: check dungeonActive (typed field) instead of casting
     if (user.inBattle && !user.dungeonActive) return msg.reply("❌ You are in a PvP battle. Finish it first.");
     const existing = getDungeon(phoneId);
     if (existing) {
@@ -2030,7 +2021,6 @@ async function handleMessage(msg: Message) {
     }
 
     const stats = computeStats(user, user.battleExp || 0);
-    // FIX: use typed user.dungeonFloor instead of (user as any).dungeonFloor
     const startFloor = user.dungeonFloor || 1;
     const monster = getMonsterForFloor(startFloor);
 
@@ -2067,7 +2057,6 @@ async function handleMessage(msg: Message) {
     }
 
     setDungeon(phoneId, dungeonState);
-    // FIX: use typed fields — no more `as any`
     await storage.updateUser(phoneId, { inBattle: true, dungeonActive: true });
 
     const skillList = (user.equippedActives as string[])
@@ -2133,7 +2122,6 @@ async function handleMessage(msg: Message) {
 
       if (newState.floor >= 10) {
         deleteDungeon(phoneId);
-        // FIX: typed fields
         await storage.updateUser(phoneId, { inBattle: false, dungeonActive: false, dungeonFloor: 1 });
         return msg.reply(
           `${logText}\n\n${reward.message}\n\n` +
@@ -2156,7 +2144,6 @@ async function handleMessage(msg: Message) {
       newState.playerHp = Math.min(newState.playerMaxHp, newState.playerHp + healAmt);
       newState.playerMp = Math.min(newState.playerMaxMp, newState.playerMp + 30);
 
-      // FIX: typed field
       await storage.updateUser(phoneId, { dungeonFloor: newState.floor });
       setDungeon(phoneId, newState);
 
@@ -2188,7 +2175,6 @@ async function handleMessage(msg: Message) {
       const lostXp = Math.floor(newState.xpEarned * 0.2);
       const keptXp = newState.xpEarned - lostXp;
 
-      // FIX: typed fields
       await storage.updateUser(phoneId, {
         xp: user.xp + keptXp,
         inBattle: false,
@@ -2237,7 +2223,6 @@ async function handleMessage(msg: Message) {
     if (dungeon.turnTimer) clearTimeout(dungeon.turnTimer);
 
     const keptXp = dungeon.xpEarned;
-    // FIX: typed fields
     await storage.updateUser(phoneId, {
       xp: user.xp + keptXp,
       inBattle: false,
@@ -2257,7 +2242,6 @@ async function handleMessage(msg: Message) {
 
   if (body === "!dfloor") {
     const dungeon = getDungeon(phoneId);
-    // FIX: typed field
     const savedFloor = user.dungeonFloor || 1;
     if (dungeon) {
       return msg.reply(
@@ -2277,7 +2261,6 @@ async function handleMessage(msg: Message) {
 
   if (body === "!dtower") {
     const allUsers = await storage.getUsers();
-    // FIX: typed field
     const ranked = allUsers
       .filter(u => u.dungeonFloor > 1)
       .sort((a, b) => (b.dungeonFloor || 1) - (a.dungeonFloor || 1));
@@ -2296,7 +2279,6 @@ async function handleMessage(msg: Message) {
   //  OWNER COMMANDS
   // ════════════════════════════════════════════════════════════════
 
-  // FIX: Guard against empty OWNER_NUMBER, check both @lid and @c.us
   if (!isOwner(phoneId)) return;
 
   if (body === "!guidespawn") {
