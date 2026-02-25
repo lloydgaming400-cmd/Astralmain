@@ -1,7 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
-
 const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
@@ -46,11 +45,24 @@ export async function runMigrations() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS equipped_passive TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS in_battle BOOLEAN NOT NULL DEFAULT FALSE;
 
-      -- FIX: Dungeon System columns (were in migration but missing from schema.ts)
+      -- Dungeon System columns
       ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_floor INTEGER NOT NULL DEFAULT 1;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_active BOOLEAN NOT NULL DEFAULT FALSE;
 
-      -- FIX: Reset any stuck battle/dungeon states from a previous crash/restart
+      -- Pet System columns
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS pet_type TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS pet_name TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS pet_xp_stolen INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS pet_hatched BOOLEAN NOT NULL DEFAULT FALSE;
+
+      -- Permanent Stat Bonus columns (earned through battles & dungeon)
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS str_bonus INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS agi_bonus INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS int_bonus INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS lck_bonus INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS spd_bonus INTEGER NOT NULL DEFAULT 0;
+
+      -- Reset any stuck battle/dungeon states from a previous crash/restart
       UPDATE users SET in_battle = FALSE WHERE in_battle = TRUE;
       UPDATE users SET dungeon_active = FALSE WHERE dungeon_active = TRUE;
 
