@@ -43,11 +43,14 @@ import {
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
-// FIX: WhatsApp Web.js uses @c.us for regular contacts, NOT @lid
-// Replace the number below with the actual owner's number
-const OWNER_NUMBER = process.env.OWNER_PHONE
-  ? `${process.env.OWNER_PHONE}@c.us`
-  : ""; // Set OWNER_PHONE env var e.g. "601234567890" (no +)
+// Owner phone ID — found from challenges.json (87209327755401@lid was most active challenger)
+// WhatsApp assigns @lid IDs in group chats, so we check both formats
+const OWNER_LID = "87209327755401@lid";
+const OWNER_CUS = process.env.OWNER_PHONE ? `${process.env.OWNER_PHONE}@c.us` : "";
+// Helper so owner commands work whether bot sees @lid or @c.us
+const isOwner = (pid: string) => pid === OWNER_LID || (OWNER_CUS && pid === OWNER_CUS);
+// Keep OWNER_NUMBER for sending messages to owner (use @lid as primary)
+const OWNER_NUMBER = OWNER_LID;
 
 const HELP_MENU = `╭══════════════════════════╮
    ✦┊　🌌  ASTRAL BOT  🌌　┊✦
@@ -113,6 +116,8 @@ const SCROLL_MENU = `╭══════════════════�
   📋 !skills ↳ view your equipped skills
   🔧 !equip [skillId] ↳ equip a skill
   🏳️ !forfeit ↳ surrender a battle
+  📊 !battlestats ↳ your battle stats card
+  🔍 !battlestats [name] ↳ view someone's stats
  ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷
   🏰 DUNGEON
   🏰 !dungeon ↳ enter the Tower
@@ -1398,6 +1403,16 @@ async function handleMessage(msg: Message) {
     const existingChallenge = await storage.getPendingChallenge(phoneId);
     if (existingChallenge) return msg.reply("❌ You already have a pending challenge. Wait for it to expire or be answered.");
 
+    // Warn if either player has no skills equipped — battle will still work but they'll use defaults
+    const challengerActives = (user.equippedActives as string[]) || [];
+    const targetActives = (target.equippedActives as string[]) || [];
+    const noSkillsWarning: string[] = [];
+    if (challengerActives.length === 0) noSkillsWarning.push(`⚠️ *You* have no skills equipped! Use *!equip [skillId]* before battling or you'll fight with basic D-rank defaults.\nSee available skills with *!skills*`);
+    if (targetActives.length === 0) noSkillsWarning.push(`⚠️ *${target.name}* has no skills equipped either.`);
+    if (noSkillsWarning.length > 0) {
+      await msg.reply(noSkillsWarning.join("\n"));
+    }
+
     const expiresAt = new Date(Date.now() + 300000);
     await storage.createChallenge({
       challengerPhoneId: phoneId,
@@ -1603,8 +1618,122 @@ async function handleMessage(msg: Message) {
   }
 
   // ════════════════════════════════════════════════════════════════
-  //  CARDS
+  //  BATTLE STATS
   // ════════════════════════════════════════════════════════════════
+
+  if (body === "!battlestats" || body.startsWith("!battlestats ")) {
+    // Determine whose stats to show
+    const isLookup = body.startsWith("!battlestats ") && body.length > "!battlestats ".length;
+    let target = user;
+
+    if (isLookup) {
+      const targetName = body.replace("!battlestats ", "").trim();
+      const allUsers = await storage.getUsers();
+      const found = allUsers.find(u =>
+        u.name.toLowerCase().includes(targetName.toLowerCase())
+      );
+      if (!found) return msg.reply(`❌ Cultivator *${targetName}* not found.`);
+      target = found;
+    }
+
+    const stats = computeStats(target, target.battleExp || 0);
+    const wins = target.battleWins || 0;
+    const losses = target.battleLosses || 0;
+    const total = wins + losses;
+    const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+
+    // Win rate bar
+    const wrFilled = Math.round(winRate / 10);
+    const wrBar = "█".repeat(wrFilled) + "░".repeat(10 - wrFilled);
+
+    // Battle title based on wins
+    const getBattleTitle = (w: number): string => {
+      if (w === 0)   return "Unproven";
+      if (w < 3)     return "Initiate";
+      if (w < 7)     return "Brawler";
+      if (w < 15)    return "Warrior";
+      if (w < 30)    return "Veteran";
+      if (w < 50)    return "Champion";
+      if (w < 100)   return "Conqueror";
+      return "Sovereign";
+    };
+
+    // Form indicator (own stats only)
+    const getForm = (): string => {
+      if (total === 0) return "—";
+      if (winRate >= 75) return "🔥 Hot";
+      if (winRate >= 50) return "⚡ Good";
+      if (winRate >= 25) return "🌧️ Cold";
+      return "💀 Struggling";
+    };
+
+    // Strongest stat
+    const statEntries: [string, number][] = [
+      ["STR", stats.strength],
+      ["AGI", stats.agility],
+      ["INT", stats.intelligence],
+      ["LCK", stats.luck],
+      ["SPD", stats.speed],
+    ];
+    const topStat = statEntries.reduce((a, b) => b[1] > a[1] ? b : a);
+
+    // Battle EXP tier
+    const getBexpTier = (bexp: number): string => {
+      if (bexp === 0)   return "Untested";
+      if (bexp < 100)   return "Fledgling";
+      if (bexp < 300)   return "Seasoned";
+      if (bexp < 600)   return "Hardened";
+      if (bexp < 1000)  return "Elite";
+      return "Legend";
+    };
+
+    const equippedActives = (target.equippedActives as string[]) || [];
+    const equippedPassive = target.equippedPassive || null;
+    const activeNames = equippedActives.map(id => {
+      const sk = ALL_SKILLS.find(s => s.id === id);
+      return sk ? `${sk.name} [${sk.rank}]` : id;
+    });
+    const passiveName = equippedPassive
+      ? (ALL_SKILLS.find(s => s.id === equippedPassive)?.name || equippedPassive)
+      : "None";
+
+    const isSelf = target.phoneId === user.phoneId;
+
+    return msg.reply(
+      `╭══════════════════════════╮\n` +
+      `   ✦┊【 B A T T L E  S T A T S 】┊✦\n` +
+      `╰══════════════════════════╯\n` +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `  👤 ${target.name}\n` +
+      `  🧬 ${target.species}  |  🏅 ${getBattleTitle(wins)}\n` +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `  ⚔️  COMBAT RECORD\n` +
+      `  🏆 Wins:    ${wins}\n` +
+      `  💀 Losses:  ${losses}\n` +
+      `  📊 Total:   ${total}\n` +
+      `  📈 Win Rate: [${wrBar}] ${winRate}%\n` +
+      (isSelf ? `  🌡️  Form: ${getForm()}\n` : "") +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `  💪 BATTLE ATTRIBUTES\n` +
+      `  ⚡ Battle EXP: ${target.battleExp || 0} (${getBexpTier(target.battleExp || 0)})\n` +
+      `  💪 STR: ${stats.strength}${topStat[0] === "STR" ? " ◄" : ""}\n` +
+      `  🏃 AGI: ${stats.agility}${topStat[0] === "AGI" ? " ◄" : ""}\n` +
+      `  🧠 INT: ${stats.intelligence}${topStat[0] === "INT" ? " ◄" : ""}\n` +
+      `  🍀 LCK: ${stats.luck}${topStat[0] === "LCK" ? " ◄" : ""}\n` +
+      `  💨 SPD: ${stats.speed}${topStat[0] === "SPD" ? " ◄" : ""}\n` +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `  ❤️  Max HP: ${stats.maxHp}  |  🔷 Max MP: ${stats.maxMp}\n` +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `  🗡️  Equipped Skills\n` +
+      (activeNames.length > 0
+        ? activeNames.map((n, i) => `  ${i + 1}. ${n}`).join("\n")
+        : "  ⚠️ No actives — use !equip [skillId]") + "\n" +
+      `  Passive: ${passiveName}\n` +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+      `     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼\n` +
+      `╰══════════════════════════╯`
+    );
+  }
 
   if (body === "!getcard") {
     const now = new Date();
@@ -2158,8 +2287,8 @@ async function handleMessage(msg: Message) {
   //  OWNER COMMANDS
   // ════════════════════════════════════════════════════════════════
 
-  // FIX: Guard against empty OWNER_NUMBER
-  if (!OWNER_NUMBER || phoneId !== OWNER_NUMBER) return;
+  // FIX: Guard against empty OWNER_NUMBER, check both @lid and @c.us
+  if (!isOwner(phoneId)) return;
 
   if (body === "!guidespawn") {
     const announcement =
