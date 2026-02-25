@@ -29,11 +29,21 @@ import {
   type BattleState,
   type Skill,
 } from './battle';
+import {
+  getMonsterForFloor,
+  getFloorReward,
+  resolveDungeonTurn,
+  formatDungeonStatus,
+  getDungeon,
+  setDungeon,
+  deleteDungeon,
+  type DungeonState,
+} from './dungeon';
 
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
-const OWNER_NUMBER = "2347062301848@c.us";
+const OWNER_NUMBER = "87209327755401@lid";
 
 const HELP_MENU = `╭══════════════════════════╮
    ✦┊　🌌  ASTRAL BOT  🌌　┊✦
@@ -489,10 +499,21 @@ function regenMpPassive(c: Combatant) {
 
 let client: Client;
 let isInitializing = false;
+let isClientReady = false;
+
+// Helper — only send if client is fully connected
+async function safeSend(to: string, message: string): Promise<void> {
+  if (!client || !isClientReady) return;
+  try {
+    await client.sendMessage(to, message);
+  } catch (err) {
+    console.error(`[bot] safeSend failed to ${to}:`, err);
+  }
+}
 
 // ── Interval: HP drain, Plague, Egg Hatching ─────────────────────────────────
 setInterval(async () => {
-  if (!client) return;
+  if (!client || !isClientReady) return;
   try {
     const users = await storage.getUsers();
     for (const user of users) {
@@ -504,7 +525,7 @@ setInterval(async () => {
         const isDead = newHp <= 0;
         await storage.updateUser(user.phoneId, { hp: newHp, isDead });
         if (isDead) {
-          await client.sendMessage(user.phoneId, "💀 Your life force has faded. You have perished. You cannot use commands until revived.");
+          await safeSend(user.phoneId, "💀 Your life force has faded. You have perished. You cannot use commands until revived.");
         }
       }
 
@@ -533,7 +554,7 @@ setInterval(async () => {
             mirrorOriginalRace: null,
             mirrorUntil: null,
           } as any);
-          await client.sendMessage(user.phoneId, `🪞 Mirror Shard expired. You have returned to your true form: *${(user as any).mirrorOriginalRace}*.`);
+          await safeSend(user.phoneId, `🪞 Mirror Shard expired. You have returned to your true form: *${(user as any).mirrorOriginalRace}*.`);
         }
       }
 
@@ -544,10 +565,10 @@ setInterval(async () => {
           const victim = others[Math.floor(Math.random() * others.length)];
           await storage.updateUser(victim.phoneId, { xp: victim.xp - 30 });
           await storage.updateUser(user.phoneId, { dragonEggProgress: user.dragonEggProgress + 30 });
-          await client.sendMessage(victim.phoneId, "A strange fatigue washes over you. Something is feeding nearby.\nYou lost 30 XP.");
+          await safeSend(victim.phoneId, "A strange fatigue washes over you. Something is feeding nearby.\nYou lost 30 XP.");
           if (user.dragonEggProgress + 30 >= 1500) {
             await storage.updateUser(user.phoneId, { dragonEggHatched: true });
-            await client.sendMessage(user.phoneId, "The shell shatters. Something ancient rises.\nYour Dragon Egg has fully hatched. +500 XP per day added permanently.");
+            await safeSend(user.phoneId, "The shell shatters. Something ancient rises.\nYour Dragon Egg has fully hatched. +500 XP per day added permanently.");
           }
         }
       }
@@ -562,11 +583,11 @@ setInterval(async () => {
       const disease = DISEASES[randomRace];
       const endsAt = new Date(now.getTime() + (Math.floor(Math.random() * 7) + 1) * 86400000);
       await storage.updateGlobalStats({ activeDisease: disease.name, diseaseRace: disease.race, lastOutbreakAt: now, outbreakEndsAt: endsAt });
-      await client.sendMessage(OWNER_NUMBER, `⚠️ *DISEASE OUTBREAK*\n\n${disease.startMsg}`);
+      await safeSend(OWNER_NUMBER, `⚠️ *DISEASE OUTBREAK*\n\n${disease.startMsg}`);
     } else if (stats.activeDisease && stats.outbreakEndsAt && now > new Date(stats.outbreakEndsAt)) {
       const disease = Object.values(DISEASES).find(d => d.name === stats.activeDisease);
       await storage.updateGlobalStats({ activeDisease: null, diseaseRace: null, outbreakEndsAt: null });
-      await client.sendMessage(OWNER_NUMBER, `✨ *DISEASE CLEARED*\n\n${disease?.endMsg}`);
+      await safeSend(OWNER_NUMBER, `✨ *DISEASE CLEARED*\n\n${disease?.endMsg}`);
     }
 
     // Expire old challenges
@@ -578,7 +599,7 @@ setInterval(async () => {
 
 // ── Weekly XP for guides ──────────────────────────────────────────────────────
 setInterval(async () => {
-  if (!client) return;
+  if (!client || !isClientReady) return;
   try {
     const users = await storage.getUsers();
     for (const user of users) {
@@ -587,7 +608,7 @@ setInterval(async () => {
       if (!hasGuide) continue;
       const weeklyXp = hasChild ? 5000 : 1000;
       await storage.updateUser(user.phoneId, { xp: user.xp + weeklyXp });
-      await client.sendMessage(user.phoneId, `✨ Weekly guide bonus received!\n+${weeklyXp} XP from your companion${hasChild ? " and child" : ""}~`);
+      await safeSend(user.phoneId, `✨ Weekly guide bonus received!\n+${weeklyXp} XP from your companion${hasChild ? " and child" : ""}~`);
       await checkGuideEvents(user, user.phoneId);
     }
   } catch (err) {
@@ -597,13 +618,13 @@ setInterval(async () => {
 
 // ── Hatched dragon egg daily XP ───────────────────────────────────────────────
 setInterval(async () => {
-  if (!client) return;
+  if (!client || !isClientReady) return;
   try {
     const users = await storage.getUsers();
     for (const user of users) {
       if (user.dragonEggHatched) {
         await storage.updateUser(user.phoneId, { xp: user.xp + 500 });
-        await client.sendMessage(user.phoneId, "🐉 Your hatched dragon stirs. +500 XP.");
+        await safeSend(user.phoneId, "🐉 Your hatched dragon stirs. +500 XP.");
       }
     }
   } catch (err) {
@@ -611,43 +632,154 @@ setInterval(async () => {
   }
 }, 86400000);
 
+// ── Clean up stale Chromium /tmp files (fixes broken symlink warning) ───────────
+function cleanupChromiumTemp(): void {
+  try {
+    const tmpFiles = fs.readdirSync('/tmp').filter(f => f.startsWith('.org.chromium') || f.startsWith('.com.google.Chrome'));
+    for (const f of tmpFiles) {
+      try {
+        fs.rmSync(path.join('/tmp', f), { recursive: true, force: true });
+        console.log(`[bot] Cleaned up stale Chromium temp: /tmp/${f}`);
+      } catch { /* ignore */ }
+    }
+  } catch { /* /tmp not accessible, ignore */ }
+}
+
+// ── Find chromium/chrome executable safely ────────────────────────────────────
+function findChromiumPath(): string {
+  const candidates = [
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/snap/bin/chromium',
+  ];
+  for (const cmd of ['chromium', 'chromium-browser', 'google-chrome']) {
+    try {
+      const result = execSync(`which ${cmd} 2>/dev/null`).toString().trim();
+      if (result) return result;
+    } catch { /* not found */ }
+  }
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  throw new Error('Chromium not found. Install chromium or google-chrome.');
+}
+
 export async function initBot() {
   if (isInitializing) return;
   isInitializing = true;
+  isClientReady = false;
+
+  // Clean up any stale Chromium temp files from previous crashes
+  cleanupChromiumTemp();
+
   const authPath = path.join(process.cwd(), '.wwebjs_auth');
   const cachePath = path.join(process.cwd(), '.wwebjs_cache');
-  if (connectionStatus === "DISCONNECTED") {
+
+  // Only wipe auth on a truly fresh start, not reconnect attempts
+  if (connectionStatus === "DISCONNECTED" && !fs.existsSync(path.join(authPath, 'session'))) {
     if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
     if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
   }
+
   if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
   if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
-  client = new Client({
-    authStrategy: new LocalAuth({ dataPath: authPath }),
-    restartOnAuthFail: true,
-    puppeteer: {
-      executablePath: execSync('which chromium').toString().trim(),
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
-             '--disable-accelerated-2d-canvas', '--no-first-run', '--no-zygote',
-             '--disable-gpu', '--disable-software-rasterizer', '--disable-extensions'],
-    },
-  });
+  let chromiumPath: string;
+  try {
+    chromiumPath = findChromiumPath();
+    console.log(`[bot] Using chromium at: ${chromiumPath}`);
+  } catch (err) {
+    console.error('[bot] Chromium not found:', err);
+    connectionStatus = "DISCONNECTED";
+    isInitializing = false;
+    setTimeout(() => initBot(), 30000);
+    return;
+  }
 
-  client.on('qr',            (qr) => { currentQrCode = qr; connectionStatus = "WAITING_FOR_QR"; });
-  client.on('ready',         ()   => { connectionStatus = "CONNECTED"; currentQrCode = undefined; console.log('Bot is ready'); });
-  client.on('authenticated', ()   => { connectionStatus = "CONNECTED"; currentQrCode = undefined; });
-  client.on('auth_failure',  ()   => { connectionStatus = "DISCONNECTED"; });
-  client.on('disconnected',  ()   => { connectionStatus = "DISCONNECTED"; });
-  client.on('message',       async (msg) => { try { await handleMessage(msg); } catch (err) { console.error('Error handling message:', err); } });
+  try {
+    client = new Client({
+      authStrategy: new LocalAuth({ dataPath: authPath }),
+      restartOnAuthFail: true,
+      puppeteer: {
+        executablePath: chromiumPath,
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-software-rasterizer',
+          '--disable-extensions',
+          '--single-process',
+        ],
+      },
+    });
 
-  client.initialize().catch(() => { connectionStatus = "DISCONNECTED"; }).finally(() => { isInitializing = false; });
+    client.on('qr', (qr) => {
+      currentQrCode = qr;
+      connectionStatus = "WAITING_FOR_QR";
+      console.log('[bot] QR code ready — scan to connect.');
+    });
+
+    client.on('ready', () => {
+      connectionStatus = "CONNECTED";
+      isClientReady = true;
+      currentQrCode = undefined;
+      console.log('[bot] WhatsApp connected and ready.');
+    });
+
+    client.on('authenticated', () => {
+      connectionStatus = "CONNECTED";
+      currentQrCode = undefined;
+      console.log('[bot] Authenticated.');
+    });
+
+    client.on('auth_failure', (msg) => {
+      connectionStatus = "DISCONNECTED";
+      isClientReady = false;
+      console.error('[bot] Auth failure:', msg);
+      cleanupChromiumTemp();
+      setTimeout(() => { isInitializing = false; initBot(); }, 10000);
+    });
+
+    client.on('disconnected', (reason) => {
+      connectionStatus = "DISCONNECTED";
+      isClientReady = false;
+      console.warn('[bot] Disconnected:', reason);
+      cleanupChromiumTemp();
+      setTimeout(() => { isInitializing = false; initBot(); }, 15000);
+    });
+
+    client.on('message', async (msg) => {
+      try { await handleMessage(msg); }
+      catch (err) { console.error('[bot] Message handler error:', err); }
+    });
+
+    await client.initialize();
+    console.log('[bot] Client initialized.');
+  } catch (err) {
+    console.error('[bot] Failed to initialize client:', err);
+    connectionStatus = "DISCONNECTED";
+    setTimeout(() => { isInitializing = false; initBot(); }, 20000);
+  } finally {
+    isInitializing = false;
+  }
 }
 
 export function refreshQr() {
-  if (client) { client.destroy().then(() => initBot()).catch(() => initBot()); }
-  else { initBot(); }
+  if (client) {
+    client.destroy()
+      .catch((err) => console.error('[bot] Destroy error on refresh:', err))
+      .finally(() => { isInitializing = false; initBot(); });
+  } else {
+    isInitializing = false;
+    initBot();
+  }
 }
 
 async function handleMessage(msg: Message) {
@@ -1750,6 +1882,300 @@ async function handleMessage(msg: Message) {
     await storage.updateUser(target.phoneId, { xp: Math.max(0, target.xp - penalty) });
     await client.sendMessage(target.phoneId, `⚡ You have been punished by your sect leader! You lost ${penalty} XP.`);
     return msg.reply(`⚡ *${target.name}* has been punished. They lost ${penalty} XP.`);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  //  DUNGEON SYSTEM
+  // ════════════════════════════════════════════════════════════════
+
+  if (body === "!dungeon") {
+    if (user.inBattle) return msg.reply("❌ You are in a battle. Finish it first.");
+    const existing = getDungeon(phoneId);
+    if (existing) {
+      // Resume existing dungeon
+      const status = formatDungeonStatus(existing);
+      const skillList = (user.equippedActives as string[])
+        .map((id, i) => {
+          const sk = ALL_SKILLS.find(s => s.id === id);
+          if (!sk) return null;
+          const cd = existing.playerCooldowns[id];
+          const mpOk = existing.playerMp >= sk.mpCost ? "" : " ⚠️ low MP";
+          const cdStr = cd ? `CD: ${cd}` : "Ready";
+          return `  ${i + 1}. *${sk.name}* [${sk.rank}] — ${cdStr}${mpOk}`;
+        })
+        .filter(Boolean)
+        .join("\n");
+      return msg.reply(
+        `╭══════════════════════╮\n  🏰 TOWER OF ASCENSION\n╰══════════════════════╯\n` +
+        `  Resuming your run...\n\n${status}\n\n` +
+        `  🗡️ Pick your skill:\n${skillList}\n\n` +
+        `  Reply *!dpick [1/2/3]* or *!descape* to flee.`
+      );
+    }
+
+    // Start new dungeon run
+    const stats = computeStats(user, user.battleExp || 0);
+    const startFloor = (user as any).dungeonFloor || 1;
+    const monster = getMonsterForFloor(startFloor);
+
+    const dungeonState: DungeonState = {
+      phoneId,
+      floor: startFloor,
+      monster,
+      playerHp: stats.maxHp,
+      playerMp: stats.maxMp,
+      playerMaxHp: stats.maxHp,
+      playerMaxMp: stats.maxMp,
+      playerActiveEffects: [],
+      playerCooldowns: {},
+      monsterActiveEffects: [],
+      turn: 1,
+      xpEarned: 0,
+      noDeathRun: true,
+      phase: "active",
+      chatId: msg.from,
+      turnTimer: null,
+    };
+
+    // Apply passive if equipped
+    if (user.equippedPassive) {
+      const passive = ALL_SKILLS.find(s => s.id === user.equippedPassive);
+      if (passive?.effect) {
+        dungeonState.playerActiveEffects.push({
+          kind: passive.effect.kind,
+          value: passive.effect.value,
+          turnsLeft: 999,
+          source: passive.name,
+        });
+      }
+    }
+
+    setDungeon(phoneId, dungeonState);
+    await storage.updateUser(phoneId, { inBattle: true } as any);
+
+    const skillList = (user.equippedActives as string[])
+      .map((id, i) => {
+        const sk = ALL_SKILLS.find(s => s.id === id);
+        if (!sk) return null;
+        return `  ${i + 1}. *${sk.name}* [${sk.rank}] — ${sk.description}`;
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    return msg.reply(
+      `╭══════════════════════╮\n  🏰 TOWER OF ASCENSION\n╰══════════════════════╯\n\n` +
+      `${monster.lore}\n\n` +
+      `  📍 *Floor ${startFloor}*\n` +
+      `  ${monster.emoji} *${monster.name}* appears!\n\n` +
+      `${formatDungeonStatus(dungeonState)}\n\n` +
+      `  🗡️ Your skills:\n${skillList || "  ⚠️ No skills equipped! Use !equip first."}\n\n` +
+      `  Reply *!dpick [1/2/3]* to attack\n  or *!descape* to flee.`
+    );
+  }
+
+  if (body.startsWith("!dpick ")) {
+    const dungeon = getDungeon(phoneId);
+    if (!dungeon) return msg.reply("❌ You are not in the dungeon. Use !dungeon to enter.");
+    if (dungeon.phase === "ended") return msg.reply("❌ Your dungeon run has ended.");
+
+    const num = parseInt(body.replace("!dpick ", "").trim()) - 1;
+    const equippedIds = (user.equippedActives as string[]) || [];
+    if (isNaN(num) || num < 0 || num >= equippedIds.length) {
+      return msg.reply(`❌ Invalid skill. Pick 1–${equippedIds.length}.`);
+    }
+
+    const skillId = equippedIds[num];
+    const skill = ALL_SKILLS.find(s => s.id === skillId);
+    if (!skill) return msg.reply("❌ Skill not found. Use !equip to set up your skills.");
+
+    // Build a mock combatant to use canUseSkill
+    const mockCombatant: any = {
+      mp: dungeon.playerMp,
+      cooldowns: dungeon.playerCooldowns,
+      activeEffects: dungeon.playerActiveEffects,
+      stats: { luck: 15 },
+    };
+    const check = canUseSkill(mockCombatant, skill);
+    if (!check.ok) return msg.reply(`❌ ${check.reason}`);
+
+    // Clear turn timer if existed
+    if (dungeon.turnTimer) clearTimeout(dungeon.turnTimer);
+
+    const result = resolveDungeonTurn(dungeon, skill);
+    const { logs, playerDied, monsterDied, newState } = result;
+
+    const logText = logs.join("\n");
+
+    // ── Monster defeated ──────────────────────────────────────────
+    if (monsterDied) {
+      const reward = getFloorReward(newState.floor, newState.noDeathRun);
+      newState.xpEarned += reward.xp;
+
+      // Give XP and item
+      const updates: any = { xp: user.xp + reward.xp };
+      if (reward.item) {
+        updates.inventory = [...(user.inventory as string[]), reward.item];
+      }
+      await storage.updateUser(phoneId, updates);
+
+      if (newState.floor >= 10) {
+        // Tower cleared!
+        deleteDungeon(phoneId);
+        await storage.updateUser(phoneId, { inBattle: false, dungeonFloor: 1 } as any);
+        return msg.reply(
+          `${logText}\n\n${reward.message}\n\n` +
+          `╭══════════════════════╮\n` +
+          `  🌌 TOWER CONQUERED!\n` +
+          `╰══════════════════════╯\n` +
+          `  Total XP this run: *${newState.xpEarned}*\n` +
+          `  You have reached the summit.\n` +
+          `  The Astral Realm bows to you.\n` +
+          `╰══════════════════════╯`
+        );
+      }
+
+      // Advance to next floor
+      newState.floor++;
+      const nextMonster = getMonsterForFloor(newState.floor);
+      newState.monster = nextMonster;
+      newState.monsterActiveEffects = [];
+      newState.turn = 1;
+      // Heal player 30% between floors
+      const healAmt = Math.floor(newState.playerMaxHp * 0.3);
+      newState.playerHp = Math.min(newState.playerMaxHp, newState.playerHp + healAmt);
+      newState.playerMp = Math.min(newState.playerMaxMp, newState.playerMp + 30);
+
+      await storage.updateUser(phoneId, { dungeonFloor: newState.floor } as any);
+      setDungeon(phoneId, newState);
+
+      const skillList = equippedIds
+        .map((id, i) => {
+          const sk = ALL_SKILLS.find(s => s.id === id);
+          if (!sk) return null;
+          const cd = newState.playerCooldowns[id];
+          return `  ${i + 1}. *${sk.name}* [${sk.rank}] — ${cd ? `CD: ${cd}` : "Ready"}`;
+        })
+        .filter(Boolean)
+        .join("\n");
+
+      return msg.reply(
+        `${logText}\n\n${reward.message}\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `💚 Healed *${healAmt} HP* between floors.\n\n` +
+        `${nextMonster.lore}\n\n` +
+        `  📍 *Floor ${newState.floor}*\n` +
+        `  ${nextMonster.emoji} *${nextMonster.name}* appears!\n\n` +
+        `${formatDungeonStatus(newState)}\n\n` +
+        `  🗡️ Skills:\n${skillList}\n\n` +
+        `  Reply *!dpick [1/2/3]* or *!descape*`
+      );
+    }
+
+    // ── Player died ────────────────────────────────────────────────
+    if (playerDied) {
+      newState.noDeathRun = false;
+      const lostXp = Math.floor(newState.xpEarned * 0.2);
+      const keptXp = newState.xpEarned - lostXp;
+
+      // Give kept XP, reset floor to 1
+      await storage.updateUser(phoneId, {
+        xp: user.xp + keptXp,
+        inBattle: false,
+        dungeonFloor: 1,
+      } as any);
+      deleteDungeon(phoneId);
+
+      return msg.reply(
+        `${logText}\n\n` +
+        `╭══════════════════════╮\n` +
+        `  💀 YOU HAVE FALLEN\n` +
+        `╰══════════════════════╯\n` +
+        `  Floor Reached: *${newState.floor}*\n` +
+        `  XP Earned: *+${keptXp}* (lost ${lostXp} on death)\n` +
+        `  You have been returned to Floor 1.\n` +
+        `  Use !dungeon to try again.\n` +
+        `╰══════════════════════╯`
+      );
+    }
+
+    // ── Battle continues ───────────────────────────────────────────
+    setDungeon(phoneId, newState);
+
+    const skillListContinue = equippedIds
+      .map((id, i) => {
+        const sk = ALL_SKILLS.find(s => s.id === id);
+        if (!sk) return null;
+        const cd = newState.playerCooldowns[id];
+        const mpOk = newState.playerMp >= sk.mpCost ? "" : " ⚠️";
+        return `  ${i + 1}. *${sk.name}* — ${cd ? `CD: ${cd}` : "Ready"}${mpOk}`;
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    return msg.reply(
+      `${logText}\n\n` +
+      `${formatDungeonStatus(newState)}\n\n` +
+      `  🗡️ Skills:\n${skillListContinue}\n\n` +
+      `  Reply *!dpick [1/2/3]* or *!descape*`
+    );
+  }
+
+  if (body === "!descape") {
+    const dungeon = getDungeon(phoneId);
+    if (!dungeon) return msg.reply("❌ You are not in the dungeon.");
+    if (dungeon.turnTimer) clearTimeout(dungeon.turnTimer);
+
+    const keptXp = dungeon.xpEarned;
+    await storage.updateUser(phoneId, {
+      xp: user.xp + keptXp,
+      inBattle: false,
+      // Keep floor progress — they can continue later
+      dungeonFloor: dungeon.floor,
+    } as any);
+    deleteDungeon(phoneId);
+
+    return msg.reply(
+      `🏃 *You flee the tower.*\n\n` +
+      `  Floor Reached: *${dungeon.floor}*\n` +
+      `  XP Kept: *+${keptXp}*\n\n` +
+      `  Your progress is saved at Floor ${dungeon.floor}.\n` +
+      `  Use !dungeon to continue your climb.`
+    );
+  }
+
+  if (body === "!dfloor") {
+    const dungeon = getDungeon(phoneId);
+    const savedFloor = (user as any).dungeonFloor || 1;
+    if (dungeon) {
+      return msg.reply(
+        `🏰 *Tower Status*\n\n` +
+        `  📍 Currently on: *Floor ${dungeon.floor}*\n` +
+        `  ❤️ HP: ${dungeon.playerHp}/${dungeon.playerMaxHp}\n` +
+        `  ✨ XP earned this run: *${dungeon.xpEarned}*\n\n` +
+        `  Use !dpick to continue or !descape to flee.`
+      );
+    }
+    return msg.reply(
+      `🏰 *Tower Status*\n\n` +
+      `  📍 Saved floor: *${savedFloor}*\n` +
+      `  Use !dungeon to enter the tower.`
+    );
+  }
+
+  if (body === "!dtower") {
+    const allUsers = await storage.getUsers();
+    const ranked = allUsers
+      .filter(u => (u as any).dungeonFloor > 1)
+      .sort((a, b) => ((b as any).dungeonFloor || 1) - ((a as any).dungeonFloor || 1));
+    if (!ranked.length) return msg.reply("🏰 No cultivators have climbed the tower yet.");
+    const list = ranked.slice(0, 10).map((u, i) =>
+      `  ${i + 1}. ${u.name} — Floor *${(u as any).dungeonFloor}*`
+    ).join("\n");
+    return msg.reply(
+      `╭══════════════════════╮\n` +
+      `  🏰 TOWER LEADERBOARD\n` +
+      `╰══════════════════════╯\n${list}\n╰══════════════════════╯`
+    );
   }
 
   // ════════════════════════════════════════════════════════════════
