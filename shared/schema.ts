@@ -37,13 +37,13 @@ export const users = pgTable("users", {
   infectedAt: timestamp("infected_at"),
   isDead: boolean("is_dead").notNull().default(false),
 
-  // ── Guide System ─────────────────────────────────────────────────────────────
+  // ── Guide System ────────────────────────────────────────────────────────────
   guideName: text("guide_name"),
   guideSmashAt: timestamp("guide_smash_at"),
   guidePregnant: boolean("guide_pregnant").notNull().default(false),
   guideChildName: text("guide_child_name"),
 
-  // ── Item Effects ──────────────────────────────────────────────────────────────
+  // ── Item Effects ─────────────────────────────────────────────────────────────
   eclipseUntil: timestamp("eclipse_until"),
   phantomUntil: timestamp("phantom_until"),
   mirrorRace: text("mirror_race"),
@@ -57,10 +57,6 @@ export const users = pgTable("users", {
   equippedActives: jsonb("equipped_actives").notNull().default([]),  // string[] skill IDs
   equippedPassive: text("equipped_passive"),                          // skill ID or null
   inBattle: boolean("in_battle").notNull().default(false),
-
-  // ── Dungeon System ────────────────────────────────────────────────────────────
-  dungeonFloor: integer("dungeon_floor").notNull().default(1),
-  dungeonActive: boolean("dungeon_active").notNull().default(false),
 });
 
 export const globalStats = pgTable("global_stats", {
@@ -94,14 +90,14 @@ export const cards = pgTable("cards", {
   rarity: text("rarity").notNull(),
 });
 
-// ── Challenges ────────────────────────────────────────────────────────────────
+// ── Challenges (pending, expires 5 min) ───────────────────────────────────────
 export const challenges = pgTable("challenges", {
   id: serial("id").primaryKey(),
   challengerPhoneId: text("challenger_phone_id").notNull(),
   targetPhoneId: text("target_phone_id").notNull(),
   chatId: text("chat_id").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  status: text("status").notNull().default("pending"),
+  status: text("status").notNull().default("pending"), // pending | accepted | declined | expired
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
