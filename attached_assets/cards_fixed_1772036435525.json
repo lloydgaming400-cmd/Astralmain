@@ -1,0 +1,137 @@
+[
+  {
+    "id": 1,
+    "owner_phone_id": "132972657274979@c.us",
+    "character_id": 334,
+    "name": "Jun Kitagawa",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/13/54621.jpg",
+    "rarity": "Rare"
+  },
+  {
+    "id": 2,
+    "owner_phone_id": "75639189192859@c.us",
+    "character_id": 435,
+    "name": "Sorata Arisugawa",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/9/41122.jpg",
+    "rarity": "Common"
+  },
+  {
+    "id": 3,
+    "owner_phone_id": "87209327755401@c.us",
+    "character_id": 161,
+    "name": "Souji Okita",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/6/72567.jpg",
+    "rarity": "Common"
+  },
+  {
+    "id": 4,
+    "owner_phone_id": "87209327755401@c.us",
+    "character_id": 156,
+    "name": "Shichiroji",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/10/80681.jpg",
+    "rarity": "Uncommon"
+  },
+  {
+    "id": 5,
+    "owner_phone_id": "113533199073476@c.us",
+    "character_id": 333,
+    "name": "Sayuri Kurata",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/15/75634.jpg",
+    "rarity": "Rare"
+  },
+  {
+    "id": 6,
+    "owner_phone_id": "77352981794953@c.us",
+    "character_id": 314,
+    "name": "Takenori Akagi",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/6/512342.jpg",
+    "rarity": "Uncommon"
+  },
+  {
+    "id": 7,
+    "owner_phone_id": "55156691443946@c.us",
+    "character_id": 262,
+    "name": "Mune-mune",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/8/112428.jpg",
+    "rarity": "Common"
+  },
+  {
+    "id": 8,
+    "owner_phone_id": "22054724214834@c.us",
+    "character_id": 380,
+    "name": "Aika S. Granzchesta",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/8/119418.jpg",
+    "rarity": "Uncommon"
+  },
+  {
+    "id": 9,
+    "owner_phone_id": "105523269615858@c.us",
+    "character_id": 11,
+    "name": "Edward Elric",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/9/72533.jpg",
+    "rarity": "Legendary"
+  },
+  {
+    "id": 10,
+    "owner_phone_id": "149156144390395@c.us",
+    "character_id": 34,
+    "name": "Shino",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/8/85961.jpg",
+    "rarity": "Uncommon"
+  },
+  {
+    "id": 11,
+    "owner_phone_id": "65412872048876@c.us",
+    "character_id": 252,
+    "name": "Kyon",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/13/75369.jpg",
+    "rarity": "Rare"
+  },
+  {
+    "id": 12,
+    "owner_phone_id": "51265149091988@c.us",
+    "character_id": 33,
+    "name": "Haseo",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/12/86036.jpg",
+    "rarity": "Uncommon"
+  },
+  {
+    "id": 13,
+    "owner_phone_id": "2347073966532@c.us",
+    "character_id": 213,
+    "name": "Ken Hidaka",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/13/54589.jpg",
+    "rarity": "Common"
+  },
+  {
+    "id": 14,
+    "owner_phone_id": "2348066098792@c.us",
+    "character_id": 464,
+    "name": "Nate River",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/13/77339.jpg",
+    "rarity": "Common"
+  },
+  {
+    "id": 15,
+    "owner_phone_id": "2349011662339@c.us",
+    "character_id": 186,
+    "name": "Haruka",
+    "series": "Unknown Series",
+    "image_url": "https://cdn.myanimelist.net/images/characters/7/55512.jpg",
+    "rarity": "Uncommon"
+  }
+]

@@ -1,0 +1,154 @@
+[
+  {
+    "id": 1,
+    "challenger_phone_id": "87209327755401@c.us",
+    "target_phone_id": "132972657274979@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T21:47:12.844Z",
+    "status": "accepted"
+  },
+  {
+    "id": 2,
+    "challenger_phone_id": "87209327755401@c.us",
+    "target_phone_id": "113005152968794@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T21:57:27.335Z",
+    "status": "accepted"
+  },
+  {
+    "id": 3,
+    "challenger_phone_id": "132972657274979@c.us",
+    "target_phone_id": "113005152968794@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T22:15:30.616Z",
+    "status": "expired"
+  },
+  {
+    "id": 4,
+    "challenger_phone_id": "132972657274979@c.us",
+    "target_phone_id": "87209327755401@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T22:20:44.763Z",
+    "status": "accepted"
+  },
+  {
+    "id": 5,
+    "challenger_phone_id": "132972657274979@c.us",
+    "target_phone_id": "87209327755401@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T22:29:30.098Z",
+    "status": "declined"
+  },
+  {
+    "id": 6,
+    "challenger_phone_id": "132972657274979@c.us",
+    "target_phone_id": "77352981794953@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T22:42:41.650Z",
+    "status": "declined"
+  },
+  {
+    "id": 7,
+    "challenger_phone_id": "87209327755401@c.us",
+    "target_phone_id": "55156691443946@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T22:44:25.148Z",
+    "status": "expired"
+  },
+  {
+    "id": 8,
+    "challenger_phone_id": "87209327755401@c.us",
+    "target_phone_id": "55156691443946@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T22:51:01.082Z",
+    "status": "accepted"
+  },
+  {
+    "id": 9,
+    "challenger_phone_id": "132972657274979@c.us",
+    "target_phone_id": "77352981794953@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T22:56:40.190Z",
+    "status": "accepted"
+  },
+  {
+    "id": 10,
+    "challenger_phone_id": "77352981794953@c.us",
+    "target_phone_id": "55156691443946@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T23:22:19.103Z",
+    "status": "declined"
+  },
+  {
+    "id": 11,
+    "challenger_phone_id": "77352981794953@c.us",
+    "target_phone_id": "87209327755401@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T23:23:58.912Z",
+    "status": "accepted"
+  },
+  {
+    "id": 12,
+    "challenger_phone_id": "105523269615858@c.us",
+    "target_phone_id": "65412872048876@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T23:30:10.213Z",
+    "status": "expired"
+  },
+  {
+    "id": 13,
+    "challenger_phone_id": "105523269615858@c.us",
+    "target_phone_id": "75639189192859@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T23:36:24.695Z",
+    "status": "expired"
+  },
+  {
+    "id": 14,
+    "challenger_phone_id": "132972657274979@c.us",
+    "target_phone_id": "55156691443946@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T23:41:08.824Z",
+    "status": "expired"
+  },
+  {
+    "id": 15,
+    "challenger_phone_id": "65412872048876@c.us",
+    "target_phone_id": "147562208174272@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-24T23:58:39.791Z",
+    "status": "accepted"
+  },
+  {
+    "id": 16,
+    "challenger_phone_id": "87209327755401@c.us",
+    "target_phone_id": "132972657274979@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-25T00:01:06.374Z",
+    "status": "accepted"
+  },
+  {
+    "id": 17,
+    "challenger_phone_id": "65412872048876@c.us",
+    "target_phone_id": "147562208174272@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-25T00:11:50.101Z",
+    "status": "expired"
+  },
+  {
+    "id": 18,
+    "challenger_phone_id": "132972657274979@c.us",
+    "target_phone_id": "65412872048876@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-25T00:27:39.830Z",
+    "status": "declined"
+  },
+  {
+    "id": 19,
+    "challenger_phone_id": "2347045111424@c.us",
+    "target_phone_id": "113533199073476@c.us",
+    "chat_id": "120363404599512797@g.us",
+    "expires_at": "2026-02-25T13:04:20.713Z",
+    "status": "expired"
+  }
+]
