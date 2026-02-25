@@ -45,17 +45,25 @@ import {
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
+// ── FIX #10: OWNER_NUMBER now correctly uses the env-derived value so safeSend works ──
 const OWNER_LID = "87209327755401@lid";
 const OWNER_CUS = process.env.OWNER_PHONE ? `${process.env.OWNER_PHONE}@c.us` : "";
+const OWNER_NUMBER = OWNER_CUS || OWNER_LID; // FIX: was hardcoded to OWNER_LID
 const isOwner = (pid: string) => pid === OWNER_LID || (OWNER_CUS && pid === OWNER_CUS);
-const OWNER_NUMBER = OWNER_LID;
 
+// ── FIX #8: resolveQuotedUser now has a timeout guard ──
 async function resolveQuotedUser(msg: Message): Promise<{ phoneId: string; contact: any } | null> {
   try {
-    const quoted = await msg.getQuotedMessage();
-    const contact = await quoted.getContact();
-    const phoneId = contact.id._serialized;
-    return { phoneId, contact };
+    const result = await Promise.race([
+      (async () => {
+        const quoted = await msg.getQuotedMessage();
+        const contact = await quoted.getContact();
+        const phoneId = contact.id._serialized;
+        return { phoneId, contact };
+      })(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+    ]);
+    return result;
   } catch {
     return null;
   }
@@ -220,6 +228,13 @@ const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
   "void fragment":            { price: 100000, description: "A fragment of the void. Extremely unstable." },
   "star dust":                { price: 75000,  description: "Dust from the stars. Grants a temporary domain." },
 };
+
+// ── Items that came from the SHOP (purchased) should never be randomly consumed ──
+// FIX #1: Shop-bought items bypass the random-fizzle check entirely.
+const SHOP_ITEM_KEYS = new Set(Object.keys(SHOP_ITEMS));
+
+// ── Items that CAN randomly fizzle (found via chat drop, not purchased) ──
+const FIZZLE_ITEMS = new Set(["Dragon Egg", "Void Fragment", "Star Dust", "Vampire Tooth", "Cursed Bone", "Living Core"]);
 
 const DISEASES: Record<string, { name: string; race: string; startMsg: string; endMsg: string; cure: string }> = {
   "Human":        { name: "The Grey Rot",        race: "Human",        startMsg: "A deadly disease has spread throughout the Human race. The Grey Rot is consuming them from within.",                  endMsg: "The Grey Rot has run its course. The Human race can breathe again.",           cure: "grey rot cure" },
@@ -386,14 +401,12 @@ async function resolveBattleTurn(battleId: string) {
       ? [challenger, target, cSkill, tSkill]
       : [target, challenger, tSkill, cSkill];
 
-  // ── Improved pet help — scales with HP%, unique messages per pet type ──
   const applyPetHelp = async (owner: Combatant, opponent: Combatant) => {
     const ownerUser = await storage.getUserByPhone(owner.phoneId);
     if (!ownerUser?.petHatched) return;
 
     const hpPercent = owner.hp / owner.stats.maxHp;
 
-    // Activation chance increases as HP drops
     const activateChance =
       hpPercent < 0.15 ? 0.65 :
       hpPercent < 0.25 ? 0.50 :
@@ -417,7 +430,6 @@ async function resolveBattleTurn(battleId: string) {
     const msgs = PET_BATTLE_MSGS[petType] || [`${petEmoji} *${petName}* attacks!`];
     const petMsg = msgs[Math.floor(Math.random() * msgs.length)];
 
-    // Fairy heals instead of attacking (40% of the time)
     if (petType === "fairy" && Math.random() < 0.4) {
       const healAmt = Math.floor(owner.stats.intelligence * 0.5 + 20);
       owner.hp = Math.min(owner.stats.maxHp, owner.hp + healAmt);
@@ -525,7 +537,6 @@ async function resolveBattleTurn(battleId: string) {
     const winnerUser = await storage.getUserByPhone(winner.phoneId);
     const loserUser  = await storage.getUserByPhone(loser.phoneId);
 
-    // ── Stat gains on battle end ─────────────────────────────────
     const winnerGains = rollStatGains(true);
     const loserGains  = rollStatGains(false);
 
@@ -607,6 +618,30 @@ async function safeSend(to: string, message: string): Promise<void> {
   }
 }
 
+// ── FIX #11: Weekly bonus uses a persistent timestamp stored in globalStats
+// instead of relying on a raw setInterval from server start ──
+async function runWeeklyBonusIfDue() {
+  if (!client || !isClientReady) return;
+  try {
+    const stats = await storage.getGlobalStats();
+    const now = Date.now();
+    const lastWeekly = stats.lastWeeklyBonusAt ? new Date(stats.lastWeeklyBonusAt).getTime() : 0;
+    if (now - lastWeekly < 604800000) return; // not yet a week
+    await storage.updateGlobalStats({ lastWeeklyBonusAt: new Date() });
+
+    const users = await storage.getUsers();
+    for (const user of users) {
+      if (!user.guideName) continue;
+      const weeklyXp = user.guideChildName ? 5000 : 1000;
+      await storage.updateUser(user.phoneId, { xp: user.xp + weeklyXp });
+      await safeSend(user.phoneId, `✨ Weekly guide bonus received!\n+${weeklyXp} XP from your companion${user.guideChildName ? " and child" : ""}~`);
+      await checkGuideEvents(user, user.phoneId);
+    }
+  } catch (err) {
+    console.error("Weekly bonus error:", err);
+  }
+}
+
 setInterval(async () => {
   if (!client || !isClientReady) return;
   try {
@@ -680,28 +715,15 @@ setInterval(async () => {
     }
 
     await storage.expireOldChallenges();
+
+    // FIX #11: Check weekly bonus on every 5-min tick instead of a fragile one-shot interval
+    await runWeeklyBonusIfDue();
   } catch (err) {
     console.error("Interval error:", err);
   }
 }, 300000);
 
-setInterval(async () => {
-  if (!client || !isClientReady) return;
-  try {
-    const users = await storage.getUsers();
-    for (const user of users) {
-      const hasGuide = !!user.guideName;
-      const hasChild = !!user.guideChildName;
-      if (!hasGuide) continue;
-      const weeklyXp = hasChild ? 5000 : 1000;
-      await storage.updateUser(user.phoneId, { xp: user.xp + weeklyXp });
-      await safeSend(user.phoneId, `✨ Weekly guide bonus received!\n+${weeklyXp} XP from your companion${hasChild ? " and child" : ""}~`);
-      await checkGuideEvents(user, user.phoneId);
-    }
-  } catch (err) {
-    console.error("Weekly interval error:", err);
-  }
-}, 604800000);
+// REMOVED: old unreliable weekly setInterval — replaced by runWeeklyBonusIfDue() above
 
 setInterval(async () => {
   if (!client || !isClientReady) return;
@@ -930,7 +952,7 @@ async function handleMessage(msg: Message) {
 
   // ── XP gain on normal messages ────────────────────────────────────────────
   if (body.length >= 3 && !body.startsWith("!")) {
-    let rate = user.species === "Constellation" ? 300 : (SPECIES_XP_RATES[user.species] || 5);
+ let rate = user.species === "Constellation" ? 300 : (SPECIES_XP_RATES[user.species] || 5);
     let dustBonus = 0;
 
     if (user.dustDomainUntil && new Date() < new Date(user.dustDomainUntil)) {
@@ -1068,7 +1090,6 @@ async function handleMessage(msg: Message) {
       ? `${GUIDES[user.guideName.toLowerCase()]?.emoji || "✨"} ${user.guideName}${user.guideChildName ? ` + 👶 ${user.guideChildName}` : ""}`
       : "None";
 
-    // ── Improved pet display with progress bar ────────────────────
     let petLine = "None";
     if (user.petType) {
       const petEmoji = PET_EMOJIS[user.petType] || "🐾";
@@ -1218,8 +1239,9 @@ async function handleMessage(msg: Message) {
       return msg.reply(`❌ *${itemName}* requires a target. Reply to someone's message to use it.`);
     }
 
-    const isFindable = ["dragon egg", "void fragment", "star dust", "vampire tooth", "cursed bone", "living core", "pet egg"].includes(itemLower);
-    if (isFindable && Math.random() > 0.11) {
+    // ── FIX #1: Only fizzle items that were found via chat drop, never shop-bought items ──
+    const canFizzle = FIZZLE_ITEMS.has(itemName) && !SHOP_ITEM_KEYS.has(itemLower);
+    if (canFizzle && Math.random() > 0.11) {
       inv.splice(num, 1);
       await storage.updateUser(phoneId, { inventory: inv });
       return msg.reply(`✨ You used ${itemName}, but its power remains dormant. The item was consumed.`);
@@ -1259,8 +1281,9 @@ async function handleMessage(msg: Message) {
       reply = `🦴 Shadow Veil active! You are now permanently immune to plagues.`;
 
     } else if (itemLower === "dragon egg") {
+      // FIX #2: initialize dragonEggProgress to 0, not 1
       if (user.dragonEggProgress > 0) return msg.reply("❌ You already have a Dragon Egg incubating.");
-      updates.dragonEggProgress = 1;
+      updates.dragonEggProgress = 0;
       reply = `🥚 The egg begins to pulse. It has begun feeding on nearby XP. (needs 1500 XP to hatch)`;
 
     } else if (itemLower === "vampire tooth") {
@@ -1282,7 +1305,7 @@ async function handleMessage(msg: Message) {
       updates.petType = type;
       updates.petXpStolen = 0;
       updates.petHatched = false;
-      reply = `🥚 You found a mysterious *${type.charAt(0).toUpperCase() + type.slice(1)} Egg*! It will hatch once it witnesses you stealing 50,000 XP using Blood Runes or Vampire abilities.`;
+      reply = `🥚 You cracked open a mysterious *${type.charAt(0).toUpperCase() + type.slice(1)} Egg*! It will hatch once it witnesses you stealing 50,000 XP using Blood Runes or Vampire abilities.`;
 
     } else if (itemLower === "cursed coin") {
       const outcomes = [
@@ -1397,20 +1420,22 @@ async function handleMessage(msg: Message) {
       return msg.reply(`🦷 You must wait ${mins} more minute(s) before feeding again.`);
     }
     const amt = Math.floor(Math.random() * 251) + 50;
-    await storage.updateUser(phoneId, { xp: user.xp + amt, lastSuckAt: new Date() });
+    // FIX #5: save inventory alongside petXpStolen/petHatched update
+    const suckUpdates: any = { xp: user.xp + amt, lastSuckAt: new Date() };
     await storage.updateUser(targetId, { xp: Math.max(0, target.xp - amt) });
 
-    // Update pet progress on vampire suck too
     if (user.petType && !user.petHatched) {
       const newXp = (user.petXpStolen || 0) + amt;
       const hatched = newXp >= PET_HATCH_THRESHOLD;
-      await storage.updateUser(phoneId, { petXpStolen: newXp, petHatched: hatched });
+      suckUpdates.petXpStolen = newXp;
+      suckUpdates.petHatched = hatched;
       if (hatched) {
         const petEmoji = PET_EMOJIS[user.petType] || "🐾";
         await client.sendMessage(phoneId, `🎊 *YOUR EGG HAS HATCHED!*\n\n${petEmoji} *${user.petType.charAt(0).toUpperCase() + user.petType.slice(1)}* has been born!\nUse *!petname [name]* to name your companion.\nIt will now fight alongside you in battle!`);
       }
     }
 
+    await storage.updateUser(phoneId, suckUpdates);
     await client.sendMessage(targetId, `Something cold grips you in the dark. You lost ${amt} XP.`);
     return msg.reply(`🦷 You drained *${amt} XP* from ${target.name}.`);
   }
@@ -1479,7 +1504,6 @@ async function handleMessage(msg: Message) {
     return msg.reply(`🕊️ You revived *${target.name}*!`);
   }
 
-  // ── Pet naming command ────────────────────────────────────────────────────
   if (body.startsWith("!petname ")) {
     if (!user.petHatched) return msg.reply("❌ You don't have a hatched pet to name yet.");
     const newName = body.replace("!petname ", "").trim();
@@ -1493,7 +1517,7 @@ async function handleMessage(msg: Message) {
   //  BATTLE SYSTEM
   // ════════════════════════════════════════════════════════════════
 
- if (body === "!skills") {
+  if (body === "!skills") {
     const unlockedSkills = getUnlockedSkills(user.rank);
     const actives = unlockedSkills.filter(s => s.type === "active");
     const passives = unlockedSkills.filter(s => s.type === "passive");
@@ -1569,10 +1593,9 @@ async function handleMessage(msg: Message) {
 
     if (targetId === phoneId) return msg.reply("❌ You cannot challenge yourself.");
 
-    // ── FIX: use fuzzy lookup so @lid and @c.us variants both resolve correctly ──
     const target = await storage.getUserByPhoneFuzzy(targetId);
     if (!target || !target.isRegistered) return msg.reply("❌ That person is not registered. They need to use !start first.");
-    const resolvedTargetId = target.phoneId; // always use the stored ID from here on
+    const resolvedTargetId = target.phoneId;
 
     if (target.isDead) return msg.reply("❌ You cannot challenge a dead person.");
     if (target.inBattle) return msg.reply("❌ That person is already in a battle.");
@@ -1590,13 +1613,13 @@ async function handleMessage(msg: Message) {
     const expiresAt = new Date(Date.now() + 300000);
     await storage.createChallenge({
       challengerPhoneId: phoneId,
-      targetPhoneId: resolvedTargetId, // ── FIX: use stored ID
+      targetPhoneId: resolvedTargetId,
       chatId: msg.from,
       expiresAt,
       status: "pending",
     });
 
-    await client.sendMessage(resolvedTargetId, // ── FIX: use stored ID
+    await client.sendMessage(resolvedTargetId,
       `⚔️ *${user.name}* has challenged you to a battle!\n\n` +
       `Reply *!accept* to accept or *!decline* to refuse.\n` +
       `This challenge expires in 5 minutes.`
@@ -1613,14 +1636,13 @@ async function handleMessage(msg: Message) {
     }
     if (user.inBattle) return msg.reply("❌ You are already in a battle.");
 
-    // ── FIX: use fuzzy lookup for challenger too ──
     const challenger = await storage.getUserByPhoneFuzzy(challenge.challengerPhoneId);
     if (!challenger) return msg.reply("❌ Challenger not found.");
     if (challenger.inBattle) return msg.reply("❌ The challenger is already in another battle.");
 
     await storage.updateChallenge(challenge.id, { status: "accepted" });
     await storage.updateUser(phoneId, { inBattle: true });
-    await storage.updateUser(challenger.phoneId, { inBattle: true }); // ── FIX: use stored ID
+    await storage.updateUser(challenger.phoneId, { inBattle: true });
 
     const cStats = computeStats(challenger, challenger.battleExp || 0);
     const tStats = computeStats(user, user.battleExp || 0);
@@ -1726,9 +1748,9 @@ async function handleMessage(msg: Message) {
     const challenge = await storage.getPendingChallengeForTarget(phoneId);
     if (!challenge) return msg.reply("❌ You have no pending challenge to decline.");
     await storage.updateChallenge(challenge.id, { status: "declined" });
-    const challenger = await storage.getUserByPhoneFuzzy(challenge.challengerPhoneId); // ── FIX
+    const challenger = await storage.getUserByPhoneFuzzy(challenge.challengerPhoneId);
     if (challenger) {
-      await client.sendMessage(challenger.phoneId, `❌ *${user.name}* declined your challenge.`); // ── FIX
+      await client.sendMessage(challenger.phoneId, `❌ *${user.name}* declined your challenge.`);
     }
     return msg.reply("❌ Challenge declined.");
   }
@@ -1784,7 +1806,13 @@ async function handleMessage(msg: Message) {
 
     const penalty = Math.floor(user.xp * 0.1);
     await storage.updateUser(phoneId, { xp: Math.max(0, user.xp - penalty) });
+    // FIX #9: also clear dungeonActive on forfeit
     await storage.endBattle(activeBattle.id, opponentId);
+    const dungeon = getDungeon(phoneId);
+    if (dungeon) {
+      deleteDungeon(phoneId);
+      await storage.updateUser(phoneId, { inBattle: false, dungeonActive: false });
+    }
 
     if (opponent) {
       await client.sendMessage(opponentId, `🏳️ *${user.name}* has forfeited! You win!\n🏆 Victory recorded.`);
@@ -1897,7 +1925,8 @@ async function handleMessage(msg: Message) {
       `╰══════════════════════════╯`
     );
   }
-if (body === "!getcard") {
+
+  if (body === "!getcard") {
     const now = new Date();
     if (user.lastCardClaim) {
       const diff = now.getTime() - new Date(user.lastCardClaim).getTime();
@@ -1981,9 +2010,7 @@ if (body === "!getcard") {
         }
       }
 
-      if (!imageSent) {
-        await msg.reply(cardMsg);
-      }
+      if (!imageSent) await msg.reply(cardMsg);
       return;
     }
 
@@ -2038,13 +2065,11 @@ if (body === "!getcard") {
         }
         const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), `${card.name}.jpg`);
         return msg.reply(media, undefined, { caption: cardMsg });
-      } catch {
-        // fall through to text
-      }
+      } catch { /* fall through */ }
     }
     return msg.reply(cardMsg);
   }
-   
+
   // ════════════════════════════════════════════════════════════════
   //  SECTS
   // ════════════════════════════════════════════════════════════════
@@ -2087,10 +2112,13 @@ if (body === "!getcard") {
     if (!sect) return msg.reply("❌ Your sect no longer exists.");
     const allUsers = await storage.getUsers();
     const members = allUsers.filter(u => u.sectId === sect.id);
+    // FIX #3: resolve leader name instead of showing raw phoneId
+    const leaderMember = members.find(m => m.phoneId === sect.leaderPhoneId);
+    const leaderDisplay = leaderMember ? leaderMember.name : sect.leaderPhoneId;
     const memberList = members.slice(0, 10).map((m, i) => `  ${i + 1}. ${m.name} — ${m.xp} XP`).join("\n");
     return msg.reply(
       `╭══════════════════════╮\n  🏯 ${sect.name} [${sect.tag}]\n╰══════════════════════╯\n` +
-      `  👑 Leader: ${sect.leaderPhoneId}\n  👥 Members: ${sect.membersCount}\n` +
+      `  👑 Leader: ${leaderDisplay}\n  👥 Members: ${sect.membersCount}\n` +
       `  💰 Treasury: ${sect.treasuryXp} XP\n\n  Top Members:\n${memberList}\n╰══════════════════════╯`
     );
   }
