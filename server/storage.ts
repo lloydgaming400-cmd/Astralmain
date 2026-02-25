@@ -227,28 +227,21 @@ export class DatabaseStorage implements IStorage {
     if (record) record.state = state;
   }
 
+  // ── FIX: wins/losses are already handled inside resolveBattleTurn in bot.ts.
+  //         This method only clears inBattle to avoid double-counting.
   async endBattle(battleId: string, winnerPhoneId: string): Promise<void> {
     const record = activeBattles.get(battleId);
     if (!record) return;
-    // Update win/loss counts in DB
+
     const loserPhoneId =
       record.challengerPhoneId === winnerPhoneId
         ? record.opponentPhoneId
         : record.challengerPhoneId;
-    const winner = await this.getUserByPhone(winnerPhoneId);
-    const loser = await this.getUserByPhone(loserPhoneId);
-    if (winner) {
-      await this.updateUser(winnerPhoneId, {
-        battleWins: (winner.battleWins || 0) + 1,
-        inBattle: false,
-      });
-    }
-    if (loser) {
-      await this.updateUser(loserPhoneId, {
-        battleLosses: (loser.battleLosses || 0) + 1,
-        inBattle: false,
-      });
-    }
+
+    // Only set inBattle = false — DO NOT increment wins/losses here
+    await this.updateUser(winnerPhoneId, { inBattle: false });
+    await this.updateUser(loserPhoneId,  { inBattle: false });
+
     // Clean up maps
     playerBattleMap.delete(record.challengerPhoneId);
     playerBattleMap.delete(record.opponentPhoneId);
