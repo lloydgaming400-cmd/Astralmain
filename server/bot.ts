@@ -718,8 +718,13 @@ export async function initBot() {
           '--disable-software-rasterizer',
           '--disable-extensions',
           '--single-process',
-          '--user-data-dir=/tmp/whatsapp-session-' + Date.now()
+          '--user-data-dir=/tmp/whatsapp-session-' + Date.now(),
+          '--disable-web-security',
+          '--no-default-browser-check'
         ],
+        handleSIGINT: false,
+        handleSIGTERM: false,
+        handleSIGHUP: false,
       },
     });
 

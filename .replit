@@ -3,7 +3,7 @@ run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 [nix]
 channel = "stable-25_05"
-packages = ["chromium"]
+packages = ["chromium", "nss", "freetype", "harfbuzz", "cacert", "libexif", "glib", "nspr"]
 
 [[ports]]
 localPort = 5000
