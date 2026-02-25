@@ -1889,7 +1889,8 @@ async function handleMessage(msg: Message) {
   // ════════════════════════════════════════════════════════════════
 
   if (body === "!dungeon") {
-    if (user.inBattle) return msg.reply("❌ You are in a battle. Finish it first.");
+    // Check if in PvP battle (not dungeon)
+    if (user.inBattle && !(user as any).dungeonActive) return msg.reply("❌ You are in a PvP battle. Finish it first.");
     const existing = getDungeon(phoneId);
     if (existing) {
       // Resume existing dungeon
@@ -1926,6 +1927,7 @@ async function handleMessage(msg: Message) {
       playerMp: stats.maxMp,
       playerMaxHp: stats.maxHp,
       playerMaxMp: stats.maxMp,
+      playerStats: stats,
       playerActiveEffects: [],
       playerCooldowns: {},
       monsterActiveEffects: [],
@@ -1951,7 +1953,7 @@ async function handleMessage(msg: Message) {
     }
 
     setDungeon(phoneId, dungeonState);
-    await storage.updateUser(phoneId, { inBattle: true } as any);
+    await storage.updateUser(phoneId, { inBattle: true, dungeonActive: true } as any);
 
     const skillList = (user.equippedActives as string[])
       .map((id, i) => {
@@ -2021,7 +2023,7 @@ async function handleMessage(msg: Message) {
       if (newState.floor >= 10) {
         // Tower cleared!
         deleteDungeon(phoneId);
-        await storage.updateUser(phoneId, { inBattle: false, dungeonFloor: 1 } as any);
+        await storage.updateUser(phoneId, { inBattle: false, dungeonActive: false, dungeonFloor: 1 } as any);
         return msg.reply(
           `${logText}\n\n${reward.message}\n\n` +
           `╭══════════════════════╮\n` +
@@ -2081,6 +2083,7 @@ async function handleMessage(msg: Message) {
       await storage.updateUser(phoneId, {
         xp: user.xp + keptXp,
         inBattle: false,
+        dungeonActive: false,
         dungeonFloor: 1,
       } as any);
       deleteDungeon(phoneId);
@@ -2129,7 +2132,7 @@ async function handleMessage(msg: Message) {
     await storage.updateUser(phoneId, {
       xp: user.xp + keptXp,
       inBattle: false,
-      // Keep floor progress — they can continue later
+      dungeonActive: false,
       dungeonFloor: dungeon.floor,
     } as any);
     deleteDungeon(phoneId);
