@@ -45,6 +45,9 @@ export async function runMigrations() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS equipped_passive TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS in_battle BOOLEAN NOT NULL DEFAULT FALSE;
 
+      -- Dungeon System columns
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_floor INTEGER NOT NULL DEFAULT 1;
+
       -- Challenges table
       CREATE TABLE IF NOT EXISTS challenges (
         id SERIAL PRIMARY KEY,
