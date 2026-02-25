@@ -19,33 +19,33 @@ export interface Skill {
   rank: SkillRank;
   type: SkillType;
   mpCost: number;
-  cooldown: number;            // turns
+  cooldown: number;
   statBase: StatType;
-  attackPercent: number;       // e.g. 0.10 = 10%
+  attackPercent: number;
   effect: SkillEffect | null;
-  description: string;         // shown in pick list
+  description: string;
 }
 
 export interface SkillEffect {
   kind:
-    | "burn"           // damage over time
-    | "freeze"         // skip turn
-    | "bleed"          // damage over time physical
-    | "stun"           // skip turn
-    | "shield"         // absorb damage
-    | "haste"          // speed boost
-    | "slow"           // speed reduction
-    | "regen"          // HP recovery per turn
-    | "mp_drain"       // drain MP from opponent
-    | "lifesteal"      // heal self on hit
-    | "dodge_up"       // raise dodge chance
-    | "crit_up"        // raise crit chance
-    | "str_up"         // raise strength
-    | "agi_up"         // raise agility
-    | "aoe_cleave"     // future use
-    | "silence";       // block skill use
-  value: number;       // amount (damage per turn, %, stat points, etc.)
-  duration: number;    // turns
+    | "burn"
+    | "freeze"
+    | "bleed"
+    | "stun"
+    | "shield"
+    | "haste"
+    | "slow"
+    | "regen"
+    | "mp_drain"
+    | "lifesteal"
+    | "dodge_up"
+    | "crit_up"
+    | "str_up"
+    | "agi_up"
+    | "aoe_cleave"
+    | "silence";
+  value: number;
+  duration: number;
   target: "self" | "opponent";
 }
 
@@ -63,7 +63,7 @@ export interface ActiveEffect {
   kind: SkillEffect["kind"];
   value: number;
   turnsLeft: number;
-  source: string;    // skill name that applied it
+  source: string;
 }
 
 export interface Combatant {
@@ -72,10 +72,10 @@ export interface Combatant {
   stats: BattleStats;
   hp: number;
   mp: number;
-  equippedActives: Skill[];   // up to 3
+  equippedActives: Skill[];
   equippedPassive: Skill | null;
   activeEffects: ActiveEffect[];
-  cooldowns: Record<string, number>; // skillId -> turnsLeft
+  cooldowns: Record<string, number>;
   battleExp: number;
 }
 
@@ -85,13 +85,13 @@ export interface BattleState {
   target: Combatant;
   turn: number;
   location: string;
-  firstMoverId: string;        // phoneId of who moves first this turn
+  firstMoverId: string;
   phase: "waiting_challenger" | "waiting_target" | "resolving" | "ended";
-  challengerSkillChoice: string | null;   // skillId chosen this turn
+  challengerSkillChoice: string | null;
   targetSkillChoice: string | null;
   turnTimer: ReturnType<typeof setTimeout> | null;
-  chatId: string;              // group chat or DM id
-  xpTransfer: number;          // random 100-500 for end
+  chatId: string;
+  xpTransfer: number;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -107,11 +107,11 @@ export const RANK_MP_COST: Record<SkillRank, number> = {
 };
 
 // ─────────────────────────────────────────────────────────────────
-//  SKILL POOL (60 skills, D→S, Solo-Leveling flavoured)
+//  SKILL POOL
 // ─────────────────────────────────────────────────────────────────
 
 export const ALL_SKILLS: Skill[] = [
-  // ── D RANK (unlock at rank 8) ──────────────────────────────────
+  // ── D RANK ────────────────────────────────────────────────────
   {
     id: "d_slash",
     name: "Shadow Slash",
@@ -185,7 +185,7 @@ export const ALL_SKILLS: Skill[] = [
     description: "Passive: absorb flat 15 damage per hit.",
   },
 
-  // ── C RANK (unlock at rank 7) ──────────────────────────────────
+  // ── C RANK ────────────────────────────────────────────────────
   {
     id: "c_ember",
     name: "Ember Fang",
@@ -259,7 +259,7 @@ export const ALL_SKILLS: Skill[] = [
     description: "Evade and strike. +20% dodge for 2 turns.",
   },
 
-  // ── B RANK (unlock at rank 6) ──────────────────────────────────
+  // ── B RANK ────────────────────────────────────────────────────
   {
     id: "b_void_wave",
     name: "Void Wave",
@@ -369,7 +369,7 @@ export const ALL_SKILLS: Skill[] = [
     description: "Steal 30% of damage dealt as HP.",
   },
 
-  // ── A RANK (unlock at rank 5) ──────────────────────────────────
+  // ── A RANK ────────────────────────────────────────────────────
   {
     id: "a_sovereign",
     name: "Sovereign's Wrath",
@@ -479,7 +479,7 @@ export const ALL_SKILLS: Skill[] = [
     description: "Passive: +25% crit. Death rides every strike.",
   },
 
-  // ── S RANK (unlock at rank 4 and below) ───────────────────────
+  // ── S RANK ────────────────────────────────────────────────────
   {
     id: "s_arise",
     name: "ARISE",
@@ -580,11 +580,9 @@ export const ALL_SKILLS: Skill[] = [
 
 // ─────────────────────────────────────────────────────────────────
 //  RANK → SKILL UNLOCK TIER MAP
-//  Bot rank 8 = lowest, rank 1 = highest
 // ─────────────────────────────────────────────────────────────────
 
 export function getUnlockedSkillRanks(botRank: number): SkillRank[] {
-  // botRank 8 = D only, 7 = D+C, 6 = D+C+B, 5 = +A, 4-1 = +S
   const unlocks: SkillRank[] = ["D"];
   if (botRank <= 7) unlocks.push("C");
   if (botRank <= 6) unlocks.push("B");
@@ -616,32 +614,32 @@ const SPECIES_BONUSES: Record<string, Partial<BattleStats>> = {
 };
 
 // ─────────────────────────────────────────────────────────────────
-//  STAT SCALING FROM CHAT XP + BATTLE EXP + RANK
+//  STAT SCALING
 // ─────────────────────────────────────────────────────────────────
 
 export function computeStats(user: User, battleExp: number): BattleStats {
-  const botRank = user.rank; // 8=lowest, 1=highest
-
-  // Base scaling from chat XP
+  const botRank = user.rank;
   const xpScale = Math.floor(user.xp / 1000);
-
-  // Rank bonus (inverted: rank 8 = 0 bonus, rank 1 = 70 bonus)
   const rankBonus = (8 - botRank) * 10;
-
-  // Battle EXP bonus
   const bExpScale = Math.floor(battleExp / 50) * 3;
 
+  // Per-battle permanent stat gains (stored on user)
+  const strBonus = (user as any).strBonus || 0;
+  const agiBonus = (user as any).agiBonus || 0;
+  const intBonus = (user as any).intBonus || 0;
+  const lckBonus = (user as any).lckBonus || 0;
+  const spdBonus = (user as any).spdBonus || 0;
+
   const base: BattleStats = {
-    strength:     20 + rankBonus + xpScale + bExpScale,
-    agility:      15 + rankBonus + xpScale + bExpScale,
-    intelligence: 15 + rankBonus + xpScale + bExpScale,
-    luck:         10 + Math.floor(rankBonus / 2) + Math.floor(xpScale / 2),
-    speed:        20 + rankBonus + xpScale + bExpScale,
+    strength:     20 + rankBonus + xpScale + bExpScale + strBonus,
+    agility:      15 + rankBonus + xpScale + bExpScale + agiBonus,
+    intelligence: 15 + rankBonus + xpScale + bExpScale + intBonus,
+    luck:         10 + Math.floor(rankBonus / 2) + Math.floor(xpScale / 2) + lckBonus,
+    speed:        20 + rankBonus + xpScale + bExpScale + spdBonus,
     maxHp:        200 + (8 - botRank) * 50 + xpScale * 5,
     maxMp:        100 + (8 - botRank) * 20 + xpScale * 2,
   };
 
-  // Species bonuses
   const bonus = SPECIES_BONUSES[user.species] || {};
   return {
     strength:     base.strength     + (bonus.strength     || 0),
@@ -655,7 +653,54 @@ export function computeStats(user: User, battleExp: number): BattleStats {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  DAMAGE CALCULATION
+//  STAT GROWTH REWARD (called after battle ends)
+//  Returns the stat gains to apply to winner & loser
+// ─────────────────────────────────────────────────────────────────
+
+export interface StatGain {
+  str: number;
+  agi: number;
+  int: number;
+  lck: number;
+  spd: number;
+}
+
+export function rollStatGains(isWinner: boolean): StatGain {
+  // Winners get 3-6 gains, losers get 1-3
+  const roll = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  if (isWinner) {
+    return {
+      str: roll(2, 6),
+      agi: roll(1, 5),
+      int: roll(1, 5),
+      lck: roll(0, 3),
+      spd: roll(1, 4),
+    };
+  } else {
+    return {
+      str: roll(0, 3),
+      agi: roll(0, 2),
+      int: roll(0, 2),
+      lck: roll(0, 1),
+      spd: roll(0, 2),
+    };
+  }
+}
+
+export function formatStatGains(gains: StatGain, label: string): string {
+  const parts: string[] = [];
+  if (gains.str > 0) parts.push(`💪 STR +${gains.str}`);
+  if (gains.agi > 0) parts.push(`🏃 AGI +${gains.agi}`);
+  if (gains.int > 0) parts.push(`🧠 INT +${gains.int}`);
+  if (gains.lck > 0) parts.push(`🍀 LCK +${gains.lck}`);
+  if (gains.spd > 0) parts.push(`💨 SPD +${gains.spd}`);
+  if (!parts.length) return `${label}: No stat gains this time.`;
+  return `${label}\n${parts.join("  ")}`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  DAMAGE CALCULATION — 30 to 500, strength-driven, tough battles
 // ─────────────────────────────────────────────────────────────────
 
 export interface DamageResult {
@@ -670,52 +715,76 @@ export function calculateDamage(
   defender: Combatant,
   skill: Skill
 ): DamageResult {
-  const statMap: Record<StatType, keyof BattleStats> = {
-    strength: "strength",
-    agility: "agility",
-    intelligence: "intelligence",
-    luck: "luck",
-    speed: "speed",
-  };
-  
-  // Use strength primarily for damage as requested
-  const strengthStat = attacker.stats.strength;
+  // ── Get the attacker's primary stat for this skill ─────────────
+  let primaryStat = attacker.stats.strength; // default
+  if (skill.statBase === "agility")      primaryStat = attacker.stats.agility;
+  if (skill.statBase === "intelligence") primaryStat = attacker.stats.intelligence;
+  if (skill.statBase === "luck")         primaryStat = attacker.stats.luck;
+  if (skill.statBase === "speed")        primaryStat = attacker.stats.speed;
 
-  // Base damage from strength (scales from ~36 at 20 str to ~360 at 200 str)
-  let dmg = Math.floor(strengthStat * 1.8 * (1 + skill.attackPercent));
-  
-  // Add small random variance
-  dmg += Math.floor(Math.random() * 20);
+  // ── Apply active buffs to the primary stat ─────────────────────
+  for (const fx of attacker.activeEffects) {
+    if (fx.kind === "str_up" && skill.statBase === "strength")      primaryStat += fx.value;
+    if (fx.kind === "agi_up" && skill.statBase === "agility")       primaryStat += fx.value;
+    if (fx.kind === "haste"  && skill.statBase === "speed")         primaryStat += fx.value;
+  }
 
-  // Strictly clamp between 30 and 500 for normal hits
+  // ── Strength always contributes partially to every hit ─────────
+  // This ensures strength matters even for INT/AGI skills
+  const strContrib = Math.floor(attacker.stats.strength * 0.25);
+
+  // ── Defender's agility reduces damage (counter-stat) ──────────
+  // High AGI defenders are harder to land full hits on
+  const defAgi = defender.stats.agility;
+  const agiMitigation = Math.floor(defAgi * 0.15); // 15% of defender's agility as damage reduction
+
+  // ── Base formula ───────────────────────────────────────────────
+  // Range: a mid-rank player (str=50) with a B-rank skill (0.22) → ~50*1.8*(1.22) ≈ 110
+  // Low player (str=20, D-rank 0.10) → 20*1.4*(1.10) ≈ 30
+  // High player (str=150, S-rank 0.50) → 150*1.8*(1.50) ≈ 405 — safely under 500
+  let dmg = Math.floor(primaryStat * 1.8 * (1 + skill.attackPercent) + strContrib);
+
+  // Subtract agility mitigation (makes battles tougher — defense matters)
+  dmg = Math.max(0, dmg - agiMitigation);
+
+  // Small random variance (+/- 15%)
+  const variance = 1 + (Math.random() * 0.30 - 0.15);
+  dmg = Math.floor(dmg * variance);
+
+  // Hard clamp: 30 minimum, 500 maximum (non-crit)
   dmg = Math.max(30, Math.min(500, dmg));
 
-  let critChance = attacker.stats.luck;
+  // ── Crit calculation ───────────────────────────────────────────
+  let critChance = attacker.stats.luck; // luck drives crit
   for (const fx of attacker.activeEffects) {
     if (fx.kind === "crit_up") critChance += fx.value;
   }
-  critChance = Math.min(critChance, 85);
+  critChance = Math.min(critChance, 80); // cap at 80%
   const crit = Math.random() * 100 < critChance;
   if (crit) {
-    dmg = Math.floor(dmg * 1.5);
-    // Ensure even crits stay within reasonable bounds (cap at 750)
-    dmg = Math.min(750, dmg);
+    dmg = Math.floor(dmg * 1.6);
+    dmg = Math.min(750, dmg); // crits can go up to 750
   }
 
-  let dodgeChance = 10;
+  // ── Dodge calculation ──────────────────────────────────────────
+  // Defender's speed matters for dodge: higher speed = better dodge
+  let dodgeChance = 8 + Math.floor(defender.stats.speed / 20);
   for (const fx of defender.activeEffects) {
     if (fx.kind === "dodge_up") dodgeChance += fx.value;
+    if (fx.kind === "slow")     dodgeChance = Math.max(2, dodgeChance - 10);
   }
+  dodgeChance = Math.min(dodgeChance, 60); // cap dodge at 60%
   const dodged = Math.random() * 100 < dodgeChance;
   if (dodged) dmg = 0;
 
+  // ── Shield absorption ──────────────────────────────────────────
   if (!dodged && dmg > 0) {
-    let shieldLeft = 0;
+    let shieldTotal = 0;
     for (const fx of defender.activeEffects) {
-      if (fx.kind === "shield") shieldLeft += fx.value;
+      if (fx.kind === "shield") shieldTotal += fx.value;
     }
-    if (shieldLeft > 0) {
-      const absorbed = Math.min(shieldLeft, dmg);
+    if (shieldTotal > 0) {
+      const absorbed = Math.min(shieldTotal, dmg);
       dmg = Math.max(0, dmg - absorbed);
     }
   }
@@ -759,7 +828,6 @@ export function makeBar(current: number, max: number, size = 10): string {
 
 // ─────────────────────────────────────────────────────────────────
 //  APPLY TURN EFFECTS (DoT, regen, etc.)
-//  Returns log lines describing what happened
 // ─────────────────────────────────────────────────────────────────
 
 export function applyTurnEffects(combatant: Combatant): string[] {
@@ -767,12 +835,12 @@ export function applyTurnEffects(combatant: Combatant): string[] {
   for (const fx of combatant.activeEffects) {
     if (fx.kind === "burn" || fx.kind === "bleed") {
       combatant.hp = Math.max(0, combatant.hp - fx.value);
-      lines.push(`🔥 ${combatant.name} takes ${fx.value} ${fx.kind === "burn" ? "burn" : "bleed"} damage. HP: ${combatant.hp}`);
+      lines.push(`🔥 *${combatant.name}* takes *${fx.value}* ${fx.kind === "burn" ? "burn" : "bleed"} damage. HP: ${combatant.hp}`);
     }
     if (fx.kind === "regen") {
       const healed = Math.min(fx.value, combatant.stats.maxHp - combatant.hp);
       combatant.hp = Math.min(combatant.stats.maxHp, combatant.hp + fx.value);
-      if (healed > 0) lines.push(`💚 ${combatant.name} regenerates ${healed} HP. HP: ${combatant.hp}`);
+      if (healed > 0) lines.push(`💚 *${combatant.name}* regenerates *${healed} HP*. HP: ${combatant.hp}`);
     }
   }
   return lines;
@@ -792,7 +860,7 @@ export function tickCooldowns(combatant: Combatant): void {
 export function tickEffects(combatant: Combatant): string[] {
   const expired: string[] = [];
   combatant.activeEffects = combatant.activeEffects.filter(fx => {
-    if (fx.duration === 999) return true; // permanent (passive)
+    if (fx.duration === 999) return true;
     fx.turnsLeft--;
     if (fx.turnsLeft <= 0) {
       expired.push(fx.source);
@@ -830,7 +898,6 @@ export function applySkillEffect(
     case "silence":
     case "freeze":
     case "stun":
-      // Remove existing same-kind effect (refresh)
       target.activeEffects = target.activeEffects.filter(fx => fx.kind !== effect.kind || fx.duration === 999);
       target.activeEffects.push({
         kind: effect.kind,
@@ -838,18 +905,17 @@ export function applySkillEffect(
         turnsLeft: effect.duration,
         source: skillName,
       });
-      logs.push(`✨ ${skillName} applied *${effect.kind}* to ${target.name} for ${effect.duration === 999 ? "battle" : `${effect.duration} turn(s)`}.`);
+      logs.push(`✨ *${skillName}* applied *${effect.kind}* to ${target.name} for ${effect.duration === 999 ? "battle" : `${effect.duration} turn(s)`}.`);
       break;
 
     case "mp_drain":
       const drained = Math.min(effect.value, defender.mp);
       defender.mp = Math.max(0, defender.mp - drained);
       attacker.mp = Math.min(attacker.stats.maxMp, attacker.mp + Math.floor(drained * 0.5));
-      logs.push(`🌀 ${skillName} drained *${drained} MP* from ${defender.name}.`);
+      logs.push(`🌀 *${skillName}* drained *${drained} MP* from ${defender.name}.`);
       break;
 
     case "lifesteal":
-      // handled after damage in resolution — stored as effect
       target.activeEffects.push({
         kind: "lifesteal",
         value: effect.value,
@@ -890,7 +956,6 @@ export function canUseSkill(
   if (combatant.mp < skill.mpCost) {
     return { ok: false, reason: `Not enough MP for *${skill.name}*. Need ${skill.mpCost} MP, have ${combatant.mp}.` };
   }
-  // Cooldown check removed
   const silenced = combatant.activeEffects.some(fx => fx.kind === "silence");
   if (silenced && skill.rank !== "D") {
     return { ok: false, reason: `You are *silenced*. Only D-rank skills can be used.` };
@@ -925,15 +990,26 @@ export function formatTurnBlock(state: BattleState): string {
   const tgHpBar = makeBar(target.hp, target.stats.maxHp);
   const tgMpBar = makeBar(target.mp, target.stats.maxMp);
 
+  // Show active effects (non-permanent)
+  const fmtEffects = (c: Combatant) => {
+    const efx = c.activeEffects
+      .filter(fx => fx.duration !== 999 && fx.turnsLeft > 0)
+      .map(fx => `${fx.kind}(${fx.turnsLeft})`)
+      .join(", ");
+    return efx ? `\n  ⚠️ Effects: ${efx}` : "";
+  };
+
   return (
     `⚔️ *TURN ${turn}*\n` +
     `📍 ${location}\n\n` +
     `*${challenger.name}*\n` +
     `HP: [${chHpBar}] ${challenger.hp}/${challenger.stats.maxHp}\n` +
-    `MP: [${chMpBar}] ${challenger.mp}/${challenger.stats.maxMp}\n\n` +
+    `MP: [${chMpBar}] ${challenger.mp}/${challenger.stats.maxMp}` +
+    `${fmtEffects(challenger)}\n\n` +
     `*${target.name}*\n` +
     `HP: [${tgHpBar}] ${target.hp}/${target.stats.maxHp}\n` +
-    `MP: [${tgMpBar}] ${target.mp}/${target.stats.maxMp}`
+    `MP: [${tgMpBar}] ${target.mp}/${target.stats.maxMp}` +
+    `${fmtEffects(target)}`
   );
 }
 
@@ -942,12 +1018,10 @@ export function formatTurnBlock(state: BattleState): string {
 // ─────────────────────────────────────────────────────────────────
 
 export function getDefaultSkill(combatant: Combatant): Skill {
-  // Pick first active skill that user can afford and isn't on cooldown
   for (const sk of combatant.equippedActives) {
     const check = canUseSkill(combatant, sk);
     if (check.ok) return sk;
   }
-  // If nothing works, return first active anyway (0 mp cost fallback)
   return combatant.equippedActives[0];
 }
 
@@ -979,4 +1053,20 @@ export function determineFirstMover(
       `⚡ *${first.name}* moves first this turn.\n` +
       `Speed: ${first.stats.speed} vs ${second.stats.speed}`,
   };
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  MOMENTUM SYSTEM — consecutive hits build momentum
+//  Stored on combatant, resets on dodge/miss
+// ─────────────────────────────────────────────────────────────────
+
+export interface MomentumTracker {
+  challengerStreak: number; // consecutive hits without being dodged
+  targetStreak: number;
+}
+
+export function applyMomentumBonus(streak: number): number {
+  // Each consecutive hit adds a small damage bonus (max 5 stacks = +25%)
+  const stacks = Math.min(streak, 5);
+  return Math.floor(stacks * 0.05 * 100); // returns as percentage bonus
 }
