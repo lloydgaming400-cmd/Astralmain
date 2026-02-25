@@ -699,7 +699,10 @@ export async function initBot() {
 
   try {
     client = new Client({
-      authStrategy: new LocalAuth({ dataPath: authPath }),
+      authStrategy: new LocalAuth({ 
+        clientId: "astral-bot",
+        dataPath: authPath 
+      }),
       restartOnAuthFail: true,
       puppeteer: {
         executablePath: chromiumPath,
@@ -715,6 +718,7 @@ export async function initBot() {
           '--disable-software-rasterizer',
           '--disable-extensions',
           '--single-process',
+          '--user-data-dir=/tmp/whatsapp-session-' + Date.now()
         ],
       },
     });
