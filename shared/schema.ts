@@ -18,7 +18,8 @@ export const users = pgTable("users", {
   missAstralLastUsed: timestamp("miss_astral_last_used"),
   missAstralUsageCount: integer("miss_astral_usage_count").notNull().default(0),
   isRegistered: boolean("is_registered").notNull().default(false),
-  rank: integer("rank").notNull().default(1),
+  // FIX: default was 1 (highest rank) — new users should start at 8 (lowest)
+  rank: integer("rank").notNull().default(8),
   condition: text("condition").notNull().default("Healthy"),
   hp: integer("hp").notNull().default(100),
   lastDailyReset: timestamp("last_daily_reset").notNull().defaultNow(),
@@ -57,6 +58,10 @@ export const users = pgTable("users", {
   equippedActives: jsonb("equipped_actives").notNull().default([]),  // string[] skill IDs
   equippedPassive: text("equipped_passive"),                          // skill ID or null
   inBattle: boolean("in_battle").notNull().default(false),
+
+  // FIX: These were missing from schema — caused runtime `as any` casts and silent DB errors
+  dungeonFloor: integer("dungeon_floor").notNull().default(1),
+  dungeonActive: boolean("dungeon_active").notNull().default(false),
 });
 
 export const globalStats = pgTable("global_stats", {
