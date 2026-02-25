@@ -47,6 +47,7 @@ export async function runMigrations() {
 
       -- Dungeon System columns
       ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_floor INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_active BOOLEAN NOT NULL DEFAULT FALSE;
 
       -- Challenges table
       CREATE TABLE IF NOT EXISTS challenges (
