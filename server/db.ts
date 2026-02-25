@@ -1,66 +1,187 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
-import * as schema from "@shared/schema";
-const { Pool } = pg;
+import { db } from "./db";
+import {
+  users, sects, cards, globalStats, challenges,
+  type User, type InsertUser,
+  type Sect, type InsertSect,
+  type Card, type InsertCard,
+  type Challenge, type InsertChallenge,
+} from "@shared/schema";
+import { eq, desc, and } from "drizzle-orm";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+export interface IStorage {
+  getUserByPhone(phoneId: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(phoneId: string, updates: Partial<InsertUser>): Promise<User>;
+  getBannedUsers(): Promise<User[]>;
+
+  // Sects
+  getSect(id: number): Promise<Sect | undefined>;
+  getSectByName(name: string): Promise<Sect | undefined>;
+  getSects(): Promise<Sect[]>;
+  createSect(sect: InsertSect): Promise<Sect>;
+  updateSect(id: number, updates: Partial<InsertSect>): Promise<Sect>;
+
+  // Cards
+  getUserCards(phoneId: string): Promise<Card[]>;
+  createCard(card: InsertCard): Promise<Card>;
+  getCard(id: number): Promise<Card | undefined>;
+  updateCard(id: number, updates: Partial<InsertCard>): Promise<Card>;
+  deleteCard(id: number): Promise<void>;
+
+  // Global Stats
+  getGlobalStats(): Promise<any>;
+  updateGlobalStats(updates: any): Promise<void>;
+  resetDatabase(): Promise<void>;
+
+  // Challenges
+  createChallenge(c: InsertChallenge): Promise<Challenge>;
+  getPendingChallenge(challengerPhoneId: string): Promise<Challenge | undefined>;
+  getPendingChallengeForTarget(targetPhoneId: string): Promise<Challenge | undefined>;
+  updateChallenge(id: number, updates: Partial<InsertChallenge>): Promise<Challenge>;
+  expireOldChallenges(): Promise<void>;
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
+export class DatabaseStorage implements IStorage {
+  async getUserByPhone(phoneId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.phoneId, phoneId));
+    return user;
+  }
 
-export async function runMigrations() {
-  try {
-    console.log("[db] Running database migrations...");
-    await db.execute(`
-      -- Existing columns (safe to re-run)
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS eclipse_until TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS phantom_until TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS mirror_race TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS mirror_original_race TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS mirror_until TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS dust_domain_until TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS dust_domain_messages INTEGER NOT NULL DEFAULT 0;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS has_shadow_veil BOOLEAN NOT NULL DEFAULT FALSE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_suck_at TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS disease TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS infected_at TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_dead BOOLEAN NOT NULL DEFAULT FALSE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_vampire BOOLEAN NOT NULL DEFAULT FALSE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS vampire_until TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_constellation BOOLEAN NOT NULL DEFAULT FALSE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS dragon_egg_hatched BOOLEAN NOT NULL DEFAULT FALSE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS dragon_egg_progress INTEGER NOT NULL DEFAULT 0;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_name TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_smash_at TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_pregnant BOOLEAN NOT NULL DEFAULT FALSE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_child_name TEXT;
+  async resetDatabase(): Promise<void> {
+    await db.delete(cards);
+    await db.delete(sects);
+    await db.delete(users);
+  }
 
-      -- Battle System columns
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS battle_exp INTEGER NOT NULL DEFAULT 0;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS battle_wins INTEGER NOT NULL DEFAULT 0;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS battle_losses INTEGER NOT NULL DEFAULT 0;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS equipped_actives JSONB NOT NULL DEFAULT '[]';
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS equipped_passive TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS in_battle BOOLEAN NOT NULL DEFAULT FALSE;
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.isBanned, false)).orderBy(desc(users.xp));
+  }
 
-      -- Dungeon System columns
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_floor INTEGER NOT NULL DEFAULT 1;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS dungeon_active BOOLEAN NOT NULL DEFAULT FALSE;
+  async getBannedUsers(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.isBanned, true)).orderBy(desc(users.xp));
+  }
 
-      -- Challenges table
-      CREATE TABLE IF NOT EXISTS challenges (
-        id SERIAL PRIMARY KEY,
-        challenger_phone_id TEXT NOT NULL,
-        target_phone_id TEXT NOT NULL,
-        chat_id TEXT NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        status TEXT NOT NULL DEFAULT 'pending'
-      );
-    `);
-    console.log("[db] Migrations complete ✅");
-  } catch (err) {
-    console.error("[db] Migration error:", err);
+  async createUser(user: InsertUser): Promise<User> {
+    const [created] = await db.insert(users).values(user).returning();
+    return created;
+  }
+
+  async updateUser(phoneId: string, updates: Partial<InsertUser>): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.phoneId, phoneId))
+      .returning();
+    return updated;
+  }
+
+  async getSect(id: number): Promise<Sect | undefined> {
+    const [sect] = await db.select().from(sects).where(eq(sects.id, id));
+    return sect;
+  }
+
+  async getSectByName(name: string): Promise<Sect | undefined> {
+    const [sect] = await db.select().from(sects).where(eq(sects.name, name));
+    return sect;
+  }
+
+  async getSects(): Promise<Sect[]> {
+    return await db.select().from(sects).orderBy(desc(sects.treasuryXp));
+  }
+
+  async createSect(sect: InsertSect): Promise<Sect> {
+    const [created] = await db.insert(sects).values(sect).returning();
+    return created;
+  }
+
+  async updateSect(id: number, updates: Partial<InsertSect>): Promise<Sect> {
+    const [updated] = await db.update(sects).set(updates).where(eq(sects.id, id)).returning();
+    return updated;
+  }
+
+  async getUserCards(phoneId: string): Promise<Card[]> {
+    return await db.select().from(cards).where(eq(cards.ownerPhoneId, phoneId));
+  }
+
+  async createCard(card: InsertCard): Promise<Card> {
+    const [created] = await db.insert(cards).values(card).returning();
+    return created;
+  }
+
+  async getCard(id: number): Promise<Card | undefined> {
+    const [card] = await db.select().from(cards).where(eq(cards.id, id));
+    return card;
+  }
+
+  async updateCard(id: number, updates: Partial<InsertCard>): Promise<Card> {
+    const [updated] = await db.update(cards).set(updates).where(eq(cards.id, id)).returning();
+    return updated;
+  }
+
+  async deleteCard(id: number): Promise<void> {
+    await db.delete(cards).where(eq(cards.id, id));
+  }
+
+  async getGlobalStats(): Promise<any> {
+    const [stats] = await db.select().from(globalStats).where(eq(globalStats.id, 1));
+    return stats;
+  }
+
+  async updateGlobalStats(updates: any): Promise<void> {
+    const [stats] = await db.select().from(globalStats).where(eq(globalStats.id, 1));
+    if (!stats) {
+      await db.insert(globalStats).values({ id: 1, ...updates });
+    } else {
+      await db.update(globalStats).set(updates).where(eq(globalStats.id, 1));
+    }
+  }
+
+  // ── Challenges ────────────────────────────────────────────────────────────────
+
+  async createChallenge(c: InsertChallenge): Promise<Challenge> {
+    const [created] = await db.insert(challenges).values(c).returning();
+    return created;
+  }
+
+  async getPendingChallenge(challengerPhoneId: string): Promise<Challenge | undefined> {
+    const [c] = await db
+      .select()
+      .from(challenges)
+      .where(and(eq(challenges.challengerPhoneId, challengerPhoneId), eq(challenges.status, "pending")));
+    return c;
+  }
+
+  async getPendingChallengeForTarget(targetPhoneId: string): Promise<Challenge | undefined> {
+    const [c] = await db
+      .select()
+      .from(challenges)
+      .where(and(eq(challenges.targetPhoneId, targetPhoneId), eq(challenges.status, "pending")));
+    return c;
+  }
+
+  async updateChallenge(id: number, updates: Partial<InsertChallenge>): Promise<Challenge> {
+    const [updated] = await db
+      .update(challenges)
+      .set(updates)
+      .where(eq(challenges.id, id))
+      .returning();
+    return updated;
+  }
+
+  async expireOldChallenges(): Promise<void> {
+    // Mark all pending challenges past their expiry as expired
+    const now = new Date();
+    const pending = await db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.status, "pending"));
+    for (const ch of pending) {
+      if (new Date(ch.expiresAt) < now) {
+        await db.update(challenges).set({ status: "expired" }).where(eq(challenges.id, ch.id));
+      }
+    }
   }
 }
+
+export const storage = new DatabaseStorage();
