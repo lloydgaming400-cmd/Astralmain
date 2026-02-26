@@ -40,6 +40,7 @@ import {
   setDungeon,
   deleteDungeon,
   advanceDungeonWave,
+  createDungeonState,
   type DungeonState,
 } from './dungeon';
 
@@ -2047,37 +2048,7 @@ async function handleMessage(msg: Message) {
     const startFloor = user.dungeonFloor || 1;
     const monster = getMonsterForFloor(startFloor);
 
-    const dungeonState: DungeonState = {
-      phoneId,
-      floor: startFloor,
-      arc: Math.ceil(startFloor / 10),
-      arcName: monster.arcName || "The Forsaken Gate",
-      monster,
-      playerHp: stats.maxHp,
-      playerMp: stats.maxMp,
-      playerMaxHp: stats.maxHp,
-      playerMaxMp: stats.maxMp,
-      playerStats: stats,
-      playerActiveEffects: [],
-      playerCooldowns: {},
-      monsterActiveEffects: [],
-      turn: 1,
-      xpEarned: 0,
-      noDeathRun: true,
-      phase: "active",
-      chatId: msg.from,
-      turnTimer: null,
-      playerStreak: 0,
-      wave: 1,
-      totalWaves: startFloor % 10 === 0 ? 3 : 1,
-      isBossWave: startFloor % 10 === 0,
-      wavesCleared: 0,
-      bossEntranceDone: false,
-      lastBossThinkTurn: 0,
-      lastPlayerDmg: 0,
-      lastPlayerSkillName: "",
-      lastPlayerSkillKind: "",
-    };
+  const dungeonState = createDungeonState(phoneId, msg.from, startFloor, stats);
 
     if (user.equippedPassive) {
       const passive = ALL_SKILLS.find(s => s.id === user.equippedPassive);
