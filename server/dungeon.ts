@@ -49,6 +49,27 @@ function pick<T>(arr: T[]): T {
 }
 
 // ─────────────────────────────────────────────────────────────────
+//  ARC NAME LOOKUP
+// ─────────────────────────────────────────────────────────────────
+
+export const ARC_NAMES = [
+  "The Forsaken Gate",
+  "Tomb of the Ancients",
+  "The Bleeding Maze",
+  "Ashfall Caverns",
+  "The Void Between",
+  "Dominion of Shadows",
+  "The Celestial Prison",
+  "Realm of Shattered Kings",
+  "The Edge of Everything",
+  "The Sovereign's Throne",
+] as const;
+
+export function getArcName(arcNum: number): string {
+  return ARC_NAMES[arcNum - 1] ?? `Arc ${arcNum}`;
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  EXPORTED TYPES  (bot.ts imports these)
 // ─────────────────────────────────────────────────────────────────
 
@@ -109,7 +130,7 @@ export interface DungeonState {
   lastPlayerDmg: number;
   lastPlayerSkillName: string;
   lastPlayerSkillKind: string;
-  // ── Core fields (same as before) ──
+  // ── Core fields ──
   monster: Monster;
   playerHp: number;
   playerMp: number;
@@ -139,6 +160,12 @@ export interface DungeonTurnResult {
   logs: string[];
   playerDied: boolean;
   monsterDied: boolean;
+  newState: DungeonState;
+}
+
+export interface WaveAdvanceResult {
+  narration: string;
+  bossEntrance?: string[];
   newState: DungeonState;
 }
 
@@ -407,7 +434,7 @@ export function resolveDungeonTurn(
 
     monster.hp = Math.max(0, monster.hp - dmg);
     playerDmgDealt = dmg;
-    state.lastPlayerDmg      = dmg;
+    state.lastPlayerDmg       = dmg;
     state.lastPlayerSkillName = playerSkill.name;
     state.lastPlayerSkillKind = playerSkill.statBase;
     state.playerStreak        = (state.playerStreak || 0) + 1;
@@ -611,12 +638,6 @@ export function resolveDungeonTurn(
 //  WAVE ADVANCE (boss floors have 3 waves: 2 mobs + 1 boss)
 // ─────────────────────────────────────────────────────────────────
 
-export interface WaveAdvanceResult {
-  narration: string;
-  bossEntrance?: string[];
-  newState: DungeonState;
-}
-
 export function advanceDungeonWave(state: DungeonState): WaveAdvanceResult {
   state.wavesCleared++;
   state.wave++;
@@ -629,11 +650,11 @@ export function advanceDungeonWave(state: DungeonState): WaveAdvanceResult {
   const isBossWave = state.wave >= state.totalWaves;
 
   if (isBossWave) {
-    const boss     = buildMonster(state.floor);
-    state.monster  = boss;
+    const boss       = buildMonster(state.floor);
+    state.monster    = boss;
     state.isBossWave = true;
-    const floorNarr = arc.floorNarrations[state.floor] ?? '';
-    const entrance  = boss.entranceMonologue ?? [];
+    const floorNarr  = arc.floorNarrations[state.floor] ?? '';
+    const entrance   = boss.entranceMonologue ?? [];
     return { narration: floorNarr, bossEntrance: entrance, newState: state };
   } else {
     state.monster    = buildMobWaveMonster(state.floor, state.wave);
