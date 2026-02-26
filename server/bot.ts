@@ -177,27 +177,20 @@ const SCROLL_MENU = `╭══════════════════�
 ╰══════════════════════╯`;
 
 const SPECIES_XP_RATES: Record<string, number> = {
-  "Human": 5,
-  "Demon": 10,
-  "Beast Clan": 15,
-  "Fallen Angel": 20,
-  "Undead": 25,
-  "Spirit": 30,
-  "Elf": 35,
-  "Dragon": 40,
-  "Celestial": 50,
-  "Constellation": 300,
+  "Human": 5, "Demon": 10, "Beast Clan": 15, "Fallen Angel": 20,
+  "Undead": 25, "Spirit": 30, "Elf": 35, "Dragon": 40,
+  "Celestial": 50, "Constellation": 300,
 };
 
 const RANKS = [
-  { level: 8, name: "Core Disciple of Mid",           threshold: 0,     messages: 0     },
-  { level: 7, name: "Outer Disciple of Low Peak",      threshold: 100,   messages: 20    },
-  { level: 6, name: "Inner Disciple of Mid Peak",      threshold: 500,   messages: 100   },
-  { level: 5, name: "Core Disciple of Peak",           threshold: 2000,  messages: 400   },
-  { level: 4, name: "Celestial Lord",                  threshold: 10000, messages: 2000  },
-  { level: 3, name: "Dao of Heavenly Peak",            threshold: 20000, messages: 4000  },
-  { level: 2, name: "Supreme Dao Ancestor",            threshold: 35000, messages: 6000  },
-  { level: 1, name: "True Peak Dao of Astral Realm",  threshold: 50000, messages: 10000 },
+  { level: 8, name: "Core Disciple of Mid",          threshold: 0,     messages: 0     },
+  { level: 7, name: "Outer Disciple of Low Peak",     threshold: 100,   messages: 20    },
+  { level: 6, name: "Inner Disciple of Mid Peak",     threshold: 500,   messages: 100   },
+  { level: 5, name: "Core Disciple of Peak",          threshold: 2000,  messages: 400   },
+  { level: 4, name: "Celestial Lord",                 threshold: 10000, messages: 2000  },
+  { level: 3, name: "Dao of Heavenly Peak",           threshold: 20000, messages: 4000  },
+  { level: 2, name: "Supreme Dao Ancestor",           threshold: 35000, messages: 6000  },
+  { level: 1, name: "True Peak Dao of Astral Realm", threshold: 50000, messages: 10000 },
 ];
 
 function getRankForXp(xp: number) {
@@ -208,37 +201,37 @@ function getRankForXp(xp: number) {
 }
 
 const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
-  "blood rune":               { price: 80000,  description: "Steal XP from another user. (reply to use)" },
-  "eclipse stone":            { price: 90000,  description: "Hide your race & XP from others for 24hrs." },
-  "phantom seal":             { price: 85000,  description: "Vanish from the leaderboard for 24hrs." },
-  "cursed coin":              { price: 5000,   description: "Unknown outcome. Flip and find out." },
-  "mirror shard":             { price: 95000,  description: "Copy another user's race for 30 mins. (reply to use)" },
-  "vampire tooth":            { price: 100000, description: "Become a vampire for a week." },
-  "cursed bone":              { price: 100000, description: "Attract shadows for permanent plague immunity." },
-  "grey rot cure":            { price: 15000,  description: "Cures the Grey Rot. (Human)" },
-  "hellfire suppressant":     { price: 18000,  description: "Cures Hellfire Fever. (Demon)" },
-  "feral antidote":           { price: 18000,  description: "Cures the Feral Plague. (Beast Clan)" },
-  "grace restoration vial":   { price: 20000,  description: "Cures Corruption Blight. (Fallen Angel)" },
-  "scale restoration salve":  { price: 22000,  description: "Cures Scale Sickness. (Dragon)" },
-  "rootwither remedy":        { price: 20000,  description: "Cures Rootwither. (Elf)" },
-  "soul restoration tonic":   { price: 20000,  description: "Cures Soul Decay. (Spirit)" },
-  "living core":              { price: 100000, description: "Rebirth into a new random species." },
-  "dragon egg":               { price: 90000,  description: "A mysterious egg that feeds on nearby XP." },
-  "void fragment":            { price: 100000, description: "A fragment of the void. Extremely unstable." },
-  "star dust":                { price: 75000,  description: "Dust from the stars. Grants a temporary domain." },
+  "blood rune":              { price: 80000,  description: "Steal XP from another user. (reply to use)" },
+  "eclipse stone":           { price: 90000,  description: "Hide your race & XP from others for 24hrs." },
+  "phantom seal":            { price: 85000,  description: "Vanish from the leaderboard for 24hrs." },
+  "cursed coin":             { price: 5000,   description: "Unknown outcome. Flip and find out." },
+  "mirror shard":            { price: 95000,  description: "Copy another user's race for 30 mins. (reply to use)" },
+  "vampire tooth":           { price: 100000, description: "Become a vampire for a week." },
+  "cursed bone":             { price: 100000, description: "Attract shadows for permanent plague immunity." },
+  "grey rot cure":           { price: 15000,  description: "Cures the Grey Rot. (Human)" },
+  "hellfire suppressant":    { price: 18000,  description: "Cures Hellfire Fever. (Demon)" },
+  "feral antidote":          { price: 18000,  description: "Cures the Feral Plague. (Beast Clan)" },
+  "grace restoration vial":  { price: 20000,  description: "Cures Corruption Blight. (Fallen Angel)" },
+  "scale restoration salve": { price: 22000,  description: "Cures Scale Sickness. (Dragon)" },
+  "rootwither remedy":       { price: 20000,  description: "Cures Rootwither. (Elf)" },
+  "soul restoration tonic":  { price: 20000,  description: "Cures Soul Decay. (Spirit)" },
+  "living core":             { price: 100000, description: "Rebirth into a new random species." },
+  "dragon egg":              { price: 90000,  description: "A mysterious egg that feeds on nearby XP." },
+  "void fragment":           { price: 100000, description: "A fragment of the void. Extremely unstable." },
+  "star dust":               { price: 75000,  description: "Dust from the stars. Grants a temporary domain." },
 };
 
 const SHOP_ITEM_KEYS = new Set(Object.keys(SHOP_ITEMS));
 const FIZZLE_ITEMS = new Set(["Dragon Egg", "Void Fragment", "Star Dust", "Vampire Tooth", "Cursed Bone", "Living Core"]);
 
 const DISEASES: Record<string, { name: string; race: string; startMsg: string; endMsg: string; cure: string }> = {
-  "Human":        { name: "The Grey Rot",        race: "Human",        startMsg: "A deadly disease has spread throughout the Human race. The Grey Rot is consuming them from within.",                  endMsg: "The Grey Rot has run its course. The Human race can breathe again.",           cure: "grey rot cure" },
-  "Demon":        { name: "Hellfire Fever",       race: "Demon",        startMsg: "A plague has ignited within the Demon race. Hellfire Fever is burning through their ranks.",                         endMsg: "The flames have died down. Hellfire Fever has left the Demon race.",           cure: "hellfire suppressant" },
-  "Beast Clan":   { name: "Feral Plague",         race: "Beast Clan",   startMsg: "A plague has broken loose within the Beast Clan. The Feral Plague is tearing through their kind.",                  endMsg: "The Feral Plague has been contained. The Beast Clan rises again.",            cure: "feral antidote" },
-  "Fallen Angel": { name: "Corruption Blight",    race: "Fallen Angel", startMsg: "A blight has swept through the Fallen Angel race. Corruption Blight is consuming what little grace they have left.", endMsg: "The Corruption Blight has faded. The Fallen Angels endure once more.",       cure: "grace restoration vial" },
-  "Dragon":       { name: "Scale Sickness",       race: "Dragon",       startMsg: "A sickness has infected the Dragon race. Scale Sickness is cracking through their legendary hides.",                endMsg: "Scale Sickness has passed. The Dragon race stands unbroken.",                 cure: "scale restoration salve" },
-  "Elf":          { name: "Rootwither",           race: "Elf",          startMsg: "A withering has begun among the Elf race. Rootwither is severing their bond with the ancient world.",               endMsg: "Rootwither has retreated into the earth. The Elf race is restored.",          cure: "rootwither remedy" },
-  "Spirit":       { name: "Soul Decay",           race: "Spirit",       startMsg: "A corruption has swept through the Spirit race. Soul Decay is dissolving their very essence.",                      endMsg: "Soul Decay has dissipated. The Spirit race endures once more.",               cure: "soul restoration tonic" },
+  "Human":        { name: "The Grey Rot",       race: "Human",        startMsg: "A deadly disease has spread throughout the Human race. The Grey Rot is consuming them from within.",                  endMsg: "The Grey Rot has run its course. The Human race can breathe again.",         cure: "grey rot cure" },
+  "Demon":        { name: "Hellfire Fever",      race: "Demon",        startMsg: "A plague has ignited within the Demon race. Hellfire Fever is burning through their ranks.",                         endMsg: "The flames have died down. Hellfire Fever has left the Demon race.",         cure: "hellfire suppressant" },
+  "Beast Clan":   { name: "Feral Plague",        race: "Beast Clan",   startMsg: "A plague has broken loose within the Beast Clan. The Feral Plague is tearing through their kind.",                  endMsg: "The Feral Plague has been contained. The Beast Clan rises again.",           cure: "feral antidote" },
+  "Fallen Angel": { name: "Corruption Blight",   race: "Fallen Angel", startMsg: "A blight has swept through the Fallen Angel race. Corruption Blight is consuming what little grace they have left.", endMsg: "The Corruption Blight has faded. The Fallen Angels endure once more.",     cure: "grace restoration vial" },
+  "Dragon":       { name: "Scale Sickness",      race: "Dragon",       startMsg: "A sickness has infected the Dragon race. Scale Sickness is cracking through their legendary hides.",                endMsg: "Scale Sickness has passed. The Dragon race stands unbroken.",               cure: "scale restoration salve" },
+  "Elf":          { name: "Rootwither",          race: "Elf",          startMsg: "A withering has begun among the Elf race. Rootwither is severing their bond with the ancient world.",               endMsg: "Rootwither has retreated into the earth. The Elf race is restored.",        cure: "rootwither remedy" },
+  "Spirit":       { name: "Soul Decay",          race: "Spirit",       startMsg: "A corruption has swept through the Spirit race. Soul Decay is dissolving their very essence.",                      endMsg: "Soul Decay has dissipated. The Spirit race endures once more.",             cure: "soul restoration tonic" },
 };
 
 async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: string; series: string; rarity: string; imageUrl: string | null }> {
@@ -255,12 +248,8 @@ async function fetchRandomAnimeCard(): Promise<{ characterId: number; name: stri
     const timeout = setTimeout(() => controller.abort(), 8000);
     let res: any;
     try {
-      res = await fetch(`https://api.jikan.moe/v4/characters?page=${page}&limit=25`, {
-        signal: controller.signal as any,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
+      res = await fetch(`https://api.jikan.moe/v4/characters?page=${page}&limit=25`, { signal: controller.signal as any });
+    } finally { clearTimeout(timeout); }
     const data = await res.json() as any;
     if (!data?.data?.length) throw new Error("No data");
     const chars = data.data.filter((c: any) => c.images?.jpg?.image_url);
@@ -310,20 +299,16 @@ const ANNA = {
   ],
 };
 
-const GUIDES: Record<string, typeof ANNA> = {
-  anna: ANNA,
-};
+const GUIDES: Record<string, typeof ANNA> = { anna: ANNA };
 
 async function checkGuideEvents(user: any, phoneId: string) {
   if (!user.guideName || !user.guideSmashAt) return;
   const now = Date.now();
   const smashTime = new Date(user.guideSmashAt).getTime();
-
   if (!user.guidePregnant && now - smashTime >= 86400000) {
     await storage.updateUser(phoneId, { guidePregnant: true });
     await client.sendMessage(phoneId, ANNA.pregnantMsg);
   }
-
   if (user.guidePregnant && !user.guideChildName && now - smashTime >= 259200000) {
     try {
       const imgBuffer = fs.readFileSync(path.join(process.cwd(), ANNA.imageWithChild));
@@ -338,9 +323,7 @@ async function checkGuideEvents(user: any, phoneId: string) {
 function getRandomSpecies() {
   const races = Object.keys(SPECIES_XP_RATES).filter(r => r !== "Constellation");
   const name = races[Math.floor(Math.random() * races.length)];
-  const rarity =
-    name === "Celestial" ? "Legendary" :
-    (name === "Dragon" || name === "Elf") ? "Very Rare" : "Common";
+  const rarity = name === "Celestial" ? "Legendary" : (name === "Dragon" || name === "Elf") ? "Very Rare" : "Common";
   return { name, rarity };
 }
 
@@ -359,33 +342,27 @@ function getHpStatus(hp: number) {
 }
 
 function generateHpBar(hp: number) {
-  const total = 10;
   const filled = Math.max(0, Math.ceil(hp / 10));
-  const empty = total - filled;
-  return "█".repeat(filled) + "░".repeat(empty) + ` ${hp}/100`;
+  return "█".repeat(filled) + "░".repeat(10 - filled) + ` ${hp}/100`;
 }
+
+// ════════════════════════════════════════════════════════════════
+//  BATTLE TURN RESOLVER
+// ════════════════════════════════════════════════════════════════
 
 async function resolveBattleTurn(battleId: string) {
   const record = storage.getBattle(battleId);
   if (!record) return;
   const state = record.state as BattleState;
 
-  if (state.turnTimer) {
-    clearTimeout(state.turnTimer);
-    state.turnTimer = null;
-  }
+  if (state.turnTimer) { clearTimeout(state.turnTimer); state.turnTimer = null; }
 
   const { challenger, target } = state;
-
-  if (!state.challengerSkillChoice) {
-    state.challengerSkillChoice = getDefaultSkill(challenger).id;
-  }
-  if (!state.targetSkillChoice) {
-    state.targetSkillChoice = getDefaultSkill(target).id;
-  }
+  if (!state.challengerSkillChoice) state.challengerSkillChoice = getDefaultSkill(challenger).id;
+  if (!state.targetSkillChoice)     state.targetSkillChoice     = getDefaultSkill(target).id;
 
   const cSkill = challenger.equippedActives.find(s => s.id === state.challengerSkillChoice) || getDefaultSkill(challenger);
-  const tSkill = target.equippedActives.find(s => s.id === state.targetSkillChoice) || getDefaultSkill(target);
+  const tSkill = target.equippedActives.find(s => s.id === state.targetSkillChoice)         || getDefaultSkill(target);
 
   state.phase = "resolving";
   const logs: string[] = [];
@@ -399,20 +376,12 @@ async function resolveBattleTurn(battleId: string) {
   const applyPetHelp = async (owner: Combatant, opponent: Combatant) => {
     const ownerUser = await storage.getUserByPhone(owner.phoneId);
     if (!ownerUser?.petHatched) return;
-
     const hpPercent = owner.hp / owner.stats.maxHp;
-
-    const activateChance =
-      hpPercent < 0.15 ? 0.65 :
-      hpPercent < 0.25 ? 0.50 :
-      hpPercent < 0.40 ? 0.30 : 0;
-
+    const activateChance = hpPercent < 0.15 ? 0.65 : hpPercent < 0.25 ? 0.50 : hpPercent < 0.40 ? 0.30 : 0;
     if (activateChance <= 0 || Math.random() >= activateChance) return;
-
     const petType = ownerUser.petType || "pet";
     const petName = ownerUser.petName || (petType.charAt(0).toUpperCase() + petType.slice(1));
     const petEmoji = PET_EMOJIS[petType] || "🐾";
-
     const PET_BATTLE_MSGS: Record<string, string[]> = {
       dragon:  [`🐉 *${petName}* breathes fire!`, `🐉 *${petName}* tears through with dragon claws!`],
       phoenix: [`🔥 *${petName}* rises and scorches!`, `🔥 *${petName}* dives with blazing wings!`],
@@ -421,10 +390,8 @@ async function resolveBattleTurn(battleId: string) {
       fairy:   [`🧚 *${petName}* blinds the enemy with light!`, `🧚 *${petName}* casts a radiant bolt!`],
       kraken:  [`🐙 *${petName}* slams with a crushing tentacle!`, `🐙 *${petName}* drags the foe into the deep!`],
     };
-
     const msgs = PET_BATTLE_MSGS[petType] || [`${petEmoji} *${petName}* attacks!`];
     const petMsg = msgs[Math.floor(Math.random() * msgs.length)];
-
     if (petType === "fairy" && Math.random() < 0.4) {
       const healAmt = Math.floor(owner.stats.intelligence * 0.5 + 20);
       owner.hp = Math.min(owner.stats.maxHp, owner.hp + healAmt);
@@ -436,6 +403,7 @@ async function resolveBattleTurn(battleId: string) {
     }
   };
 
+  // First attacker
   const firstStunned = first.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
   if (!firstStunned) {
     if (first.mp < firstSkill.mpCost) {
@@ -443,7 +411,6 @@ async function resolveBattleTurn(battleId: string) {
       first.hp = 0;
     } else {
       first.mp = Math.max(0, first.mp - firstSkill.mpCost);
-
       const dmgResult = calculateDamage(first, second, firstSkill);
       if (dmgResult.dodged) {
         logs.push(`💨 *${second.name}* dodged *${firstSkill.name}*!`);
@@ -451,7 +418,6 @@ async function resolveBattleTurn(battleId: string) {
         if (dmgResult.crit) logs.push(`💥 *CRITICAL HIT!*`);
         second.hp = Math.max(0, second.hp - dmgResult.damage);
         logs.push(`⚔️ *${first.name}* used *${firstSkill.name}* → *${dmgResult.damage}* damage to *${second.name}*.`);
-
         const lifestealFx = first.activeEffects.find(fx => fx.kind === "lifesteal");
         if (lifestealFx && dmgResult.damage > 0) {
           const healed = Math.floor(dmgResult.damage * lifestealFx.value);
@@ -460,18 +426,14 @@ async function resolveBattleTurn(battleId: string) {
           logs.push(`🩸 *${first.name}* leeched *${healed} HP*.`);
         }
       }
-
-      if (firstSkill.effect) {
-        const effectLogs = applySkillEffect(firstSkill.effect, firstSkill.name, first, second);
-        logs.push(...effectLogs);
-      }
-
+      if (firstSkill.effect) logs.push(...applySkillEffect(firstSkill.effect, firstSkill.name, first, second));
       await applyPetHelp(first, second);
     }
   } else {
     logs.push(`😴 *${first.name}* is stunned/frozen and loses their turn!`);
   }
 
+  // Second attacker
   if (second.hp > 0) {
     const secondStunned = second.activeEffects.some(fx => fx.kind === "stun" || fx.kind === "freeze");
     if (!secondStunned) {
@@ -480,7 +442,6 @@ async function resolveBattleTurn(battleId: string) {
         second.hp = 0;
       } else {
         second.mp = Math.max(0, second.mp - secondSkill.mpCost);
-
         const dmgResult2 = calculateDamage(second, first, secondSkill);
         if (dmgResult2.dodged) {
           logs.push(`💨 *${first.name}* dodged *${secondSkill.name}*!`);
@@ -488,7 +449,6 @@ async function resolveBattleTurn(battleId: string) {
           if (dmgResult2.crit) logs.push(`💥 *CRITICAL HIT!*`);
           first.hp = Math.max(0, first.hp - dmgResult2.damage);
           logs.push(`⚔️ *${second.name}* used *${secondSkill.name}* → *${dmgResult2.damage}* damage to *${first.name}*.`);
-
           const lifestealFx2 = second.activeEffects.find(fx => fx.kind === "lifesteal");
           if (lifestealFx2 && dmgResult2.damage > 0) {
             const healed2 = Math.floor(dmgResult2.damage * lifestealFx2.value);
@@ -497,12 +457,7 @@ async function resolveBattleTurn(battleId: string) {
             logs.push(`🩸 *${second.name}* leeched *${healed2} HP*.`);
           }
         }
-
-        if (secondSkill.effect) {
-          const effectLogs2 = applySkillEffect(secondSkill.effect, secondSkill.name, second, first);
-          logs.push(...effectLogs2);
-        }
-
+        if (secondSkill.effect) logs.push(...applySkillEffect(secondSkill.effect, secondSkill.name, second, first));
         await applyPetHelp(second, first);
       }
     } else {
@@ -512,7 +467,6 @@ async function resolveBattleTurn(battleId: string) {
 
   logs.push(...applyTurnEffects(challenger));
   logs.push(...applyTurnEffects(target));
-
   tickCooldowns(challenger);
   tickCooldowns(target);
   const expiredC = tickEffects(challenger);
@@ -528,55 +482,41 @@ async function resolveBattleTurn(battleId: string) {
     const loser = winner.phoneId === challenger.phoneId ? target : challenger;
     const xpGain = state.xpTransfer;
     state.phase = "ended";
-
     const winnerUser = await storage.getUserByPhone(winner.phoneId);
     const loserUser  = await storage.getUserByPhone(loser.phoneId);
-
     const winnerGains = rollStatGains(true);
     const loserGains  = rollStatGains(false);
-
     if (winnerUser) {
       await storage.updateUser(winner.phoneId, {
-        xp:           winnerUser.xp + xpGain,
-        battleExp:    (winnerUser.battleExp || 0) + 100,
-        battleWins:   (winnerUser.battleWins || 0) + 1,
-        strBonus:     ((winnerUser as any).strBonus || 0) + winnerGains.str,
-        agiBonus:     ((winnerUser as any).agiBonus || 0) + winnerGains.agi,
-        intBonus:     ((winnerUser as any).intBonus || 0) + winnerGains.int,
-        lckBonus:     ((winnerUser as any).lckBonus || 0) + winnerGains.lck,
-        spdBonus:     ((winnerUser as any).spdBonus || 0) + winnerGains.spd,
+        xp: winnerUser.xp + xpGain, battleExp: (winnerUser.battleExp || 0) + 100,
+        battleWins: (winnerUser.battleWins || 0) + 1,
+        strBonus: ((winnerUser as any).strBonus || 0) + winnerGains.str,
+        agiBonus: ((winnerUser as any).agiBonus || 0) + winnerGains.agi,
+        intBonus: ((winnerUser as any).intBonus || 0) + winnerGains.int,
+        lckBonus: ((winnerUser as any).lckBonus || 0) + winnerGains.lck,
+        spdBonus: ((winnerUser as any).spdBonus || 0) + winnerGains.spd,
       });
     }
     if (loserUser) {
       await storage.updateUser(loser.phoneId, {
-        xp:           Math.max(0, loserUser.xp - xpGain),
-        battleExp:    (loserUser.battleExp || 0) + 30,
+        xp: Math.max(0, loserUser.xp - xpGain), battleExp: (loserUser.battleExp || 0) + 30,
         battleLosses: (loserUser.battleLosses || 0) + 1,
-        strBonus:     ((loserUser as any).strBonus || 0) + loserGains.str,
-        agiBonus:     ((loserUser as any).agiBonus || 0) + loserGains.agi,
-        intBonus:     ((loserUser as any).intBonus || 0) + loserGains.int,
-        lckBonus:     ((loserUser as any).lckBonus || 0) + loserGains.lck,
-        spdBonus:     ((loserUser as any).spdBonus || 0) + loserGains.spd,
+        strBonus: ((loserUser as any).strBonus || 0) + loserGains.str,
+        agiBonus: ((loserUser as any).agiBonus || 0) + loserGains.agi,
+        intBonus: ((loserUser as any).intBonus || 0) + loserGains.int,
+        lckBonus: ((loserUser as any).lckBonus || 0) + loserGains.lck,
+        spdBonus: ((loserUser as any).spdBonus || 0) + loserGains.spd,
       });
     }
-
     await storage.endBattle(battleId, winner.phoneId);
-
-    const endMsg =
-      `${logText}\n\n` +
-      `${statusBlock}\n\n` +
-      `╭══════════════════════╮\n` +
-      `  ⚔️ BATTLE OVER!\n` +
-      `╰══════════════════════╯\n` +
-      `  🏆 Winner: *${winner.name}*\n` +
-      `  💀 Loser: *${loser.name}*\n` +
-      `  💰 XP Transfer: +${xpGain} / -${xpGain}\n` +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+    await client.sendMessage(state.chatId,
+      `${logText}\n\n${statusBlock}\n\n` +
+      `╭══════════════════════╮\n  ⚔️ BATTLE OVER!\n╰══════════════════════╯\n` +
+      `  🏆 Winner: *${winner.name}*\n  💀 Loser: *${loser.name}*\n` +
+      `  💰 XP Transfer: +${xpGain} / -${xpGain}\n ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
       `  📈 ${formatStatGains(winnerGains, `*${winner.name}* stat gains:`)}\n` +
-      `  📈 ${formatStatGains(loserGains, `*${loser.name}* stat gains:`)}\n` +
-      `╰══════════════════════╯`;
-
-    await client.sendMessage(state.chatId, endMsg);
+      `  📈 ${formatStatGains(loserGains, `*${loser.name}* stat gains:`)}\n╰══════════════════════╯`
+    );
     return;
   }
 
@@ -585,20 +525,17 @@ async function resolveBattleTurn(battleId: string) {
   state.challengerSkillChoice = null;
   state.targetSkillChoice = null;
   storage.updateBattleState(battleId, state);
-
-  const nextMsg =
-    `${logText}\n\n` +
-    `${statusBlock}\n\n` +
-    `⏳ Pick your skill within 60 seconds!\n` +
-    `${formatSkillList(challenger)}\n\n` +
-    `${formatSkillList(target)}\n\n` +
-    `Reply *!pickskill 1/2/3*`;
-
-  await client.sendMessage(state.chatId, nextMsg);
-
+  await client.sendMessage(state.chatId,
+    `${logText}\n\n${statusBlock}\n\n⏳ Pick your skill within 60 seconds!\n` +
+    `${formatSkillList(challenger)}\n\n${formatSkillList(target)}\n\nReply *!pickskill 1/2/3*`
+  );
   state.turnTimer = setTimeout(() => resolveBattleTurn(battleId), 60000);
   storage.updateBattleState(battleId, state);
 }
+
+// ════════════════════════════════════════════════════════════════
+//  BOT INIT
+// ════════════════════════════════════════════════════════════════
 
 let client: Client;
 let isInitializing = false;
@@ -606,11 +543,8 @@ let isClientReady = false;
 
 async function safeSend(to: string, message: string): Promise<void> {
   if (!client || !isClientReady) return;
-  try {
-    await client.sendMessage(to, message);
-  } catch (err) {
-    console.error(`[bot] safeSend failed to ${to}:`, err);
-  }
+  try { await client.sendMessage(to, message); }
+  catch (err) { console.error(`[bot] safeSend failed to ${to}:`, err); }
 }
 
 async function runWeeklyBonusIfDue() {
@@ -621,7 +555,6 @@ async function runWeeklyBonusIfDue() {
     const lastWeekly = stats.lastWeeklyBonusAt ? new Date(stats.lastWeeklyBonusAt).getTime() : 0;
     if (now - lastWeekly < 604800000) return;
     await storage.updateGlobalStats({ lastWeeklyBonusAt: new Date() });
-
     const users = await storage.getUsers();
     for (const user of users) {
       if (!user.guideName) continue;
@@ -630,74 +563,61 @@ async function runWeeklyBonusIfDue() {
       await safeSend(user.phoneId, `✨ Weekly guide bonus received!\n+${weeklyXp} XP from your companion${user.guideChildName ? " and child" : ""}~`);
       await checkGuideEvents(user, user.phoneId);
     }
-  } catch (err) {
-    console.error("Weekly bonus error:", err);
-  }
+  } catch (err) { console.error("Weekly bonus error:", err); }
 }
 
+// 5-minute interval
 setInterval(async () => {
   if (!client || !isClientReady) return;
   try {
     const users = await storage.getUsers();
     for (const user of users) {
-      let hpDrain = 0;
-      if (user.condition === "Infected") hpDrain += 5;
-
-      if (hpDrain > 0 && !user.isDead) {
-        const newHp = Math.max(0, user.hp - hpDrain);
+      // HP drain from infection
+      if (user.condition === "Infected" && !user.isDead) {
+        const newHp = Math.max(0, user.hp - 5);
         const isDead = newHp <= 0;
         await storage.updateUser(user.phoneId, { hp: newHp, isDead });
-        if (isDead) {
-          await safeSend(user.phoneId, "💀 Your life force has faded. You have perished. You cannot use commands until revived.");
-        }
+        if (isDead) await safeSend(user.phoneId, "💀 Your life force has faded. You have perished. You cannot use commands until revived.");
       }
-
+      // Expire vampire
       if (user.isVampire && user.vampireUntil && new Date() > new Date(user.vampireUntil)) {
         await storage.updateUser(user.phoneId, { isVampire: false, vampireUntil: null });
         await client.sendMessage(user.phoneId, "🦷 Your vampire powers have expired. The tooth crumbles to dust.");
       }
-
-      if (user.eclipseUntil && new Date() > new Date(user.eclipseUntil)) {
+      // Expire eclipse
+      if (user.eclipseUntil && new Date() > new Date(user.eclipseUntil))
         await storage.updateUser(user.phoneId, { eclipseUntil: null });
-      }
-
-      if (user.phantomUntil && new Date() > new Date(user.phantomUntil)) {
+      // Expire phantom
+      if (user.phantomUntil && new Date() > new Date(user.phantomUntil))
         await storage.updateUser(user.phoneId, { phantomUntil: null });
+      // Expire mirror
+      if (user.mirrorUntil && new Date() > new Date(user.mirrorUntil) && user.mirrorOriginalRace) {
+        await storage.updateUser(user.phoneId, { species: user.mirrorOriginalRace, mirrorRace: null, mirrorOriginalRace: null, mirrorUntil: null });
+        await safeSend(user.phoneId, `🪞 Mirror Shard expired. You have returned to your true form: *${user.mirrorOriginalRace}*.`);
       }
-
-      if (user.mirrorUntil && new Date() > new Date(user.mirrorUntil)) {
-        if (user.mirrorOriginalRace) {
-          await storage.updateUser(user.phoneId, {
-            species: user.mirrorOriginalRace,
-            mirrorRace: null,
-            mirrorOriginalRace: null,
-            mirrorUntil: null,
-          });
-          await safeSend(user.phoneId, `🪞 Mirror Shard expired. You have returned to your true form: *${user.mirrorOriginalRace}*.`);
-        }
-      }
-
+      // Dragon egg XP steal (only while not hatched)
       if (user.dragonEggProgress > 0 && !user.dragonEggHatched) {
         const others = users.filter(u => u.phoneId !== user.phoneId && u.xp >= 30);
         if (others.length > 0) {
           const victim = others[Math.floor(Math.random() * others.length)];
+          const newProgress = user.dragonEggProgress + 30;
           await storage.updateUser(victim.phoneId, { xp: victim.xp - 30 });
-          await storage.updateUser(user.phoneId, { dragonEggProgress: user.dragonEggProgress + 30 });
+          await storage.updateUser(user.phoneId, { dragonEggProgress: newProgress });
           await safeSend(victim.phoneId, "A strange fatigue washes over you. Something is feeding nearby.\nYou lost 30 XP.");
-          if (user.dragonEggProgress + 30 >= 1500) {
-            await storage.updateUser(user.phoneId, { dragonEggHatched: true });
+          if (newProgress >= 1500) {
+            await storage.updateUser(user.phoneId, { dragonEggHatched: true, dragonEggProgress: 1500 });
             await safeSend(user.phoneId, "The shell shatters. Something ancient rises.\nYour Dragon Egg has fully hatched. +500 XP per day added permanently.");
           }
         }
       }
     }
 
+    // Disease logic
     const stats = await storage.getGlobalStats();
     const now = new Date();
     if (!stats.activeDisease && (!stats.lastOutbreakAt || now.getTime() - new Date(stats.lastOutbreakAt).getTime() > 604800000)) {
       const races = Object.keys(DISEASES);
-      const randomRace = races[Math.floor(Math.random() * races.length)];
-      const disease = DISEASES[randomRace];
+      const disease = DISEASES[races[Math.floor(Math.random() * races.length)]];
       const endsAt = new Date(now.getTime() + (Math.floor(Math.random() * 7) + 1) * 86400000);
       await storage.updateGlobalStats({ activeDisease: disease.name, diseaseRace: disease.race, lastOutbreakAt: now, outbreakEndsAt: endsAt });
       if (OWNER_NUMBER) await safeSend(OWNER_NUMBER, `⚠️ *DISEASE OUTBREAK*\n\n${disease.startMsg}`);
@@ -709,11 +629,10 @@ setInterval(async () => {
 
     await storage.expireOldChallenges();
     await runWeeklyBonusIfDue();
-  } catch (err) {
-    console.error("Interval error:", err);
-  }
+  } catch (err) { console.error("Interval error:", err); }
 }, 300000);
 
+// Daily dragon egg XP
 setInterval(async () => {
   if (!client || !isClientReady) return;
   try {
@@ -724,38 +643,27 @@ setInterval(async () => {
         await safeSend(user.phoneId, "🐉 Your hatched dragon stirs. +500 XP.");
       }
     }
-  } catch (err) {
-    console.error("Dragon egg daily XP error:", err);
-  }
+  } catch (err) { console.error("Dragon egg daily XP error:", err); }
 }, 86400000);
 
 function cleanupChromiumTemp(): void {
   try {
     const tmpFiles = fs.readdirSync('/tmp').filter(f => f.startsWith('.org.chromium') || f.startsWith('.com.google.Chrome'));
     for (const f of tmpFiles) {
-      try {
-        fs.rmSync(path.join('/tmp', f), { recursive: true, force: true });
-        console.log(`[bot] Cleaned up stale Chromium temp: /tmp/${f}`);
-      } catch { /* ignore */ }
+      try { fs.rmSync(path.join('/tmp', f), { recursive: true, force: true }); }
+      catch { /* ignore */ }
     }
-  } catch { /* /tmp not accessible, ignore */ }
+  } catch { /* ignore */ }
 }
 
 function findChromiumPath(): string {
-  const candidates = [
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable',
-    '/snap/bin/chromium',
-  ];
   for (const cmd of ['chromium', 'chromium-browser', 'google-chrome']) {
     try {
       const result = execSync(`which ${cmd} 2>/dev/null`).toString().trim();
       if (result) return result;
     } catch { /* not found */ }
   }
-  for (const p of candidates) {
+  for (const p of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/snap/bin/chromium']) {
     if (fs.existsSync(p)) return p;
   }
   throw new Error('Chromium not found. Install chromium or google-chrome.');
@@ -765,18 +673,16 @@ export async function initBot() {
   if (isInitializing) return;
   isInitializing = true;
   isClientReady = false;
-
   cleanupChromiumTemp();
 
-  const authPath = path.join(process.cwd(), '.wwebjs_auth');
+  const authPath  = path.join(process.cwd(), '.wwebjs_auth');
   const cachePath = path.join(process.cwd(), '.wwebjs_cache');
 
   if (connectionStatus === "DISCONNECTED" && !fs.existsSync(path.join(authPath, 'session'))) {
-    if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
+    if (fs.existsSync(authPath))  fs.rmSync(authPath,  { recursive: true, force: true });
     if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true });
   }
-
-  if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
+  if (!fs.existsSync(authPath))  fs.mkdirSync(authPath,  { recursive: true });
   if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
   let chromiumPath: string;
@@ -793,73 +699,37 @@ export async function initBot() {
 
   try {
     client = new Client({
-      authStrategy: new LocalAuth({
-        clientId: "astral-bot",
-        dataPath: authPath
-      }),
+      authStrategy: new LocalAuth({ clientId: "astral-bot", dataPath: authPath }),
       restartOnAuthFail: true,
-     puppeteer: {
-  executablePath: chromiumPath,
-  headless: true,
-  args: [
-    '--no-sandbox',
-    '--disable-setuid-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-accelerated-2d-canvas',
-    '--no-first-run',
-    '--no-zygote',
-    '--disable-gpu',
-    '--disable-software-rasterizer',
-    '--disable-extensions',
-    '--user-data-dir=/tmp/whatsapp-session',
-    '--disable-web-security',
-    '--no-default-browser-check'
-  ],
-  handleSIGINT: false,
-  handleSIGTERM: false,
-  handleSIGHUP: false,
-},
+      puppeteer: {
+        executablePath: chromiumPath,
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-software-rasterizer',
+          '--disable-extensions',
+          // FIX: Removed --user-data-dir — it conflicts with LocalAuth session management
+          '--disable-web-security',
+          '--no-default-browser-check',
+        ],
+        handleSIGINT: false,
+        handleSIGTERM: false,
+        handleSIGHUP: false,
+      },
     });
 
-    client.on('qr', (qr) => {
-      currentQrCode = qr;
-      connectionStatus = "WAITING_FOR_QR";
-      console.log('[bot] QR code ready — scan to connect.');
-    });
-
-    client.on('ready', () => {
-      connectionStatus = "CONNECTED";
-      isClientReady = true;
-      currentQrCode = undefined;
-      console.log('[bot] WhatsApp connected and ready.');
-    });
-
-    client.on('authenticated', () => {
-      connectionStatus = "CONNECTED";
-      currentQrCode = undefined;
-      console.log('[bot] Authenticated.');
-    });
-
-    client.on('auth_failure', (msg) => {
-      connectionStatus = "DISCONNECTED";
-      isClientReady = false;
-      console.error('[bot] Auth failure:', msg);
-      cleanupChromiumTemp();
-      setTimeout(() => { isInitializing = false; initBot(); }, 10000);
-    });
-
-    client.on('disconnected', (reason) => {
-      connectionStatus = "DISCONNECTED";
-      isClientReady = false;
-      console.warn('[bot] Disconnected:', reason);
-      cleanupChromiumTemp();
-      setTimeout(() => { isInitializing = false; initBot(); }, 15000);
-    });
-
-    client.on('message', async (msg) => {
-      try { await handleMessage(msg); }
-      catch (err) { console.error('[bot] Message handler error:', err); }
-    });
+    client.on('qr',            (qr)    => { currentQrCode = qr; connectionStatus = "WAITING_FOR_QR"; console.log('[bot] QR code ready — scan to connect.'); });
+    client.on('ready',         ()      => { connectionStatus = "CONNECTED"; isClientReady = true; currentQrCode = undefined; console.log('[bot] WhatsApp connected and ready.'); });
+    client.on('authenticated', ()      => { connectionStatus = "CONNECTED"; currentQrCode = undefined; console.log('[bot] Authenticated.'); });
+    client.on('auth_failure',  (msg)   => { connectionStatus = "DISCONNECTED"; isClientReady = false; console.error('[bot] Auth failure:', msg); cleanupChromiumTemp(); setTimeout(() => { isInitializing = false; initBot(); }, 10000); });
+    client.on('disconnected',  (reason)=> { connectionStatus = "DISCONNECTED"; isClientReady = false; console.warn('[bot] Disconnected:', reason); cleanupChromiumTemp(); setTimeout(() => { isInitializing = false; initBot(); }, 15000); });
+    client.on('message',       async (msg) => { try { await handleMessage(msg); } catch (err) { console.error('[bot] Message handler error:', err); } });
 
     await client.initialize();
     console.log('[bot] Client initialized.');
@@ -875,7 +745,7 @@ export async function initBot() {
 export function refreshQr() {
   if (client) {
     client.destroy()
-      .catch((err) => console.error('[bot] Destroy error on refresh:', err))
+      .catch(err => console.error('[bot] Destroy error on refresh:', err))
       .finally(() => { isInitializing = false; initBot(); });
   } else {
     isInitializing = false;
@@ -883,12 +753,16 @@ export function refreshQr() {
   }
 }
 
+// ════════════════════════════════════════════════════════════════
+//  MESSAGE HANDLER
+// ════════════════════════════════════════════════════════════════
+
 async function handleMessage(msg: Message) {
   const contact = await msg.getContact();
   const phoneId = contact.id._serialized;
-  const name = contact.pushname || contact.number;
-  const body = msg.body.trim().toLowerCase();
-  let user = await storage.getUserByPhone(phoneId);
+  const name    = contact.pushname || contact.number;
+  const body    = msg.body.trim().toLowerCase();
+  let user      = await storage.getUserByPhone(phoneId);
 
   if (user?.isBanned) return;
   if (user?.isDead && !body.startsWith("!revive")) {
@@ -896,93 +770,66 @@ async function handleMessage(msg: Message) {
     return;
   }
 
-  // ── Registration ──────────────────────────────────────────────────────────
+  // ── Registration ───────────────────────────────────────────────
   if (!user || !user.isRegistered) {
     if (body === "!start") {
       const sp = getRandomSpecies();
-      user = await storage.createUser({
-        phoneId, name, species: sp.name, isRegistered: true,
-        xp: 0, messages: 0, condition: "Healthy",
-        rank: 8,
-        inventory: [], hp: 100,
-      });
+      user = await storage.createUser({ phoneId, name, species: sp.name, isRegistered: true, xp: 0, messages: 0, condition: "Healthy", rank: 8, inventory: [], hp: 100 });
       const startMsg =
-        `╭══════════════════════╮\n` +
-        `   ✦┊【Welcome】┊✦\n` +
-        `╰══════════════════════╯\n` +
-        `  👤 Cultivator: ${name}\n` +
-        `  🧬 Species: ${sp.name} (${sp.rarity})\n\n` +
-        `  Your journey begins.\n` +
-        `  Use !scroll or !help to see commands.\n` +
-        `╰══════════════════════╯`;
+        `╭══════════════════════╮\n   ✦┊【Welcome】┊✦\n╰══════════════════════╯\n` +
+        `  👤 Cultivator: ${name}\n  🧬 Species: ${sp.name} (${sp.rarity})\n\n` +
+        `  Your journey begins.\n  Use !scroll or !help to see commands.\n╰══════════════════════╯`;
       try {
         const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Start.jpg"));
-        const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "start.jpg");
-        await msg.reply(media, undefined, { caption: startMsg });
+        await msg.reply(new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "start.jpg"), undefined, { caption: startMsg });
       } catch { await msg.reply(startMsg); }
     }
     return;
   }
 
-  // ── Infection trigger ─────────────────────────────────────────────────────
+  // ── Infection trigger ──────────────────────────────────────────
   if (["!leaderboard", "!profile", "!status"].includes(body)) {
     const stats = await storage.getGlobalStats();
-    if (
-      stats?.diseaseRace === user.species &&
-      !user.hasShadowVeil &&
-      user.species !== "Constellation" &&
-      user.condition === "Healthy"
-    ) {
+    if (stats?.diseaseRace === user.species && !user.hasShadowVeil && user.species !== "Constellation" && user.condition === "Healthy") {
       await storage.updateUser(phoneId, { condition: "Infected", disease: stats.activeDisease, infectedAt: new Date() });
       await client.sendMessage(phoneId, `☣️ You have been infected with ${stats.activeDisease}! You are losing 5 HP every 5 minutes. Buy a cure from !shop.`);
     }
   }
 
-// ── XP gain on normal messages ────────────────────────────────────────────
+  // ── XP gain ────────────────────────────────────────────────────
   if (body.length >= 3 && !body.startsWith("!")) {
     let rate = user.species === "Constellation" ? 300 : (SPECIES_XP_RATES[user.species] || 5);
     let dustBonus = 0;
-
     if (user.dustDomainUntil && new Date() < new Date(user.dustDomainUntil)) {
       const newDustMsgs = (user.dustDomainMessages || 0) + 1;
-      if (newDustMsgs % 10 === 0) {
-        dustBonus = 5000;
-        await client.sendMessage(phoneId, `✨ Dust Domain: +5000 XP earned! (${newDustMsgs} domain messages)`);
-      }
+      if (newDustMsgs % 10 === 0) { dustBonus = 5000; await client.sendMessage(phoneId, `✨ Dust Domain: +5000 XP earned! (${newDustMsgs} domain messages)`); }
       await storage.updateUser(phoneId, { dustDomainMessages: newDustMsgs });
     } else if (user.dustDomainUntil && new Date() >= new Date(user.dustDomainUntil) && user.dustDomainMessages > 0) {
       await storage.updateUser(phoneId, { dustDomainUntil: null, dustDomainMessages: 0 });
       await client.sendMessage(phoneId, `*The light fades. The domain closes. You have returned.*\n✨ Dust Domain has ended.`);
     }
-
     try {
-      const oldRank = getRankForXp(user.xp);
+      const oldRank  = getRankForXp(user.xp);
       const freshUser = await storage.getUserByPhone(phoneId);
       if (!freshUser) return;
-      const newXp = freshUser.xp + rate + dustBonus;
+      const newXp   = freshUser.xp + rate + dustBonus;
       const newRank = getRankForXp(newXp);
       const updates: Partial<typeof user> = { xp: newXp, messages: freshUser.messages + 1, rank: newRank.level };
-
       if (newRank.level < oldRank.level) {
         await client.sendMessage(msg.from,
-          `╭══════════════════════╮\n   🎊 RANK UP! 🎊\n` +
-          `   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-          `   👤 Cultivator: ${freshUser.name}\n` +
-          `   📈 New Rank: 【${newRank.level}】${newRank.name}\n` +
-          `   ✨ Total XP: ${newXp}\n` +
-          `   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-          `   Your soul ascends further!\n╰══════════════════════╯`
+          `╭══════════════════════╮\n   🎊 RANK UP! 🎊\n   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
+          `   👤 Cultivator: ${freshUser.name}\n   📈 New Rank: 【${newRank.level}】${newRank.name}\n` +
+          `   ✨ Total XP: ${newXp}\n   ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n   Your soul ascends further!\n╰══════════════════════╯`
         );
       }
-
       if (Math.random() < 0.01) {
         const itemPool: Record<string, string> = {
-          "Dragon Egg":     "*Something warm and heavy settles into your possession.*\n🥚 A Dragon Egg has appeared in your inventory.",
-          "Void Fragment":  "*A crack in reality slips into your possession.*\n🌑 A Void Fragment has appeared in your inventory.",
-          "Star Dust":      "*Something shimmering and weightless drifts into your possession.*\n✨ Star Dust has appeared in your inventory.",
-          "Vampire Tooth":  "*Something sharp and ancient pierces into your possession.*\n🦷 A Vampire Tooth has appeared in your inventory.",
-          "Cursed Bone":    "*Something cold and wrong materializes near you.*\n🦴 A Cursed Bone has appeared in your inventory.",
-          "Living Core":    "*Something ancient and alive pulses into your possession.*\n🌿 A Living Core has appeared in your inventory.",
+          "Dragon Egg":    "*Something warm and heavy settles into your possession.*\n🥚 A Dragon Egg has appeared in your inventory.",
+          "Void Fragment": "*A crack in reality slips into your possession.*\n🌑 A Void Fragment has appeared in your inventory.",
+          "Star Dust":     "*Something shimmering and weightless drifts into your possession.*\n✨ Star Dust has appeared in your inventory.",
+          "Vampire Tooth": "*Something sharp and ancient pierces into your possession.*\n🦷 A Vampire Tooth has appeared in your inventory.",
+          "Cursed Bone":   "*Something cold and wrong materializes near you.*\n🦴 A Cursed Bone has appeared in your inventory.",
+          "Living Core":   "*Something ancient and alive pulses into your possession.*\n🌿 A Living Core has appeared in your inventory.",
         };
         const itemNames = Object.keys(itemPool);
         const item = itemNames[Math.floor(Math.random() * itemNames.length)];
@@ -1003,8 +850,7 @@ async function handleMessage(msg: Message) {
   if (body === "!help") {
     try {
       const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Start.jpg"));
-      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "start.jpg");
-      await msg.reply(media, undefined, { caption: HELP_MENU });
+      await msg.reply(new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "start.jpg"), undefined, { caption: HELP_MENU });
     } catch { await msg.reply(HELP_MENU); }
     return;
   }
@@ -1012,19 +858,15 @@ async function handleMessage(msg: Message) {
   if (body === "!scroll") {
     try {
       const imgBuffer = fs.readFileSync(path.join(process.cwd(), "attached_assets/Scroll.jpg"));
-      const media = new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "scroll.jpg");
-      await msg.reply(media, undefined, { caption: SCROLL_MENU });
+      await msg.reply(new MessageMedia("image/jpeg", imgBuffer.toString("base64"), "scroll.jpg"), undefined, { caption: SCROLL_MENU });
     } catch { await msg.reply(SCROLL_MENU); }
     return;
   }
 
   if (body === "!rules") {
     return msg.reply(
-      `╭══════════════════════════╮\n` +
-      `   ✦┊【 S A C R E D  L A W S 】┊✦\n` +
-      `╰══════════════════════════╯\n` +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-      `  📜 THE SACRED LAWS\n\n` +
+      `╭══════════════════════════╮\n   ✦┊【 S A C R E D  L A W S 】┊✦\n╰══════════════════════════╯\n` +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  📜 THE SACRED LAWS\n\n` +
       `  1. Respect all cultivators.\n     Harassment leads to a ban.\n\n` +
       `  2. No exploiting bugs or glitches.\n     Report them to the owner.\n\n` +
       `  3. No spamming commands.\n     Abuse will result in a mute.\n\n` +
@@ -1032,11 +874,8 @@ async function handleMessage(msg: Message) {
       `  5. Sect leaders hold authority.\n     Obey or leave your sect.\n\n` +
       `  6. XP gained through messages only.\n     No bots, no scripts.\n\n` +
       `  7. The Owner's word is final law.\n     All rulings are absolute.\n\n` +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-      `  Violators face punishment,\n  exile, or permanent death.\n` +
-      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n` +
-      `     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼\n` +
-      `╰══════════════════════════╯`
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n  Violators face punishment,\n  exile, or permanent death.\n` +
+      ` ꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷꒦꒷\n     𝕭𝖞 𝕬𝖘𝖙𝖗𝖆l 𝕿𝖊𝖆𝖒 ™ 𝟸𝟶𝟸𝟼\n╰══════════════════════════╯`
     );
   }
 
@@ -1388,7 +1227,7 @@ async function handleMessage(msg: Message) {
     return msg.reply(reply);
   }
 
-if (body.startsWith("!suck")) {
+  if (body.startsWith("!suck")) {
     if (!user.isVampire || (user.vampireUntil && new Date() > new Date(user.vampireUntil))) {
       await storage.updateUser(phoneId, { isVampire: false, vampireUntil: null });
       return msg.reply("🦷 You are not a vampire.");
@@ -1910,7 +1749,7 @@ if (body.startsWith("!suck")) {
     );
   }
 
-if (body === "!getcard") {
+  if (body === "!getcard") {
     const now = new Date();
     if (user.lastCardClaim) {
       const diff = now.getTime() - new Date(user.lastCardClaim).getTime();
@@ -2187,7 +2026,6 @@ if (body === "!getcard") {
         .filter(Boolean)
         .join("\n");
 
-      // ── Boss wave entrance message ────────────────────────────
       let bossHeader = "";
       if (existing.isBossWave && !existing.bossEntranceDone) {
         bossHeader =
@@ -2310,11 +2148,12 @@ if (body === "!getcard") {
     const { logs, playerDied, monsterDied, newState } = result;
     const logText = logs.join("\n");
 
-   if (monsterDied) {
-      // ── Boss wave progression ────────────────────────────────
+    if (monsterDied) {
+      // ── FIX: check wavesCleared < totalWaves before advancing wave ──────
       if (newState.isBossWave && newState.wavesCleared < newState.totalWaves) {
         const waveResult = advanceDungeonWave(newState);
-        if (waveResult.newState) {
+        if (waveResult.newState.wavesCleared < waveResult.newState.totalWaves) {
+          // More waves remain — stay on boss floor
           setDungeon(phoneId, waveResult.newState);
           const skillListWave = equippedIds
             .map((id, i) => {
@@ -2333,7 +2172,7 @@ if (body === "!getcard") {
             `  Reply *!dpick [1/2/3]* or *!descape*`
           );
         }
-        // All waves cleared — fall through to floor advance below
+        // All waves cleared — fall through to floor advance
         newState.wavesCleared = newState.totalWaves;
       }
 
@@ -2421,6 +2260,7 @@ if (body === "!getcard") {
         `  Reply *!dpick [1/2/3]* or *!descape*`
       );
     }
+
     if (playerDied) {
       const lostXp = Math.floor(newState.xpEarned * 0.2);
       const keptXp = newState.xpEarned - lostXp;
