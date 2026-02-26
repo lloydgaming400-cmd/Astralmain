@@ -730,6 +730,55 @@ export function getArcEntryNarration(floor: number): string | null {
 }
 
 // ─────────────────────────────────────────────────────────────────
+//  CREATE DUNGEON STATE
+// ─────────────────────────────────────────────────────────────────
+
+export function createDungeonState(
+  phoneId: string,
+  chatId: string,
+  floor: number,
+  stats: { maxHp: number; maxMp: number; [key: string]: any }
+): DungeonState {
+  const arc = Math.min(Math.ceil(floor / 10), 10);
+  const arcName = getArcName(arc);
+  const isBoss = isBossFloor(floor);
+  const totalWaves = 1;
+  const monster = getMonsterForFloor(floor);
+
+  return {
+    phoneId,
+    chatId,
+    floor,
+    arc,
+    arcName,
+    wave: 1,
+    totalWaves,
+    isBossWave: isBoss,
+    wavesCleared: 0,
+    bossEntranceDone: false,
+    lastBossThinkTurn: 0,
+    lastPlayerDmg: 0,
+    lastPlayerSkillName: "",
+    lastPlayerSkillKind: "",
+    monster,
+    playerHp: stats.maxHp,
+    playerMp: stats.maxMp,
+    playerMaxHp: stats.maxHp,
+    playerMaxMp: stats.maxMp,
+    playerStats: stats,
+    playerActiveEffects: [],
+    playerCooldowns: {},
+    monsterActiveEffects: [],
+    turn: 0,
+    xpEarned: 0,
+    noDeathRun: true,
+    phase: "active",
+    turnTimer: null,
+    playerStreak: 0,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  IN-MEMORY STORE
 // ─────────────────────────────────────────────────────────────────
 
