@@ -55,7 +55,7 @@ export async function runMigrations() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS pet_xp_stolen INTEGER NOT NULL DEFAULT 0;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS pet_hatched BOOLEAN NOT NULL DEFAULT FALSE;
 
-      -- Permanent Stat Bonus columns (earned through battles & dungeon)
+      -- Permanent Stat Bonus columns
       ALTER TABLE users ADD COLUMN IF NOT EXISTS str_bonus INTEGER NOT NULL DEFAULT 0;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS agi_bonus INTEGER NOT NULL DEFAULT 0;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS int_bonus INTEGER NOT NULL DEFAULT 0;
@@ -75,10 +75,12 @@ export async function runMigrations() {
         expires_at TIMESTAMP NOT NULL,
         status TEXT NOT NULL DEFAULT 'pending'
       );
+
+      -- FIX: Weekly bonus timestamp — was missing, caused bonus to fire every 5 minutes
+      ALTER TABLE global_stats ADD COLUMN IF NOT EXISTS last_weekly_bonus_at TIMESTAMP;
     `);
     console.log("[db] Migrations complete ✅");
   } catch (err) {
     console.error("[db] Migration error:", err);
-    // Don't rethrow — allow server to start even if migration partially fails
   }
 }
