@@ -2180,18 +2180,20 @@ async function handleMessage(msg: Message) {
         );
       }
 
-      newState.floor++;
-      const nextArc = Math.ceil(newState.floor / 10);
-      const nextMonster = getMonsterForFloor(newState.floor);
+      const nextFloor = newState.floor + 1;
+      const nextArc = Math.ceil(nextFloor / 10);
+      const nextMonster = getMonsterForFloor(nextFloor);
+      
+      newState.floor = nextFloor;
       newState.monster = nextMonster;
       newState.arc = nextArc;
-      newState.arcName = nextMonster.arcName || newState.arcName;
+      newState.arcName = getArcName(nextArc);
       newState.monsterActiveEffects = [];
       newState.turn = 1;
       newState.playerStreak = 0;
       newState.wave = 1;
-      newState.totalWaves = newState.floor % 10 === 0 ? 3 : 1;
-      newState.isBossWave = newState.floor % 10 === 0;
+      newState.totalWaves = nextFloor % 10 === 0 ? 3 : 1;
+      newState.isBossWave = nextFloor % 10 === 0;
       newState.wavesCleared = 0;
       newState.bossEntranceDone = false;
       newState.lastBossThinkTurn = 0;
@@ -2200,7 +2202,7 @@ async function handleMessage(msg: Message) {
       newState.playerHp = Math.min(newState.playerMaxHp, newState.playerHp + healAmt);
       newState.playerMp = Math.min(newState.playerMaxMp, newState.playerMp + 40);
 
-      await storage.updateUser(phoneId, { dungeonFloor: newState.floor });
+      await storage.updateUser(phoneId, { dungeonFloor: nextFloor });
       setDungeon(phoneId, newState);
 
       const skillList = equippedIds
