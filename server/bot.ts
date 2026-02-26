@@ -39,19 +39,18 @@ import {
   getDungeon,
   setDungeon,
   deleteDungeon,
+  advanceDungeonWave,
   type DungeonState,
 } from './dungeon';
 
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
-// ── FIX #10: OWNER_NUMBER now correctly uses the env-derived value so safeSend works ──
 const OWNER_LID = "87209327755401@lid";
 const OWNER_CUS = process.env.OWNER_PHONE ? `${process.env.OWNER_PHONE}@c.us` : "";
-const OWNER_NUMBER = OWNER_CUS || OWNER_LID; // FIX: was hardcoded to OWNER_LID
+const OWNER_NUMBER = OWNER_CUS || OWNER_LID;
 const isOwner = (pid: string) => pid === OWNER_LID || (OWNER_CUS && pid === OWNER_CUS);
 
-// ── FIX #8: resolveQuotedUser now has a timeout guard ──
 async function resolveQuotedUser(msg: Message): Promise<{ phoneId: string; contact: any } | null> {
   try {
     const result = await Promise.race([
@@ -229,11 +228,7 @@ const SHOP_ITEMS: Record<string, { price: number; description: string }> = {
   "star dust":                { price: 75000,  description: "Dust from the stars. Grants a temporary domain." },
 };
 
-// ── Items that came from the SHOP (purchased) should never be randomly consumed ──
-// FIX #1: Shop-bought items bypass the random-fizzle check entirely.
 const SHOP_ITEM_KEYS = new Set(Object.keys(SHOP_ITEMS));
-
-// ── Items that CAN randomly fizzle (found via chat drop, not purchased) ──
 const FIZZLE_ITEMS = new Set(["Dragon Egg", "Void Fragment", "Star Dust", "Vampire Tooth", "Cursed Bone", "Living Core"]);
 
 const DISEASES: Record<string, { name: string; race: string; startMsg: string; endMsg: string; cure: string }> = {
@@ -618,15 +613,13 @@ async function safeSend(to: string, message: string): Promise<void> {
   }
 }
 
-// ── FIX #11: Weekly bonus uses a persistent timestamp stored in globalStats
-// instead of relying on a raw setInterval from server start ──
 async function runWeeklyBonusIfDue() {
   if (!client || !isClientReady) return;
   try {
     const stats = await storage.getGlobalStats();
     const now = Date.now();
     const lastWeekly = stats.lastWeeklyBonusAt ? new Date(stats.lastWeeklyBonusAt).getTime() : 0;
-    if (now - lastWeekly < 604800000) return; // not yet a week
+    if (now - lastWeekly < 604800000) return;
     await storage.updateGlobalStats({ lastWeeklyBonusAt: new Date() });
 
     const users = await storage.getUsers();
@@ -715,15 +708,11 @@ setInterval(async () => {
     }
 
     await storage.expireOldChallenges();
-
-    // FIX #11: Check weekly bonus on every 5-min tick instead of a fragile one-shot interval
     await runWeeklyBonusIfDue();
   } catch (err) {
     console.error("Interval error:", err);
   }
 }, 300000);
-
-// REMOVED: old unreliable weekly setInterval — replaced by runWeeklyBonusIfDue() above
 
 setInterval(async () => {
   if (!client || !isClientReady) return;
@@ -950,9 +939,9 @@ async function handleMessage(msg: Message) {
     }
   }
 
-  // ── XP gain on normal messages ────────────────────────────────────────────
+// ── XP gain on normal messages ────────────────────────────────────────────
   if (body.length >= 3 && !body.startsWith("!")) {
- let rate = user.species === "Constellation" ? 300 : (SPECIES_XP_RATES[user.species] || 5);
+    let rate = user.species === "Constellation" ? 300 : (SPECIES_XP_RATES[user.species] || 5);
     let dustBonus = 0;
 
     if (user.dustDomainUntil && new Date() < new Date(user.dustDomainUntil)) {
@@ -1239,7 +1228,6 @@ async function handleMessage(msg: Message) {
       return msg.reply(`❌ *${itemName}* requires a target. Reply to someone's message to use it.`);
     }
 
-    // ── FIX #1: Only fizzle items that were found via chat drop, never shop-bought items ──
     const canFizzle = FIZZLE_ITEMS.has(itemName) && !SHOP_ITEM_KEYS.has(itemLower);
     if (canFizzle && Math.random() > 0.11) {
       inv.splice(num, 1);
@@ -1281,7 +1269,6 @@ async function handleMessage(msg: Message) {
       reply = `🦴 Shadow Veil active! You are now permanently immune to plagues.`;
 
     } else if (itemLower === "dragon egg") {
-      // FIX #2: initialize dragonEggProgress to 0, not 1
       if (user.dragonEggProgress > 0) return msg.reply("❌ You already have a Dragon Egg incubating.");
       updates.dragonEggProgress = 0;
       reply = `🥚 The egg begins to pulse. It has begun feeding on nearby XP. (needs 1500 XP to hatch)`;
@@ -1402,7 +1389,7 @@ async function handleMessage(msg: Message) {
     return msg.reply(reply);
   }
 
-  if (body.startsWith("!suck")) {
+if (body.startsWith("!suck")) {
     if (!user.isVampire || (user.vampireUntil && new Date() > new Date(user.vampireUntil))) {
       await storage.updateUser(phoneId, { isVampire: false, vampireUntil: null });
       return msg.reply("🦷 You are not a vampire.");
@@ -1420,7 +1407,6 @@ async function handleMessage(msg: Message) {
       return msg.reply(`🦷 You must wait ${mins} more minute(s) before feeding again.`);
     }
     const amt = Math.floor(Math.random() * 251) + 50;
-    // FIX #5: save inventory alongside petXpStolen/petHatched update
     const suckUpdates: any = { xp: user.xp + amt, lastSuckAt: new Date() };
     await storage.updateUser(targetId, { xp: Math.max(0, target.xp - amt) });
 
@@ -1806,7 +1792,6 @@ async function handleMessage(msg: Message) {
 
     const penalty = Math.floor(user.xp * 0.1);
     await storage.updateUser(phoneId, { xp: Math.max(0, user.xp - penalty) });
-    // FIX #9: also clear dungeonActive on forfeit
     await storage.endBattle(activeBattle.id, opponentId);
     const dungeon = getDungeon(phoneId);
     if (dungeon) {
@@ -1926,7 +1911,7 @@ async function handleMessage(msg: Message) {
     );
   }
 
-  if (body === "!getcard") {
+if (body === "!getcard") {
     const now = new Date();
     if (user.lastCardClaim) {
       const diff = now.getTime() - new Date(user.lastCardClaim).getTime();
@@ -2112,7 +2097,6 @@ async function handleMessage(msg: Message) {
     if (!sect) return msg.reply("❌ Your sect no longer exists.");
     const allUsers = await storage.getUsers();
     const members = allUsers.filter(u => u.sectId === sect.id);
-    // FIX #3: resolve leader name instead of showing raw phoneId
     const leaderMember = members.find(m => m.phoneId === sect.leaderPhoneId);
     const leaderDisplay = leaderMember ? leaderMember.name : sect.leaderPhoneId;
     const memberList = members.slice(0, 10).map((m, i) => `  ${i + 1}. ${m.name} — ${m.xp} XP`).join("\n");
@@ -2203,9 +2187,20 @@ async function handleMessage(msg: Message) {
         })
         .filter(Boolean)
         .join("\n");
+
+      // ── Boss wave entrance message ────────────────────────────
+      let bossHeader = "";
+      if (existing.isBossWave && !existing.bossEntranceDone) {
+        bossHeader =
+          `⚠️ *BOSS FLOOR ${existing.floor}* — *${existing.arcName}*\n` +
+          `*${existing.monster.name}* awaits. This will not be easy.\n\n`;
+        existing.bossEntranceDone = true;
+        setDungeon(phoneId, existing);
+      }
+
       return msg.reply(
         `╭══════════════════════╮\n  🏰 TOWER OF ASCENSION\n╰══════════════════════╯\n` +
-        `  Resuming your run...\n\n${status}\n\n` +
+        `  Resuming your run...\n\n${bossHeader}${status}\n\n` +
         `  🗡️ Pick your skill:\n${skillList}\n\n` +
         `  Reply *!dpick [1/2/3]* or *!descape* to flee.`
       );
@@ -2218,6 +2213,8 @@ async function handleMessage(msg: Message) {
     const dungeonState: DungeonState = {
       phoneId,
       floor: startFloor,
+      arc: Math.ceil(startFloor / 10),
+      arcName: monster.arcName || "The Forsaken Gate",
       monster,
       playerHp: stats.maxHp,
       playerMp: stats.maxMp,
@@ -2234,6 +2231,15 @@ async function handleMessage(msg: Message) {
       chatId: msg.from,
       turnTimer: null,
       playerStreak: 0,
+      wave: 1,
+      totalWaves: startFloor % 10 === 0 ? 3 : 1,
+      isBossWave: startFloor % 10 === 0,
+      wavesCleared: 0,
+      bossEntranceDone: false,
+      lastBossThinkTurn: 0,
+      lastPlayerDmg: 0,
+      lastPlayerSkillName: "",
+      lastPlayerSkillKind: "",
     };
 
     if (user.equippedPassive) {
@@ -2260,9 +2266,13 @@ async function handleMessage(msg: Message) {
       .filter(Boolean)
       .join("\n");
 
+    const arcHeader = dungeonState.isBossWave
+      ? `⚠️ *BOSS FLOOR ${startFloor}* — *${dungeonState.arcName}*\n`
+      : `📖 *Arc ${dungeonState.arc}: ${dungeonState.arcName}*\n`;
+
     return msg.reply(
       `╭══════════════════════╮\n  🏰 TOWER OF ASCENSION\n╰══════════════════════╯\n\n` +
-      `${monster.lore}\n\n` +
+      `${arcHeader}${monster.lore}\n\n` +
       `  📍 *Floor ${startFloor}*\n` +
       `  ${monster.emoji} *${monster.name}* appears!\n\n` +
       `${formatDungeonStatus(dungeonState)}\n\n` +
@@ -2302,6 +2312,32 @@ async function handleMessage(msg: Message) {
     const logText = logs.join("\n");
 
     if (monsterDied) {
+      // ── Boss wave progression ────────────────────────────────
+      if (newState.isBossWave && newState.wavesCleared < newState.totalWaves) {
+        const waveResult = advanceDungeonWave(newState);
+        if (!waveResult.runComplete) {
+          setDungeon(phoneId, waveResult.newState);
+          const skillListWave = equippedIds
+            .map((id, i) => {
+              const sk = ALL_SKILLS.find(s => s.id === id);
+              if (!sk) return null;
+              const cd = waveResult.newState.playerCooldowns[id];
+              return `  ${i + 1}. *${sk.name}* [${sk.rank}] — ${cd ? `CD: ${cd}` : "Ready"}`;
+            })
+            .filter(Boolean)
+            .join("\n");
+          return msg.reply(
+            `${logText}\n\n` +
+            `${waveResult.message}\n\n` +
+            `${formatDungeonStatus(waveResult.newState)}\n\n` +
+            `  🗡️ Skills:\n${skillListWave}\n\n` +
+            `  Reply *!dpick [1/2/3]* or *!descape*`
+          );
+        }
+        // All waves cleared — fall through to floor advance below
+        newState.wavesCleared = newState.totalWaves;
+      }
+
       const reward = getFloorReward(newState.floor, newState.noDeathRun);
       newState.xpEarned += reward.xp;
 
@@ -2320,7 +2356,7 @@ async function handleMessage(msg: Message) {
       }
       await storage.updateUser(phoneId, updates);
 
-      if (newState.floor >= 10) {
+      if (newState.floor >= 100) {
         deleteDungeon(phoneId);
         await storage.updateUser(phoneId, { inBattle: false, dungeonActive: false, dungeonFloor: 1 });
         return msg.reply(
@@ -2336,11 +2372,21 @@ async function handleMessage(msg: Message) {
       }
 
       newState.floor++;
+      const nextArc = Math.ceil(newState.floor / 10);
       const nextMonster = getMonsterForFloor(newState.floor);
       newState.monster = nextMonster;
+      newState.arc = nextArc;
+      newState.arcName = nextMonster.arcName || newState.arcName;
       newState.monsterActiveEffects = [];
       newState.turn = 1;
       newState.playerStreak = 0;
+      newState.wave = 1;
+      newState.totalWaves = newState.floor % 10 === 0 ? 3 : 1;
+      newState.isBossWave = newState.floor % 10 === 0;
+      newState.wavesCleared = 0;
+      newState.bossEntranceDone = false;
+      newState.lastBossThinkTurn = 0;
+
       const healAmt = Math.floor(newState.playerMaxHp * 0.3);
       newState.playerHp = Math.min(newState.playerMaxHp, newState.playerHp + healAmt);
       newState.playerMp = Math.min(newState.playerMaxMp, newState.playerMp + 40);
@@ -2358,11 +2404,17 @@ async function handleMessage(msg: Message) {
         .filter(Boolean)
         .join("\n");
 
+      const nextArcHeader = newState.isBossWave
+        ? `⚠️ *BOSS FLOOR ${newState.floor}* — *${newState.arcName}*\n`
+        : (nextArc > Math.ceil((newState.floor - 1) / 10)
+            ? `🌟 *NEW ARC ${nextArc}: ${newState.arcName}*\n`
+            : `📖 *Arc ${nextArc}: ${newState.arcName}*\n`);
+
       return msg.reply(
         `${logText}\n\n${reward.message}\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
         `💚 Healed *${healAmt} HP* + 40 MP between floors.\n\n` +
-        `${nextMonster.lore}\n\n` +
+        `${nextArcHeader}${nextMonster.lore}\n\n` +
         `  📍 *Floor ${newState.floor}*\n` +
         `  ${nextMonster.emoji} *${nextMonster.name}* appears!\n\n` +
         `${formatDungeonStatus(newState)}\n\n` +
@@ -2443,6 +2495,7 @@ async function handleMessage(msg: Message) {
       return msg.reply(
         `🏰 *Tower Status*\n\n` +
         `  📍 Currently on: *Floor ${dungeon.floor}*\n` +
+        `  📖 Arc ${dungeon.arc}: ${dungeon.arcName}\n` +
         `  ❤️ HP: ${dungeon.playerHp}/${dungeon.playerMaxHp}\n` +
         `  ✨ XP earned this run: *${dungeon.xpEarned}*\n\n` +
         `  Use !dpick to continue or !descape to flee.`
