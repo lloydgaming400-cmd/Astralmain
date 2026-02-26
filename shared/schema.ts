@@ -54,8 +54,8 @@ export const users = pgTable("users", {
   battleExp: integer("battle_exp").notNull().default(0),
   battleWins: integer("battle_wins").notNull().default(0),
   battleLosses: integer("battle_losses").notNull().default(0),
-  equippedActives: jsonb("equipped_actives").notNull().default([]),  // string[] skill IDs
-  equippedPassive: text("equipped_passive"),                          // skill ID or null
+  equippedActives: jsonb("equipped_actives").notNull().default([]),
+  equippedPassive: text("equipped_passive"),
   inBattle: boolean("in_battle").notNull().default(false),
 
   // ── Dungeon System ────────────────────────────────────────────────────────────
@@ -63,13 +63,12 @@ export const users = pgTable("users", {
   dungeonActive: boolean("dungeon_active").notNull().default(false),
 
   // ── Pet System ────────────────────────────────────────────────────────────────
-  petType: text("pet_type"),    // dragon, fairy, phoenix, griffin, wolf, kraken
+  petType: text("pet_type"),
   petName: text("pet_name"),
   petXpStolen: integer("pet_xp_stolen").notNull().default(0),
   petHatched: boolean("pet_hatched").notNull().default(false),
 
-  // ── Permanent Stat Bonuses (earned through battles & dungeon) ─────────────────
-  // These stack forever. Each battle/floor awards a small permanent increase.
+  // ── Permanent Stat Bonuses ────────────────────────────────────────────────────
   strBonus: integer("str_bonus").notNull().default(0),
   agiBonus: integer("agi_bonus").notNull().default(0),
   intBonus: integer("int_bonus").notNull().default(0),
@@ -86,6 +85,7 @@ export const globalStats = pgTable("global_stats", {
   diseaseRace: text("disease_race"),
   lastOutbreakAt: timestamp("last_outbreak_at"),
   outbreakEndsAt: timestamp("outbreak_ends_at"),
+  lastWeeklyBonusAt: timestamp("last_weekly_bonus_at"),  // ← FIX: was missing, caused weekly bonus to fire every 5 min
 });
 
 export const sects = pgTable("sects", {
@@ -108,14 +108,13 @@ export const cards = pgTable("cards", {
   rarity: text("rarity").notNull(),
 });
 
-// ── Challenges (pending, expires 5 min) ───────────────────────────────────────
 export const challenges = pgTable("challenges", {
   id: serial("id").primaryKey(),
   challengerPhoneId: text("challenger_phone_id").notNull(),
   targetPhoneId: text("target_phone_id").notNull(),
   chatId: text("chat_id").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  status: text("status").notNull().default("pending"), // pending | accepted | declined | expired
+  status: text("status").notNull().default("pending"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
