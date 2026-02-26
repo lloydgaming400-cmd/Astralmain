@@ -798,28 +798,27 @@ export async function initBot() {
         dataPath: authPath
       }),
       restartOnAuthFail: true,
-      puppeteer: {
-        executablePath: chromiumPath,
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-          '--disable-software-rasterizer',
-          '--disable-extensions',
-          '--single-process',
-          '--user-data-dir=/tmp/whatsapp-session-' + Date.now(),
-          '--disable-web-security',
-          '--no-default-browser-check'
-        ],
-        handleSIGINT: false,
-        handleSIGTERM: false,
-        handleSIGHUP: false,
-      },
+     puppeteer: {
+  executablePath: chromiumPath,
+  headless: true,
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--no-first-run',
+    '--no-zygote',
+    '--disable-gpu',
+    '--disable-software-rasterizer',
+    '--disable-extensions',
+    '--user-data-dir=/tmp/whatsapp-session',
+    '--disable-web-security',
+    '--no-default-browser-check'
+  ],
+  handleSIGINT: false,
+  handleSIGTERM: false,
+  handleSIGHUP: false,
+},
     });
 
     client.on('qr', (qr) => {
@@ -2311,11 +2310,11 @@ if (body === "!getcard") {
     const { logs, playerDied, monsterDied, newState } = result;
     const logText = logs.join("\n");
 
-    if (monsterDied) {
+   if (monsterDied) {
       // ── Boss wave progression ────────────────────────────────
       if (newState.isBossWave && newState.wavesCleared < newState.totalWaves) {
         const waveResult = advanceDungeonWave(newState);
-        if (!waveResult.runComplete) {
+        if (waveResult.newState) {
           setDungeon(phoneId, waveResult.newState);
           const skillListWave = equippedIds
             .map((id, i) => {
@@ -2328,7 +2327,7 @@ if (body === "!getcard") {
             .join("\n");
           return msg.reply(
             `${logText}\n\n` +
-            `${waveResult.message}\n\n` +
+            `${waveResult.narration}\n\n` +
             `${formatDungeonStatus(waveResult.newState)}\n\n` +
             `  🗡️ Skills:\n${skillListWave}\n\n` +
             `  Reply *!dpick [1/2/3]* or *!descape*`
@@ -2422,7 +2421,6 @@ if (body === "!getcard") {
         `  Reply *!dpick [1/2/3]* or *!descape*`
       );
     }
-
     if (playerDied) {
       const lostXp = Math.floor(newState.xpEarned * 0.2);
       const keptXp = newState.xpEarned - lostXp;
