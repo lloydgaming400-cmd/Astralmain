@@ -517,7 +517,7 @@ export function resolveDungeonTurn(
   // ── Enrage / reaction ─────────────────────────────────────────
   const hpPct     = (monster.hp / monster.maxHp) * 100;
   const isEnraged = !!(monster.enrageAt && hpPct <= monster.enrageAt);
-  if (isEnraged && monster.enrageLines?.length && state.turn % 5 === 0) {
+  if (isEnraged && monster.enrageLines?.length && state.turn % 2 === 0) {
     logs.push(pick(monster.enrageLines));
   }
   if (monster.isBoss && playerDmgDealt > 0) {

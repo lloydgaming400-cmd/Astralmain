@@ -44,6 +44,16 @@ import {
   type DungeonState,
 } from './dungeon';
 
+function log(message: string, source = "bot") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+
 export let currentQrCode: string | undefined;
 export let connectionStatus: "CONNECTED" | "DISCONNECTED" | "WAITING_FOR_QR" = "DISCONNECTED";
 
@@ -725,7 +735,13 @@ export async function initBot() {
       },
     });
 
-    client.on('qr',            (qr)    => { currentQrCode = qr; connectionStatus = "WAITING_FOR_QR"; console.log('[bot] QR code ready — scan to connect.'); });
+    client.on('qr',            (qr)    => { 
+      currentQrCode = qr; 
+      connectionStatus = "WAITING_FOR_QR"; 
+      console.log('[bot] QR code ready — scan to connect.'); 
+      // Force a log to confirm QR generation
+      log(`QR Code generated: ${qr.substring(0, 20)}...`, "bot");
+    });
     client.on('ready',         ()      => { connectionStatus = "CONNECTED"; isClientReady = true; currentQrCode = undefined; console.log('[bot] WhatsApp connected and ready.'); });
     client.on('authenticated', ()      => { connectionStatus = "CONNECTED"; currentQrCode = undefined; console.log('[bot] Authenticated.'); });
     client.on('auth_failure',  (msg)   => { connectionStatus = "DISCONNECTED"; isClientReady = false; console.error('[bot] Auth failure:', msg); cleanupChromiumTemp(); setTimeout(() => { isInitializing = false; initBot(); }, 10000); });
@@ -2198,6 +2214,12 @@ async function handleMessage(msg: Message) {
       newState.bossEntranceDone = false;
       newState.lastBossThinkTurn = 0;
 
+      // ── Boss Entrance Handling ─────────────────────────────────────
+      if (newState.isBossWave && newState.monster.entranceMonologue?.length) {
+          logText += `\n\n${newState.monster.entranceMonologue.join('\n')}`;
+          newState.bossEntranceDone = true;
+      }
+
       const healAmt = Math.floor(newState.playerMaxHp * 0.3);
       newState.playerHp = Math.min(newState.playerMaxHp, newState.playerHp + healAmt);
       newState.playerMp = Math.min(newState.playerMaxMp, newState.playerMp + 40);
@@ -2471,5 +2493,11 @@ async function handleMessage(msg: Message) {
   if (body === "!resetdb") {
     await storage.resetDatabase();
     return msg.reply("🗑️ Database has been reset.");
+  }
+
+  if (body === "!forceqr") {
+    log("Force QR requested by owner", "bot");
+    refreshQr();
+    return msg.reply("🔄 Force resetting WhatsApp client... Please wait for the QR code to regenerate.");
   }
 }
