@@ -677,7 +677,7 @@ export function formatDungeonStatus(state: DungeonState): string {
   const mHpBar  = makeBar(monster.hp, monster.maxHp);
 
   const playerEffects = state.playerActiveEffects
-    .filter((fx: any) => fx.duration !== 999 && fx.turnsLeft > 0)
+    .filter((fx: any) => (fx.duration !== 999 && fx.duration !== 0) && fx.turnsLeft > 0)
     .map((fx: any) => `${fx.kind}(${fx.turnsLeft})`)
     .join(", ");
   const monsterEffects = state.monsterActiveEffects

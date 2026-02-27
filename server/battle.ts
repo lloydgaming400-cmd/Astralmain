@@ -181,7 +181,7 @@ export const ALL_SKILLS: Skill[] = [
     cooldown: 0,
     statBase: "strength",
     attackPercent: 0,
-    effect: { kind: "shield", value: 15, duration: 999, target: "self" },
+    effect: { kind: "shield", value: 15, duration: 0, target: "self" },
     description: "Passive: absorb flat 15 damage per hit.",
   },
 
@@ -341,7 +341,7 @@ export const ALL_SKILLS: Skill[] = [
     cooldown: 0,
     statBase: "strength",
     attackPercent: 0,
-    effect: { kind: "shield", value: 30, duration: 999, target: "self" },
+    effect: { kind: "shield", value: 30, duration: 0, target: "self" },
     description: "Passive: absorb 30 flat damage per hit.",
   },
   {
@@ -561,7 +561,7 @@ export const ALL_SKILLS: Skill[] = [
     cooldown: 0,
     statBase: "strength",
     attackPercent: 0,
-    effect: { kind: "shield", value: 80, duration: 999, target: "self" },
+    effect: { kind: "shield", value: 80, duration: 0, target: "self" },
     description: "Passive: Absorb 80 flat damage per hit.",
   },
   {
@@ -627,7 +627,7 @@ export const ALL_SKILLS: Skill[] = [
     cooldown: 0,
     statBase: "strength",
     attackPercent: 0,
-    effect: { kind: "shield", value: 10, duration: 999, target: "self" },
+    effect: { kind: "shield", value: 10, duration: 0, target: "self" },
     description: "Passive: +10 flat shield per hit.",
   },
   {
@@ -699,7 +699,7 @@ export const ALL_SKILLS: Skill[] = [
     cooldown: 0,
     statBase: "strength",
     attackPercent: 0,
-    effect: { kind: "shield", value: 12, duration: 999, target: "self" },
+    effect: { kind: "shield", value: 12, duration: 0, target: "self" },
     description: "Passive: +12 flat shield per hit.",
   },
   {
@@ -2200,7 +2200,7 @@ export function formatTurnBlock(state: BattleState): string {
 
   const fmtEffects = (c: Combatant) => {
     const efx = c.activeEffects
-      .filter(fx => fx.duration !== 999 && fx.turnsLeft > 0)
+      .filter(fx => (fx.duration !== 999 && fx.duration !== 0) && fx.turnsLeft > 0)
       .map(fx => `${fx.kind}(${fx.turnsLeft})`)
       .join(", ");
     return efx ? `\n  ⚠️ Effects: ${efx}` : "";
