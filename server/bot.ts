@@ -2105,12 +2105,13 @@ async function handleMessage(msg: Message) {
     );
   }
 
-  if (body.startsWith("!dpick ")) {
+  if (body.startsWith("!dpick")) {
     const dungeon = getDungeon(phoneId);
     if (!dungeon) return msg.reply("❌ You are not in the dungeon. Use !dungeon to enter.");
     if (dungeon.phase === "ended") return msg.reply("❌ Your dungeon run has ended.");
 
-    const num = parseInt(body.replace("!dpick ", "").trim()) - 1;
+    let numStr = body.replace("!dpick", "").trim();
+    const num = parseInt(numStr) - 1;
     const equippedIds = (user.equippedActives as string[]) || [];
     if (isNaN(num) || num < 0 || num >= equippedIds.length) {
       return msg.reply(`❌ Invalid skill. Pick 1–${equippedIds.length}.`);
@@ -2134,6 +2135,9 @@ async function handleMessage(msg: Message) {
     const result = resolveDungeonTurn(dungeon, skill);
     const { logs, playerDied, monsterDied, newState } = result;
     const logText = logs.join("\n");
+
+    // Persist state immediately
+    setDungeon(phoneId, newState);
 
     if (monsterDied) {
       // ── FIX: check wavesCleared < totalWaves before advancing wave ──────
@@ -2260,7 +2264,7 @@ async function handleMessage(msg: Message) {
       const lostXp = Math.floor(newState.xpEarned * 0.2);
       const keptXp = newState.xpEarned - lostXp;
       await storage.updateUser(phoneId, {
-        xp: user.xp + keptXp,
+        xp: (user.xp || 0) + keptXp,
         inBattle: false,
         dungeonActive: false,
         dungeonFloor: 1,
@@ -2279,6 +2283,7 @@ async function handleMessage(msg: Message) {
       );
     }
 
+    // Normal turn continuation
     setDungeon(phoneId, newState);
 
     const skillListContinue = equippedIds
