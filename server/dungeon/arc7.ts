@@ -16,7 +16,7 @@ const arc7: ArcData = {
     70: "*A single cell, larger than all others. The door is open. The occupant is inside anyway.*",
   },
   mobs: {
-    61: { id: "eyeless_angel", name: "Eyeless Angel", emoji: "👼", maxHp: 980, maxMp: 160, attack: 112, defense: 32, speed: 45, isBoss: false,
+    1: { id: "eyeless_angel", name: "Eyeless Angel", emoji: "👼", maxHp: 980, maxMp: 160, attack: 112, defense: 32, speed: 45, isBoss: false,
       lore: "*An angel without eyes. It sees more than you.*",
       moves: [
         { name: "Holy Strike",    emoji: "✨", damage: 112, mpCost: 0,  weight: 3 },
@@ -24,7 +24,7 @@ const arc7: ArcData = {
         { name: "Celestial Hum",  emoji: "🎵", damage: 0,   mpCost: 45, weight: 2, effect: { kind: "regen", value: 75, duration: 3 } },
       ],
     },
-    62: { id: "chain_seraph", name: "Chain Seraph", emoji: "⛓️", maxHp: 1020, maxMp: 140, attack: 116, defense: 28, speed: 40, isBoss: false,
+    2: { id: "chain_seraph", name: "Chain Seraph", emoji: "⛓️", maxHp: 1020, maxMp: 140, attack: 116, defense: 28, speed: 40, isBoss: false,
       lore: "*Was imprisoned here so long it became the chains.*",
       moves: [
         { name: "Light Chain",   emoji: "⛓️", damage: 116, mpCost: 30, weight: 3, effect: { kind: "slow", value: 35, duration: 4 } },
@@ -32,7 +32,7 @@ const arc7: ArcData = {
         { name: "Heavenly Mend", emoji: "💚", damage: 0,   mpCost: 50, weight: 2, effect: { kind: "regen", value: 82, duration: 3 } },
       ],
     },
-    63: { id: "kneeling_watcher", name: "Kneeling Watcher", emoji: "🧎", maxHp: 1060, maxMp: 120, attack: 118, defense: 30, speed: 38, isBoss: false,
+    3: { id: "kneeling_watcher", name: "Kneeling Watcher", emoji: "🧎", maxHp: 1060, maxMp: 120, attack: 118, defense: 30, speed: 38, isBoss: false,
       lore: "*It has been kneeling since before you were born. It wasn't worshipping. It was waiting.*",
       moves: [
         { name: "Rising Judgment",  emoji: "⬆️", damage: 118, mpCost: 0,  weight: 4 },
@@ -40,7 +40,7 @@ const arc7: ArcData = {
         { name: "Return to Prayer", emoji: "💚", damage: 0,   mpCost: 40, weight: 2, effect: { kind: "regen", value: 78, duration: 3 } },
       ],
     },
-    64: { id: "shattered_divine", name: "Shattered Divine", emoji: "💔", maxHp: 1040, maxMp: 150, attack: 120, defense: 22, speed: 52, isBoss: false,
+    4: { id: "shattered_divine", name: "Shattered Divine", emoji: "💔", maxHp: 1040, maxMp: 150, attack: 120, defense: 22, speed: 52, isBoss: false,
       lore: "*One of heaven's experiments that went wrong enough to be imprisoned.*",
       moves: [
         { name: "Broken Divinity",  emoji: "💔", damage: 120, mpCost: 0,  weight: 3 },
@@ -48,7 +48,7 @@ const arc7: ArcData = {
         { name: "Desperate Reform", emoji: "🌀", damage: 0,   mpCost: 50, weight: 2, effect: { kind: "regen", value: 85, duration: 3 } },
       ],
     },
-    65: { id: "divine_mistake", name: "The Divine Mistake", emoji: "❓", maxHp: 1100, maxMp: 170, attack: 124, defense: 26, speed: 45, isBoss: false,
+    5: { id: "divine_mistake", name: "The Divine Mistake", emoji: "❓", maxHp: 1100, maxMp: 170, attack: 124, defense: 26, speed: 45, isBoss: false,
       lore: "*Heaven created it, looked at what they'd made, and immediately imprisoned it here.*",
       moves: [
         { name: "Confused Wrath", emoji: "❓", damage: 124, mpCost: 0,  weight: 3 },
@@ -56,7 +56,7 @@ const arc7: ArcData = {
         { name: "Self Question",  emoji: "🔁", damage: 0,   mpCost: 45, weight: 2, effect: { kind: "regen", value: 90, duration: 3 } },
       ],
     },
-    66: { id: "throne_wraith", name: "Throne Wraith", emoji: "👑", maxHp: 1140, maxMp: 160, attack: 128, defense: 30, speed: 42, isBoss: false,
+    6: { id: "throne_wraith", name: "Throne Wraith", emoji: "👑", maxHp: 1140, maxMp: 160, attack: 128, defense: 30, speed: 42, isBoss: false,
       lore: "*The spirit of whoever once sat in one of the hall's thrones.*",
       moves: [
         { name: "Throne Strike",  emoji: "👑", damage: 128, mpCost: 0,  weight: 3 },
@@ -64,7 +64,7 @@ const arc7: ArcData = {
         { name: "Rule of Heaven", emoji: "⚖️", damage: 0,   mpCost: 55, weight: 2, effect: { kind: "regen", value: 95, duration: 3 } },
       ],
     },
-    67: { id: "hymn_construct", name: "Hymn Construct", emoji: "🎵", maxHp: 1160, maxMp: 200, attack: 130, defense: 26, speed: 50, isBoss: false,
+    7: { id: "hymn_construct", name: "Hymn Construct", emoji: "🎵", maxHp: 1160, maxMp: 200, attack: 130, defense: 26, speed: 50, isBoss: false,
       lore: "*Built from the hymns themselves. It is music that decided music wasn't enough.*",
       moves: [
         { name: "Hymn Strike",   emoji: "🎵", damage: 130, mpCost: 30, weight: 3 },
@@ -72,7 +72,7 @@ const arc7: ArcData = {
         { name: "Hymnal Regen",  emoji: "💚", damage: 0,   mpCost: 55, weight: 2, effect: { kind: "regen", value: 100, duration: 3 } },
       ],
     },
-    68: { id: "warden_judgment", name: "Warden's Judgment", emoji: "⚖️", maxHp: 1200, maxMp: 180, attack: 135, defense: 32, speed: 44, isBoss: false,
+    8: { id: "warden_judgment", name: "Warden's Judgment", emoji: "⚖️", maxHp: 1200, maxMp: 180, attack: 135, defense: 32, speed: 44, isBoss: false,
       lore: "*The warden is gone but the judgment remains.*",
       moves: [
         { name: "Verdict Strike",   emoji: "⚖️", damage: 135, mpCost: 0,  weight: 3 },
@@ -81,7 +81,7 @@ const arc7: ArcData = {
         { name: "Absolute Verdict", emoji: "💥", damage: 165, mpCost: 75, weight: 1 },
       ],
     },
-    69: { id: "blinding_guardian", name: "Blinding Guardian", emoji: "☀️", maxHp: 1280, maxMp: 200, attack: 140, defense: 36, speed: 40, isBoss: false,
+    9: { id: "blinding_guardian", name: "Blinding Guardian", emoji: "☀️", maxHp: 1280, maxMp: 200, attack: 140, defense: 36, speed: 40, isBoss: false,
       lore: "*Guards the approach with light so pure it's weaponized.*",
       moves: [
         { name: "Blinding Ray",   emoji: "☀️", damage: 140, mpCost: 40, weight: 3, effect: { kind: "slow", value: 45, duration: 4 } },

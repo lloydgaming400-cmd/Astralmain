@@ -16,7 +16,7 @@ const arc5: ArcData = {
     50: "*The center of the void. You feel something looking at you. You look back. There is nothing. The nothing looks back.*",
   },
   mobs: {
-    41: { id: "void_phantom", name: "Void Phantom", emoji: "🌑", maxHp: 620, maxMp: 120, attack: 74, defense: 14, speed: 54, isBoss: false,
+    1: { id: "void_phantom", name: "Void Phantom", emoji: "🌑", maxHp: 620, maxMp: 120, attack: 74, defense: 14, speed: 54, isBoss: false,
       lore: "*Exists between moments. When it attacks, it attacks from a time that hasn't happened yet.*",
       moves: [
         { name: "Temporal Strike", emoji: "⏱️", damage: 74, mpCost: 25, weight: 3 },
@@ -24,7 +24,7 @@ const arc5: ArcData = {
         { name: "Phase Tear",      emoji: "💥", damage: 90, mpCost: 50, weight: 2, effect: { kind: "bleed", value: 28, duration: 3 } },
       ],
     },
-    42: { id: "silence_walker", name: "Silence Walker", emoji: "🤫", maxHp: 580, maxMp: 100, attack: 70, defense: 16, speed: 42, isBoss: false,
+    2: { id: "silence_walker", name: "Silence Walker", emoji: "🤫", maxHp: 580, maxMp: 100, attack: 70, defense: 16, speed: 42, isBoss: false,
       lore: "*There is no sound when it moves. There is no sound when you scream.*",
       moves: [
         { name: "Silent Strike",  emoji: "💨", damage: 70, mpCost: 0,  weight: 4 },
@@ -32,7 +32,7 @@ const arc5: ArcData = {
         { name: "Consumption",    emoji: "🕳️", damage: 58, mpCost: 40, weight: 2, effect: { kind: "mp_drain", value: 48, duration: 1 } },
       ],
     },
-    43: { id: "absence", name: "The Absence", emoji: "⬜", maxHp: 640, maxMp: 80, attack: 76, defense: 10, speed: 50, isBoss: false,
+    3: { id: "absence", name: "The Absence", emoji: "⬜", maxHp: 640, maxMp: 80, attack: 76, defense: 10, speed: 50, isBoss: false,
       lore: "*The void made self-aware, briefly. It is confused. It is also hostile.*",
       moves: [
         { name: "Erase",          emoji: "⬜", damage: 76, mpCost: 0,  weight: 4 },
@@ -40,7 +40,7 @@ const arc5: ArcData = {
         { name: "Unfocus",        emoji: "💨", damage: 0,  mpCost: 35, weight: 2, effect: { kind: "regen", value: 45, duration: 2 } },
       ],
     },
-    44: { id: "time_fragment", name: "Time Fragment", emoji: "⏳", maxHp: 660, maxMp: 110, attack: 78, defense: 18, speed: 38, isBoss: false,
+    4: { id: "time_fragment", name: "Time Fragment", emoji: "⏳", maxHp: 660, maxMp: 110, attack: 78, defense: 18, speed: 38, isBoss: false,
       lore: "*A piece of time that got lost in the void.*",
       moves: [
         { name: "Temporal Crush", emoji: "⏳", damage: 78, mpCost: 30, weight: 3, effect: { kind: "stun", value: 0, duration: 1 } },
@@ -48,7 +48,7 @@ const arc5: ArcData = {
         { name: "Regress",        emoji: "🔁", damage: 0,  mpCost: 35, weight: 2, effect: { kind: "regen", value: 50, duration: 3 } },
       ],
     },
-    45: { id: "void_predator", name: "Void Predator", emoji: "🦅", maxHp: 700, maxMp: 90, attack: 82, defense: 20, speed: 58, isBoss: false,
+    5: { id: "void_predator", name: "Void Predator", emoji: "🦅", maxHp: 700, maxMp: 90, attack: 82, defense: 20, speed: 58, isBoss: false,
       lore: "*Evolved to hunt in the void. In the void, existence is loud.*",
       moves: [
         { name: "Void Dive",       emoji: "🦅", damage: 82, mpCost: 0,  weight: 4 },
@@ -56,7 +56,7 @@ const arc5: ArcData = {
         { name: "Vacuum",          emoji: "💨", damage: 45, mpCost: 30, weight: 2, effect: { kind: "slow", value: 32, duration: 3 } },
       ],
     },
-    46: { id: "slow_enormous", name: "The Slow Enormous", emoji: "🐘", maxHp: 900, maxMp: 50, attack: 88, defense: 30, speed: 8, isBoss: false,
+    6: { id: "slow_enormous", name: "The Slow Enormous", emoji: "🐘", maxHp: 900, maxMp: 50, attack: 88, defense: 30, speed: 8, isBoss: false,
       lore: "*You saw it from a distance. It noticed you when you noticed it.*",
       moves: [
         { name: "Enormous Step", emoji: "👣", damage: 88, mpCost: 0,  weight: 3 },
@@ -65,7 +65,7 @@ const arc5: ArcData = {
         { name: "Absorb Void",   emoji: "🌑", damage: 0,  mpCost: 40, weight: 2, effect: { kind: "regen", value: 55, duration: 3 } },
       ],
     },
-    47: { id: "pressure_shade", name: "Pressure Shade", emoji: "🌫️", maxHp: 720, maxMp: 130, attack: 80, defense: 16, speed: 44, isBoss: false,
+    7: { id: "pressure_shade", name: "Pressure Shade", emoji: "🌫️", maxHp: 720, maxMp: 130, attack: 80, defense: 16, speed: 44, isBoss: false,
       lore: "*The resistance you felt in the air. Given form.*",
       moves: [
         { name: "Pressure Wave", emoji: "💥", damage: 80, mpCost: 30, weight: 3 },
@@ -73,7 +73,7 @@ const arc5: ArcData = {
         { name: "Disperse",      emoji: "💨", damage: 0,  mpCost: 30, weight: 2, effect: { kind: "regen", value: 48, duration: 2 } },
       ],
     },
-    48: { id: "shadow_self", name: "Shadow Self", emoji: "🌑", maxHp: 760, maxMp: 120, attack: 86, defense: 22, speed: 40, isBoss: false,
+    8: { id: "shadow_self", name: "Shadow Self", emoji: "🌑", maxHp: 760, maxMp: 120, attack: 86, defense: 22, speed: 40, isBoss: false,
       lore: "*Your shadow, detached. It has opinions about the direction you've been going.*",
       moves: [
         { name: "Shadow Punch", emoji: "👊", damage: 86, mpCost: 0,  weight: 4 },
@@ -81,7 +81,7 @@ const arc5: ArcData = {
         { name: "Dark Mirror",  emoji: "🪞", damage: 70, mpCost: 40, weight: 2, effect: { kind: "stun", value: 0, duration: 1 } },
       ],
     },
-    49: { id: "void_herald", name: "Void Herald", emoji: "📯", maxHp: 820, maxMp: 150, attack: 90, defense: 24, speed: 35, isBoss: false,
+    9: { id: "void_herald", name: "Void Herald", emoji: "📯", maxHp: 820, maxMp: 150, attack: 90, defense: 24, speed: 35, isBoss: false,
       lore: "*Sent ahead of the Nothing.*",
       moves: [
         { name: "Herald's Blow",   emoji: "📯", damage: 90,  mpCost: 0,  weight: 3 },

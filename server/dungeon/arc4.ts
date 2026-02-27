@@ -16,7 +16,7 @@ const arc4: ArcData = {
     40: "*The deepest chamber. At the center — something that has been burning since before the tower existed.*",
   },
   mobs: {
-    31: { id: "ember_golem", name: "Ember Golem", emoji: "🔥", maxHp: 540, maxMp: 60, attack: 64, defense: 24, speed: 14, isBoss: false,
+    1: { id: "ember_golem", name: "Ember Golem", emoji: "🔥", maxHp: 540, maxMp: 60, attack: 64, defense: 24, speed: 14, isBoss: false,
       lore: "*A living furnace. It doesn't burn with malice. It just burns.*",
       moves: [
         { name: "Magma Fist",   emoji: "🌋", damage: 64, mpCost: 0,  weight: 4 },
@@ -24,7 +24,7 @@ const arc4: ArcData = {
         { name: "Inferno Core", emoji: "🔥", damage: 52, mpCost: 35, weight: 2, effect: { kind: "burn", value: 28, duration: 4 } },
       ],
     },
-    32: { id: "fire_wraith", name: "Fire Wraith", emoji: "🌪️", maxHp: 460, maxMp: 100, attack: 60, defense: 9, speed: 48, isBoss: false,
+    2: { id: "fire_wraith", name: "Fire Wraith", emoji: "🌪️", maxHp: 460, maxMp: 100, attack: 60, defense: 9, speed: 48, isBoss: false,
       lore: "*Someone burned to death with enough rage to keep moving.*",
       moves: [
         { name: "Flame Touch", emoji: "🔥", damage: 52, mpCost: 20, weight: 4, effect: { kind: "burn", value: 22, duration: 3 } },
@@ -32,7 +32,7 @@ const arc4: ArcData = {
         { name: "Smolder",     emoji: "💨", damage: 32, mpCost: 25, weight: 3, effect: { kind: "burn", value: 14, duration: 6 } },
       ],
     },
-    33: { id: "lava_crawler", name: "Lava Crawler", emoji: "🦎", maxHp: 580, maxMp: 40, attack: 66, defense: 20, speed: 26, isBoss: false,
+    3: { id: "lava_crawler", name: "Lava Crawler", emoji: "🦎", maxHp: 580, maxMp: 40, attack: 66, defense: 20, speed: 26, isBoss: false,
       lore: "*Lives in the lava rivers. You cannot tell where the creature ends and the lava begins.*",
       moves: [
         { name: "Lava Surge",   emoji: "🌋", damage: 66, mpCost: 0,  weight: 4 },
@@ -40,7 +40,7 @@ const arc4: ArcData = {
         { name: "Submerge",     emoji: "🌊", damage: 0,  mpCost: 30, weight: 2, effect: { kind: "regen", value: 38, duration: 2 } },
       ],
     },
-    34: { id: "ash_revenant", name: "Ash Revenant", emoji: "💀", maxHp: 520, maxMp: 70, attack: 62, defense: 14, speed: 36, isBoss: false,
+    4: { id: "ash_revenant", name: "Ash Revenant", emoji: "💀", maxHp: 520, maxMp: 70, attack: 62, defense: 14, speed: 36, isBoss: false,
       lore: "*The spirit of something that burned completely and became the ash itself.*",
       moves: [
         { name: "Ash Surge",    emoji: "💨", damage: 62, mpCost: 25, weight: 3, effect: { kind: "slow", value: 24, duration: 3 } },
@@ -48,7 +48,7 @@ const arc4: ArcData = {
         { name: "Reconstruct",  emoji: "🌀", damage: 0,  mpCost: 35, weight: 2, effect: { kind: "regen", value: 35, duration: 2 } },
       ],
     },
-    35: { id: "heat_stalker", name: "Heat Stalker", emoji: "👁️", maxHp: 560, maxMp: 80, attack: 68, defense: 16, speed: 42, isBoss: false,
+    5: { id: "heat_stalker", name: "Heat Stalker", emoji: "👁️", maxHp: 560, maxMp: 80, attack: 68, defense: 16, speed: 42, isBoss: false,
       lore: "*Invisible in the heat haze. You only know it's there when it's already close.*",
       moves: [
         { name: "Heat Strike",   emoji: "💥", damage: 68, mpCost: 0,  weight: 4 },
@@ -56,7 +56,7 @@ const arc4: ArcData = {
         { name: "Haze Fade",     emoji: "💨", damage: 0,  mpCost: 25, weight: 2, effect: { kind: "slow", value: 20, duration: 2 } },
       ],
     },
-    36: { id: "magma_serpent", name: "Magma Serpent", emoji: "🐍", maxHp: 620, maxMp: 60, attack: 70, defense: 22, speed: 30, isBoss: false,
+    6: { id: "magma_serpent", name: "Magma Serpent", emoji: "🐍", maxHp: 620, maxMp: 60, attack: 70, defense: 22, speed: 30, isBoss: false,
       lore: "*The lava rivers move because of it.*",
       moves: [
         { name: "Magma Bite",  emoji: "🐍", damage: 70, mpCost: 0,  weight: 4 },
@@ -64,7 +64,7 @@ const arc4: ArcData = {
         { name: "Coil",        emoji: "🌀", damage: 42, mpCost: 20, weight: 2, effect: { kind: "stun", value: 0, duration: 1 } },
       ],
     },
-    37: { id: "bone_pyromancer", name: "Bone Pyromancer", emoji: "💀", maxHp: 580, maxMp: 120, attack: 64, defense: 12, speed: 28, isBoss: false,
+    7: { id: "bone_pyromancer", name: "Bone Pyromancer", emoji: "💀", maxHp: 580, maxMp: 120, attack: 64, defense: 12, speed: 28, isBoss: false,
       lore: "*A sorcerer who came here to study the fire. The fire studied them back.*",
       moves: [
         { name: "Fireball",    emoji: "🔥", damage: 64, mpCost: 30, weight: 3, effect: { kind: "burn", value: 22, duration: 3 } },
@@ -73,7 +73,7 @@ const arc4: ArcData = {
         { name: "Incinerate",  emoji: "💥", damage: 90, mpCost: 60, weight: 1, effect: { kind: "burn", value: 35, duration: 5 } },
       ],
     },
-    38: { id: "drip_horror", name: "Ceiling Drip", emoji: "🌋", maxHp: 600, maxMp: 50, attack: 72, defense: 18, speed: 22, isBoss: false,
+    8: { id: "drip_horror", name: "Ceiling Drip", emoji: "🌋", maxHp: 600, maxMp: 50, attack: 72, defense: 18, speed: 22, isBoss: false,
       lore: "*It lives in the ceiling. It drops when something warm walks beneath it.*",
       moves: [
         { name: "Drop Strike",  emoji: "⬇️", damage: 72, mpCost: 0,  weight: 4 },
@@ -81,7 +81,7 @@ const arc4: ArcData = {
         { name: "Ceiling Pull", emoji: "🔝", damage: 0,  mpCost: 30, weight: 2, effect: { kind: "regen", value: 42, duration: 2 } },
       ],
     },
-    39: { id: "ancient_fire_beast", name: "Ancient Fire Beast", emoji: "🦁", maxHp: 680, maxMp: 80, attack: 76, defense: 26, speed: 32, isBoss: false,
+    9: { id: "ancient_fire_beast", name: "Ancient Fire Beast", emoji: "🦁", maxHp: 680, maxMp: 80, attack: 76, defense: 26, speed: 32, isBoss: false,
       lore: "*The original predator of this cavern. The teeth marks in the walls are its.*",
       moves: [
         { name: "Ancient Roar", emoji: "📣", damage: 40, mpCost: 0,  weight: 3, effect: { kind: "stun", value: 0, duration: 1 } },

@@ -25,7 +25,7 @@ const arc9: ArcData = {
   },
 
   mobs: {
-    81: {
+    1: {
       id: "ceiling_thing", name: "Flickering Ceiling Thing", emoji: "🔄",
       maxHp: 1620, maxMp: 220, attack: 188, defense: 44, speed: 52, isBoss: false,
       lore: "*Was a ceiling. Is now a creature. Is trying to go back to being a ceiling. You are in the way.*",
@@ -35,7 +35,7 @@ const arc9: ArcData = {
         { name: "Reconstitute",    emoji: "🔁", damage: 0,   mpCost: 55, weight: 2, effect: { kind: "regen", value: 130, duration: 3 } },
       ],
     },
-    82: {
+    2: {
       id: "doorway_paradox", name: "Doorway Paradox", emoji: "🚪",
       maxHp: 1660, maxMp: 200, attack: 192, defense: 40, speed: 58, isBoss: false,
       lore: "*The paradox that causes the doorways to loop. It's been doing this so long it's forgotten why. It attacks anyone who tries to solve it.*",
@@ -45,7 +45,7 @@ const arc9: ArcData = {
         { name: "Reset",           emoji: "🔄", damage: 0,   mpCost: 55, weight: 2, effect: { kind: "regen", value: 135, duration: 3 } },
       ],
     },
-    83: {
+    3: {
       id: "gravity_wyrm", name: "Gravity Wyrm", emoji: "🌀",
       maxHp: 1700, maxMp: 240, attack: 196, defense: 46, speed: 48, isBoss: false,
       lore: "*The thing that makes gravity have preferences here. It finds you interesting. It expresses this through violence.*",
@@ -55,7 +55,7 @@ const arc9: ArcData = {
         { name: "Equilibrium",     emoji: "⚖️", damage: 0,   mpCost: 60, weight: 2, effect: { kind: "regen", value: 140, duration: 3 } },
       ],
     },
-    84: {
+    4: {
       id: "phase_walker", name: "Phase Walker", emoji: "👻",
       maxHp: 1680, maxMp: 220, attack: 194, defense: 38, speed: 65, isBoss: false,
       lore: "*Passes through solid matter as a matter of preference. It finds the concept of being stopped to be quaint.*",
@@ -65,7 +65,7 @@ const arc9: ArcData = {
         { name: "Phase Regen",     emoji: "🔁", damage: 0,   mpCost: 55, weight: 2, effect: { kind: "regen", value: 138, duration: 3 } },
       ],
     },
-    85: {
+    5: {
       id: "halfway_horror", name: "The Halfway Horror", emoji: "❓",
       maxHp: 1740, maxMp: 260, attack: 200, defense: 50, speed: 54, isBoss: false,
       lore: "*Exists at exactly the halfway point of every possible measurement. You are exactly halfway through the arc. It has been waiting for you.*",
@@ -75,7 +75,7 @@ const arc9: ArcData = {
         { name: "Equidistant",     emoji: "🔁", damage: 0,   mpCost: 65, weight: 2, effect: { kind: "regen", value: 145, duration: 3 } },
       ],
     },
-    86: {
+    6: {
       id: "memory_feeder", name: "Memory Feeder", emoji: "🧠",
       maxHp: 1780, maxMp: 280, attack: 204, defense: 48, speed: 50, isBoss: false,
       lore: "*Reads your memories from the air where they've become visible. It uses what it finds. It has found things you forgot you remembered.*",
@@ -85,7 +85,7 @@ const arc9: ArcData = {
         { name: "Feed",            emoji: "🔁", damage: 0,   mpCost: 60, weight: 2, effect: { kind: "regen", value: 148, duration: 3 } },
       ],
     },
-    87: {
+    7: {
       id: "decision_specter", name: "Decision Specter", emoji: "🔀",
       maxHp: 1820, maxMp: 260, attack: 208, defense: 52, speed: 46, isBoss: false,
       lore: "*Made from the sound of your footsteps on the floor of decisions. It is every path you didn't take, animated.*",
@@ -95,7 +95,7 @@ const arc9: ArcData = {
         { name: "Reconsider",      emoji: "🔁", damage: 0,   mpCost: 65, weight: 2, effect: { kind: "regen", value: 152, duration: 3 } },
       ],
     },
-    88: {
+    8: {
       id: "formless_interest", name: "Formless Interest", emoji: "🌌",
       maxHp: 1880, maxMp: 300, attack: 214, defense: 56, speed: 58, isBoss: false,
       lore: "*The thing that was looking at you with great interest. It has decided to express this interest more physically.*",
@@ -105,7 +105,7 @@ const arc9: ArcData = {
         { name: "Absorb Interest",  emoji: "🔁", damage: 0,   mpCost: 70, weight: 2, effect: { kind: "regen", value: 158, duration: 3 } },
       ],
     },
-    89: {
+    9: {
       id: "seam_guardian", name: "Seam Guardian", emoji: "🪡",
       maxHp: 1960, maxMp: 320, attack: 222, defense: 58, speed: 52, isBoss: false,
       lore: "*Guards the seams where the tower was put together. It does not want you examining them too closely. You have been examining them too closely.*",

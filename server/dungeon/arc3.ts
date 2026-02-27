@@ -19,7 +19,7 @@ const arc3: ArcData = {
     30: "*The center of the maze. No walls. Just open space. And something that has been thinking about you since you entered.*",
   },
   mobs: {
-    21: { id: "maze_mimic", name: "Maze Mimic", emoji: "📦", maxHp: 420, maxMp: 60, attack: 50, defense: 12, speed: 28, isBoss: false,
+    1: { id: "maze_mimic", name: "Maze Mimic", emoji: "📦", maxHp: 420, maxMp: 60, attack: 50, defense: 12, speed: 28, isBoss: false,
       lore: "*It looked like a door. Then it bit you.*",
       moves: [
         { name: "Surprise Bite",  emoji: "😱", damage: 65, mpCost: 0,  weight: 3 },
@@ -27,7 +27,7 @@ const arc3: ArcData = {
         { name: "Lure Gleam",     emoji: "✨", damage: 15, mpCost: 30, weight: 2, effect: { kind: "slow", value: 16, duration: 2 } },
       ],
     },
-    22: { id: "blood_stalker", name: "Blood Stalker", emoji: "🩸", maxHp: 380, maxMp: 50, attack: 54, defense: 9, speed: 46, isBoss: false,
+    2: { id: "blood_stalker", name: "Blood Stalker", emoji: "🩸", maxHp: 380, maxMp: 50, attack: 54, defense: 9, speed: 46, isBoss: false,
       lore: "*It follows the scent of wounds.*",
       moves: [
         { name: "Frenzy Strike", emoji: "🩸", damage: 54, mpCost: 0,  weight: 4, effect: { kind: "bleed", value: 22, duration: 3 } },
@@ -35,7 +35,7 @@ const arc3: ArcData = {
         { name: "Blood Taste",   emoji: "🦷", damage: 30, mpCost: 25, weight: 2, effect: { kind: "str_up", value: 18, duration: 3 } },
       ],
     },
-    23: { id: "fork_wraith", name: "Fork Wraith", emoji: "🌀", maxHp: 400, maxMp: 80, attack: 48, defense: 8, speed: 40, isBoss: false,
+    3: { id: "fork_wraith", name: "Fork Wraith", emoji: "🌀", maxHp: 400, maxMp: 80, attack: 48, defense: 8, speed: 40, isBoss: false,
       lore: "*Born at every intersection. This is your third wrong turn.*",
       moves: [
         { name: "Wrong Path",   emoji: "🌀", damage: 48, mpCost: 20, weight: 4, effect: { kind: "slow", value: 20, duration: 2 } },
@@ -43,7 +43,7 @@ const arc3: ArcData = {
         { name: "Maze Shift",   emoji: "💨", damage: 0,  mpCost: 30, weight: 2, effect: { kind: "regen", value: 28, duration: 2 } },
       ],
     },
-    24: { id: "wall_bleeder", name: "Wall Bleeder", emoji: "🩸", maxHp: 440, maxMp: 60, attack: 52, defense: 14, speed: 20, isBoss: false,
+    4: { id: "wall_bleeder", name: "Wall Bleeder", emoji: "🩸", maxHp: 440, maxMp: 60, attack: 52, defense: 14, speed: 20, isBoss: false,
       lore: "*It emerges from the bleeding walls. It IS part of the bleeding walls.*",
       moves: [
         { name: "Wall Slam",   emoji: "🏚️", damage: 52, mpCost: 0,  weight: 4 },
@@ -51,7 +51,7 @@ const arc3: ArcData = {
         { name: "Absorb",      emoji: "🌀", damage: 0,  mpCost: 20, weight: 2, effect: { kind: "regen", value: 32, duration: 2 } },
       ],
     },
-    25: { id: "echo_hunter", name: "Echo Hunter", emoji: "👥", maxHp: 460, maxMp: 70, attack: 56, defense: 16, speed: 36, isBoss: false,
+    5: { id: "echo_hunter", name: "Echo Hunter", emoji: "👥", maxHp: 460, maxMp: 70, attack: 56, defense: 16, speed: 36, isBoss: false,
       lore: "*Made from the echoes of your own footsteps. It knows exactly how you move.*",
       moves: [
         { name: "Echo Strike",  emoji: "👥", damage: 56, mpCost: 0,  weight: 4 },
@@ -59,7 +59,7 @@ const arc3: ArcData = {
         { name: "Reverberate",  emoji: "💥", damage: 38, mpCost: 25, weight: 2, effect: { kind: "bleed", value: 18, duration: 3 } },
       ],
     },
-    26: { id: "maze_devourer", name: "Maze Devourer", emoji: "👾", maxHp: 500, maxMp: 80, attack: 58, defense: 18, speed: 18, isBoss: false,
+    6: { id: "maze_devourer", name: "Maze Devourer", emoji: "👾", maxHp: 500, maxMp: 80, attack: 58, defense: 18, speed: 18, isBoss: false,
       lore: "*Slow. Enormous. It eats the walls to grow larger.*",
       moves: [
         { name: "Devour",     emoji: "👾", damage: 58, mpCost: 0,  weight: 3 },
@@ -67,7 +67,7 @@ const arc3: ArcData = {
         { name: "Grow",       emoji: "📈", damage: 0,  mpCost: 35, weight: 2, effect: { kind: "str_up", value: 22, duration: 3 } },
       ],
     },
-    27: { id: "whisper_shade", name: "Whisper Shade", emoji: "🤫", maxHp: 480, maxMp: 100, attack: 54, defense: 12, speed: 42, isBoss: false,
+    7: { id: "whisper_shade", name: "Whisper Shade", emoji: "🤫", maxHp: 480, maxMp: 100, attack: 54, defense: 12, speed: 42, isBoss: false,
       lore: "*The whispering you heard in the walls. It has taken shape. It is saying your name now.*",
       moves: [
         { name: "Soul Whisper",  emoji: "🤫", damage: 54, mpCost: 30, weight: 3, effect: { kind: "silence", value: 0, duration: 2 } },
@@ -75,7 +75,7 @@ const arc3: ArcData = {
         { name: "Mind Drain",    emoji: "🌀", damage: 28, mpCost: 35, weight: 2, effect: { kind: "mp_drain", value: 45, duration: 1 } },
       ],
     },
-    28: { id: "personal_horror", name: "The Personal Horror", emoji: "😨", maxHp: 520, maxMp: 90, attack: 60, defense: 15, speed: 30, isBoss: false,
+    8: { id: "personal_horror", name: "The Personal Horror", emoji: "😨", maxHp: 520, maxMp: 90, attack: 60, defense: 15, speed: 30, isBoss: false,
       lore: "*The maze read your fears and made something from them.*",
       moves: [
         { name: "Fear Strike",    emoji: "😨", damage: 60, mpCost: 0,  weight: 4 },
@@ -83,7 +83,7 @@ const arc3: ArcData = {
         { name: "Know You",       emoji: "👁️", damage: 38, mpCost: 40, weight: 2, effect: { kind: "stun", value: 0, duration: 1 } },
       ],
     },
-    29: { id: "maze_twin", name: "Maze Twin", emoji: "🪞", maxHp: 560, maxMp: 100, attack: 64, defense: 20, speed: 35, isBoss: false,
+    9: { id: "maze_twin", name: "Maze Twin", emoji: "🪞", maxHp: 560, maxMp: 100, attack: 64, defense: 20, speed: 35, isBoss: false,
       lore: "*Your reflection, stepped out of the polished floor. It fights exactly like you. Except it doesn't hold back.*",
       moves: [
         { name: "Perfect Mirror", emoji: "🪞", damage: 64, mpCost: 0,  weight: 4 },

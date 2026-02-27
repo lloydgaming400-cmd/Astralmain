@@ -25,7 +25,7 @@ const arc8: ArcData = {
   },
 
   mobs: {
-    71: {
+    1: {
       id: "war_revenant", name: "War Revenant", emoji: "⚔️",
       maxHp: 1340, maxMp: 160, attack: 152, defense: 38, speed: 42, isBoss: false,
       lore: "*A soldier who died mid-charge and never stopped charging. It has been mid-charge for two hundred years.*",
@@ -35,7 +35,7 @@ const arc8: ArcData = {
         { name: "Battle Regen",    emoji: "💚", damage: 0,   mpCost: 40, weight: 2, effect: { kind: "regen", value: 95, duration: 3 } },
       ],
     },
-    72: {
+    2: {
       id: "three_kings_shade", name: "Triclaimant Shade", emoji: "👑",
       maxHp: 1380, maxMp: 180, attack: 156, defense: 36, speed: 40, isBoss: false,
       lore: "*Three kings who all claimed the same throne. They're still fighting over it. It fused them together. None of them have noticed.*",
@@ -45,7 +45,7 @@ const arc8: ArcData = {
         { name: "Claim the Throne",emoji: "🪑", damage: 0,   mpCost: 50, weight: 2, effect: { kind: "regen", value: 100, duration: 3 } },
       ],
     },
-    73: {
+    3: {
       id: "armory_spirit", name: "Armory Spirit", emoji: "🗡️",
       maxHp: 1360, maxMp: 140, attack: 158, defense: 32, speed: 46, isBoss: false,
       lore: "*The collective spirit of an armory. Every weapon in it, fighting as one. You cannot disarm what IS an armory.*",
@@ -55,7 +55,7 @@ const arc8: ArcData = {
         { name: "Rearm",           emoji: "🔧", damage: 0,   mpCost: 45, weight: 2, effect: { kind: "regen", value: 102, duration: 3 } },
       ],
     },
-    74: {
+    4: {
       id: "feast_ghost", name: "Feast Ghost", emoji: "🍽️",
       maxHp: 1320, maxMp: 200, attack: 148, defense: 34, speed: 48, isBoss: false,
       lore: "*One of the eternal feast guests. It has been hungry for centuries. It has decided to eat you instead.*",
@@ -65,7 +65,7 @@ const arc8: ArcData = {
         { name: "Feast Drain",     emoji: "🌀", damage: 105, mpCost: 45, weight: 2, effect: { kind: "mp_drain", value: 75, duration: 1 }, taunt: "*Takes energy the way a feast takes hunger.*" },
       ],
     },
-    75: {
+    5: {
       id: "echo_war", name: "Echo of War", emoji: "🔊",
       maxHp: 1400, maxMp: 160, attack: 162, defense: 36, speed: 44, isBoss: false,
       lore: "*The sound of the eternal war, given form. Every battle cry, every death scream, every sword clash from the last three centuries — compressed into one.*",
@@ -75,7 +75,7 @@ const arc8: ArcData = {
         { name: "Battle Hymn",     emoji: "🎵", damage: 0,   mpCost: 55, weight: 2, effect: { kind: "regen", value: 108, duration: 3 } },
       ],
     },
-    76: {
+    6: {
       id: "cracked_crown", name: "Cracked Crown Wraith", emoji: "💎",
       maxHp: 1440, maxMp: 180, attack: 166, defense: 38, speed: 42, isBoss: false,
       lore: "*A crown with no king — just the power that lingered in the metal after the king died. The power has opinions about who's worthy.*",
@@ -85,7 +85,7 @@ const arc8: ArcData = {
         { name: "Regal Restore",    emoji: "💚", damage: 0,   mpCost: 60, weight: 2, effect: { kind: "regen", value: 115, duration: 3 } },
       ],
     },
-    77: {
+    7: {
       id: "dead_general", name: "Dead General", emoji: "🎖️",
       maxHp: 1480, maxMp: 200, attack: 170, defense: 40, speed: 38, isBoss: false,
       lore: "*Still arguing strategy in the war council. You interrupted an important point it was making. It will finish its point. Then kill you.*",
@@ -96,7 +96,7 @@ const arc8: ArcData = {
         { name: "Execute Order",    emoji: "💥", damage: 210, mpCost: 75, weight: 1, taunt: "*Final order. No appeal.*" },
       ],
     },
-    78: {
+    8: {
       id: "execution_risen", name: "Execution Risen", emoji: "💀",
       maxHp: 1520, maxMp: 180, attack: 174, defense: 38, speed: 50, isBoss: false,
       lore: "*Was executed. Didn't stay executed. Has strong feelings about this.*",
@@ -106,7 +106,7 @@ const arc8: ArcData = {
         { name: "Refusal",         emoji: "🔁", damage: 0,   mpCost: 50, weight: 2, effect: { kind: "regen", value: 122, duration: 3 }, taunt: "*Refuses to stop. Again.*" },
       ],
     },
-    79: {
+    9: {
       id: "portrait_king", name: "Portrait King", emoji: "🖼️",
       maxHp: 1580, maxMp: 200, attack: 180, defense: 42, speed: 44, isBoss: false,
       lore: "*Stepped out of its portrait. Has been watching every warrior approach the final throne room for centuries and has decided it doesn't approve of you.*",

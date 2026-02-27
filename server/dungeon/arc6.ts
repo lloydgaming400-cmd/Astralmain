@@ -16,7 +16,7 @@ const arc6: ArcData = {
     60: "*The shadow throne room. One figure, sitting casually, looking at you as though he's been waiting.*",
   },
   mobs: {
-    51: { id: "shadow_reaper", name: "Shadow Reaper", emoji: "🌑", maxHp: 740, maxMp: 150, attack: 90, defense: 22, speed: 58, isBoss: false,
+    1: { id: "shadow_reaper", name: "Shadow Reaper", emoji: "🌑", maxHp: 740, maxMp: 150, attack: 90, defense: 22, speed: 58, isBoss: false,
       lore: "*A reaper made not of death but of the absence of light.*",
       moves: [
         { name: "Reap",            emoji: "⚔️", damage: 90, mpCost: 0,  weight: 4 },
@@ -24,7 +24,7 @@ const arc6: ArcData = {
         { name: "Darkness Shroud", emoji: "🌫️", damage: 44, mpCost: 40, weight: 2, effect: { kind: "slow", value: 28, duration: 3 } },
       ],
     },
-    52: { id: "shadow_hunter", name: "Shadow Hunter", emoji: "🏹", maxHp: 700, maxMp: 120, attack: 88, defense: 14, speed: 65, isBoss: false,
+    2: { id: "shadow_hunter", name: "Shadow Hunter", emoji: "🏹", maxHp: 700, maxMp: 120, attack: 88, defense: 14, speed: 65, isBoss: false,
       lore: "*Hunts by tracking shadows. Your shadow is already known to it.*",
       moves: [
         { name: "Shadow Arrow",  emoji: "🏹", damage: 88, mpCost: 0,  weight: 4 },
@@ -32,7 +32,7 @@ const arc6: ArcData = {
         { name: "Fade",          emoji: "💨", damage: 0,  mpCost: 30, weight: 2, effect: { kind: "regen", value: 52, duration: 2 } },
       ],
     },
-    53: { id: "pinned_shadow", name: "Escaped Pinned Shadow", emoji: "⬛", maxHp: 720, maxMp: 90, attack: 86, defense: 18, speed: 48, isBoss: false,
+    3: { id: "pinned_shadow", name: "Escaped Pinned Shadow", emoji: "⬛", maxHp: 720, maxMp: 90, attack: 86, defense: 18, speed: 48, isBoss: false,
       lore: "*One of the shadows from the hall escaped its pin. It is extremely angry.*",
       moves: [
         { name: "Pin Strike",   emoji: "📌", damage: 86, mpCost: 0,  weight: 3, effect: { kind: "stun", value: 0, duration: 1 } },
@@ -40,7 +40,7 @@ const arc6: ArcData = {
         { name: "Darken",       emoji: "🌑", damage: 55, mpCost: 35, weight: 2, effect: { kind: "slow", value: 30, duration: 3 } },
       ],
     },
-    54: { id: "dark_sovereign_lesser", name: "Dark Sovereign", emoji: "👑", maxHp: 820, maxMp: 130, attack: 96, defense: 28, speed: 42, isBoss: false,
+    4: { id: "dark_sovereign_lesser", name: "Dark Sovereign", emoji: "👑", maxHp: 820, maxMp: 130, attack: 96, defense: 28, speed: 42, isBoss: false,
       lore: "*A minor king of the shadow realm. MINOR by shadow standards.*",
       moves: [
         { name: "Sovereign Strike", emoji: "👑", damage: 96, mpCost: 0,  weight: 3 },
@@ -48,7 +48,7 @@ const arc6: ArcData = {
         { name: "Shadow Throne",    emoji: "🪑", damage: 0,  mpCost: 45, weight: 2, effect: { kind: "regen", value: 65, duration: 3 } },
       ],
     },
-    55: { id: "wrong_light", name: "Wrong Light", emoji: "💡", maxHp: 760, maxMp: 110, attack: 92, defense: 20, speed: 52, isBoss: false,
+    5: { id: "wrong_light", name: "Wrong Light", emoji: "💡", maxHp: 760, maxMp: 110, attack: 92, defense: 20, speed: 52, isBoss: false,
       lore: "*A light source that casts dark. It has become sentient.*",
       moves: [
         { name: "Dark Beam",  emoji: "💡", damage: 92, mpCost: 25, weight: 4 },
@@ -56,7 +56,7 @@ const arc6: ArcData = {
         { name: "Invert",     emoji: "🔄", damage: 55, mpCost: 40, weight: 2, effect: { kind: "silence", value: 0, duration: 2 } },
       ],
     },
-    56: { id: "shadow_conversant", name: "Shadow Conversant", emoji: "🗣️", maxHp: 800, maxMp: 160, attack: 94, defense: 24, speed: 40, isBoss: false,
+    6: { id: "shadow_conversant", name: "Shadow Conversant", emoji: "🗣️", maxHp: 800, maxMp: 160, attack: 94, defense: 24, speed: 40, isBoss: false,
       lore: "*You interrupted something important. It is taking this personally.*",
       moves: [
         { name: "Dark Words",      emoji: "🗣️", damage: 94, mpCost: 30, weight: 3, effect: { kind: "stun", value: 0, duration: 1 } },
@@ -64,7 +64,7 @@ const arc6: ArcData = {
         { name: "Shadow Commune",  emoji: "🌑", damage: 0,  mpCost: 55, weight: 2, effect: { kind: "regen", value: 70, duration: 3 } },
       ],
     },
-    57: { id: "mirror_floor_shade", name: "Mirror Floor Shade", emoji: "🪞", maxHp: 840, maxMp: 140, attack: 98, defense: 26, speed: 46, isBoss: false,
+    7: { id: "mirror_floor_shade", name: "Mirror Floor Shade", emoji: "🪞", maxHp: 840, maxMp: 140, attack: 98, defense: 26, speed: 46, isBoss: false,
       lore: "*Your shadow doing something different under the mirrored floor. It decided to come up.*",
       moves: [
         { name: "Under Strike",    emoji: "⬇️", damage: 98, mpCost: 0,  weight: 3 },
@@ -72,7 +72,7 @@ const arc6: ArcData = {
         { name: "Return Below",    emoji: "💨", damage: 0,  mpCost: 30, weight: 2, effect: { kind: "regen", value: 65, duration: 2 } },
       ],
     },
-    58: { id: "trophy_guardian", name: "Trophy Guardian", emoji: "🏆", maxHp: 900, maxMp: 130, attack: 102, defense: 30, speed: 35, isBoss: false,
+    8: { id: "trophy_guardian", name: "Trophy Guardian", emoji: "🏆", maxHp: 900, maxMp: 130, attack: 102, defense: 30, speed: 35, isBoss: false,
       lore: "*Made from the shadows of every warrior whose equipment lines the walls.*",
       moves: [
         { name: "Trophy Blow",   emoji: "🏆", damage: 102, mpCost: 0,  weight: 3 },
@@ -81,7 +81,7 @@ const arc6: ArcData = {
         { name: "Execution",     emoji: "💀", damage: 130, mpCost: 65, weight: 1 },
       ],
     },
-    59: { id: "shadow_gate_warden", name: "Shadow Gate Warden", emoji: "🚪", maxHp: 960, maxMp: 160, attack: 108, defense: 32, speed: 38, isBoss: false,
+    9: { id: "shadow_gate_warden", name: "Shadow Gate Warden", emoji: "🚪", maxHp: 960, maxMp: 160, attack: 108, defense: 32, speed: 38, isBoss: false,
       lore: "*The last line of defense before the throne.*",
       moves: [
         { name: "Gate Seal",        emoji: "🚪", damage: 108, mpCost: 0,  weight: 3 },

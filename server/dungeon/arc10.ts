@@ -25,7 +25,7 @@ const arc10: ArcData = {
   },
 
   mobs: {
-    91: {
+    1: {
       id: "ascent_sentinel", name: "Ascent Sentinel", emoji: "🗿",
       maxHp: 2100, maxMp: 240, attack: 238, defense: 62, speed: 48, isBoss: false,
       lore: "*Built to guard the ascent corridor. It has one job. It has always done it perfectly.*",
@@ -35,7 +35,7 @@ const arc10: ArcData = {
         { name: "Corridor Seal",    emoji: "🔒", damage: 195, mpCost: 60, weight: 2, effect: { kind: "slow", value: 55, duration: 4 }, taunt: "*Seals the space around you.*" },
       ],
     },
-    92: {
+    2: {
       id: "sovereign_construct", name: "Sovereign Construct", emoji: "🤖",
       maxHp: 2160, maxMp: 260, attack: 244, defense: 64, speed: 52, isBoss: false,
       lore: "*Built by the Sovereign himself. It fights with the precision of the man who designed it.*",
@@ -45,7 +45,7 @@ const arc10: ArcData = {
         { name: "Self Repair",      emoji: "🔧", damage: 0,   mpCost: 65, weight: 2, effect: { kind: "regen", value: 172, duration: 3 } },
       ],
     },
-    93: {
+    3: {
       id: "name_warden", name: "Name Warden", emoji: "📜",
       maxHp: 2220, maxMp: 280, attack: 250, defense: 66, speed: 50, isBoss: false,
       lore: "*Guards the wall of names. It has recorded every warrior who reached this floor. It will record yours — one way or another.*",
@@ -55,7 +55,7 @@ const arc10: ArcData = {
         { name: "Chronicle",        emoji: "📖", damage: 0,   mpCost: 70, weight: 2, effect: { kind: "regen", value: 178, duration: 3 } },
       ],
     },
-    94: {
+    4: {
       id: "memorial_guardian", name: "Memorial Guardian", emoji: "🏛️",
       maxHp: 2280, maxMp: 300, attack: 256, defense: 68, speed: 48, isBoss: false,
       lore: "*Guards the memorial of every boss you've fought. It carries a piece of each of them. You have fought all of this before.*",
@@ -66,7 +66,7 @@ const arc10: ArcData = {
         { name: "Final Memorial",   emoji: "⚔️", damage: 310, mpCost: 95, weight: 1, taunt: "*A tribute to every battle that brought you here.*" },
       ],
     },
-    95: {
+    5: {
       id: "sovereign_intent", name: "Sovereign's Intent", emoji: "🎯",
       maxHp: 2360, maxMp: 320, attack: 264, defense: 72, speed: 55, isBoss: false,
       lore: "*The will of the Sovereign, given form. Not the man — just the intention. The tower's purpose, distilled.*",
@@ -76,7 +76,7 @@ const arc10: ArcData = {
         { name: "Intentional Heal", emoji: "💚", damage: 0,   mpCost: 80, weight: 2, effect: { kind: "regen", value: 192, duration: 3 } },
       ],
     },
-    96: {
+    6: {
       id: "preparing_servant", name: "Throne Servant", emoji: "🧎",
       maxHp: 2420, maxMp: 300, attack: 270, defense: 70, speed: 52, isBoss: false,
       lore: "*Was preparing the throne room for — something. You interrupted. It does not enjoy being interrupted while serving.*",
@@ -86,7 +86,7 @@ const arc10: ArcData = {
         { name: "Restore Order",    emoji: "🔧", damage: 0,   mpCost: 75, weight: 2, effect: { kind: "regen", value: 198, duration: 3 } },
       ],
     },
-    97: {
+    7: {
       id: "observatory_watcher", name: "Observatory Watcher", emoji: "🔭",
       maxHp: 2500, maxMp: 340, attack: 278, defense: 74, speed: 54, isBoss: false,
       lore: "*Has watched every warrior from the observatory. Knows every arc they struggled with. Knows exactly where to hit you.*",
@@ -96,7 +96,7 @@ const arc10: ArcData = {
         { name: "Distant Watch",    emoji: "💚", damage: 0,   mpCost: 80, weight: 2, effect: { kind: "regen", value: 205, duration: 3 } },
       ],
     },
-    98: {
+    8: {
       id: "weapon_keeper", name: "Weapon Keeper", emoji: "⚔️",
       maxHp: 2600, maxMp: 360, attack: 288, defense: 76, speed: 56, isBoss: false,
       lore: "*Keeps the Sovereign's weapons. It knows exactly what every weapon does. It uses that knowledge against you.*",
@@ -107,7 +107,7 @@ const arc10: ArcData = {
         { name: "Sovereign's Blade",emoji: "🗡️", damage: 355, mpCost: 110, weight: 1, taunt: "*Uses the Sovereign's own weapon. Just briefly. Just enough.*" },
       ],
     },
-    99: {
+    9: {
       id: "antechamber_silence", name: "The Antechamber Silence", emoji: "🤫",
       maxHp: 2720, maxMp: 380, attack: 298, defense: 80, speed: 58, isBoss: false,
       lore: "*The silence of the antechamber, given form. It has been guarding this door for the entire life of the tower. It does not want you to open it.*",

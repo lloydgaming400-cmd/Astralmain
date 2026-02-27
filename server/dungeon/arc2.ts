@@ -21,7 +21,7 @@ const arc2: ArcData = {
     20: "*The door to the throne room is sealed with seven locks. As you approach, all seven unlock themselves.*",
   },
   mobs: {
-    11: {
+    1: {
       id: "mummy_warrior", name: "Mummy Warrior", emoji: "🧟",
       maxHp: 340, maxMp: 40, attack: 38, defense: 16, speed: 13, isBoss: false,
       lore: "*It was a general once. It remembers the commands given to it centuries ago. It is still following them.*",
@@ -31,7 +31,7 @@ const arc2: ArcData = {
         { name: "Death Rattle",   emoji: "💀", damage: 16, mpCost: 15, weight: 2, effect: { kind: "stun", value: 0, duration: 1 } },
       ],
     },
-    12: {
+    2: {
       id: "scarab_swarm", name: "Scarab Swarm", emoji: "🪲",
       maxHp: 300, maxMp: 0, attack: 32, defense: 5, speed: 44, isBoss: false,
       lore: "*Individually harmless. Together they stripped a pharaoh to bones in four seconds.*",
@@ -41,7 +41,7 @@ const arc2: ArcData = {
         { name: "Scatter Reform", emoji: "💨", damage: 0,  mpCost: 0, weight: 2, effect: { kind: "regen", value: 20, duration: 1 } },
       ],
     },
-    13: {
+    3: {
       id: "tomb_shade", name: "Tomb Shade", emoji: "🌫️",
       maxHp: 320, maxMp: 80, attack: 36, defense: 9, speed: 32, isBoss: false,
       lore: "*The ghost of someone buried alive. It has had centuries to be angry about that.*",
@@ -51,7 +51,7 @@ const arc2: ArcData = {
         { name: "Phase Out",       emoji: "🌀", damage: 0,  mpCost: 20, weight: 2, effect: { kind: "regen", value: 26, duration: 2 } },
       ],
     },
-    14: {
+    4: {
       id: "sand_serpent", name: "Sand Serpent", emoji: "🐍",
       maxHp: 360, maxMp: 50, attack: 40, defense: 10, speed: 38, isBoss: false,
       lore: "*Ancient burial guardian. Coiled in the sand for centuries. It has been waiting.*",
@@ -61,7 +61,7 @@ const arc2: ArcData = {
         { name: "Ancient Venom", emoji: "☠️", damage: 20, mpCost: 30, weight: 2, effect: { kind: "burn", value: 16, duration: 5 } },
       ],
     },
-    15: {
+    5: {
       id: "cursed_soldier", name: "Cursed Soldier", emoji: "⚔️",
       maxHp: 380, maxMp: 60, attack: 42, defense: 18, speed: 20, isBoss: false,
       lore: "*A soldier cursed to guard this floor forever.*",
@@ -71,7 +71,7 @@ const arc2: ArcData = {
         { name: "Bone Shield",  emoji: "🛡️", damage: 0,  mpCost: 30, weight: 2, effect: { kind: "regen", value: 30, duration: 2 } },
       ],
     },
-    16: {
+    6: {
       id: "canopic_horror", name: "Canopic Horror", emoji: "🫙",
       maxHp: 350, maxMp: 70, attack: 38, defense: 14, speed: 22, isBoss: false,
       lore: "*The organs removed during mummification were stored in jars. The organs have opinions about that.*",
@@ -81,7 +81,7 @@ const arc2: ArcData = {
         { name: "Jar Shatter",  emoji: "💥", damage: 45, mpCost: 35, weight: 2 },
       ],
     },
-    17: {
+    7: {
       id: "frost_priest", name: "Frost Priest", emoji: "🧊",
       maxHp: 400, maxMp: 100, attack: 44, defense: 15, speed: 18, isBoss: false,
       lore: "*A high priest preserved by the cold. It stopped chanting for a moment to fight you.*",
@@ -92,7 +92,7 @@ const arc2: ArcData = {
         { name: "Preservation",  emoji: "💚", damage: 0,  mpCost: 40, weight: 2, effect: { kind: "regen", value: 35, duration: 3 } },
       ],
     },
-    18: {
+    8: {
       id: "mirror_revenant", name: "Mirror Revenant", emoji: "🪞",
       maxHp: 420, maxMp: 80, attack: 46, defense: 12, speed: 35, isBoss: false,
       lore: "*Your own reflection, stepped out of the mirror.*",
@@ -102,7 +102,7 @@ const arc2: ArcData = {
         { name: "False Image",   emoji: "💨", damage: 0,  mpCost: 30, weight: 2, effect: { kind: "slow", value: 20, duration: 2 } },
       ],
     },
-    19: {
+    9: {
       id: "royal_champion", name: "Royal Champion", emoji: "🏆",
       maxHp: 480, maxMp: 90, attack: 50, defense: 22, speed: 28, isBoss: false,
       lore: "*The pharaoh's personal bodyguard. Rewarded with undeath so it could keep serving.*",
